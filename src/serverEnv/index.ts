@@ -13,6 +13,8 @@ const serverEnv = {
   serviceName: process.env.SERVICE_NAME,
   otelExporterEndpoint: process.env.OTEL_EXPORTER_OTLP_ENDPOINT!,
   signozIngestionKey: process.env.SIGNOZ_INGESTION_KEY!,
+  appScheme: process.env.APP_SCHEME!,
+  baseUrl: process.env.BASE_URL!,
 };
 
 export default serverEnv;

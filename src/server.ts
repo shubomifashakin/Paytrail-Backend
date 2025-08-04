@@ -3,29 +3,28 @@ import express from "express";
 import helmet from "helmet";
 import http from "http";
 import morgan from "morgan";
-import { toNodeHandler } from "better-auth/node";
 import cors, { CorsOptions } from "cors";
 
 import dotenv from "dotenv";
 dotenv.config();
 
+import authRouter from "./routes/authRouter";
 import healthRouter from "./routes/healthRouter";
 
 import serverEnv from "./serverEnv";
 
-import auth from "./lib/auth";
 import prisma from "./lib/prisma";
 import redisClient from "./lib/redis";
 import logger, { loggerProvider } from "./lib/logger";
 
-// import createRateLimiter from "./middlewares/rateLimiters";
+import createRateLimiter from "./middlewares/rateLimiter";
 import errorMiddleware from "./middlewares/errorMiddleware";
 // import isAuthorized from "./middlewares/isAuthorized";
 import morganToJson from "./middlewares/morgan";
 import tagRequest from "./middlewares/tagRequest";
 
-import { FORCE_EXIT_TIMEOUT } from "./utils/constants";
 import { sleep } from "./utils/fns";
+import { API_V1, FORCE_EXIT_TIMEOUT } from "./utils/constants";
 
 const app = express();
 
@@ -58,8 +57,6 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use(`/health`, healthRouter);
 
-app.all("/api/auth/{*any}", toNodeHandler(auth));
-
 app.use(express.json());
 
 app.use(errorMiddleware);
@@ -73,8 +70,7 @@ async function startServer() {
 
     await redisClient.connect();
 
-    //routes that require rate limiting come here e.g
-    // app.use(`${API_V1}/example`, createRateLimiter({redisClient,limit: 5,window: 60}), exampleRouter);
+    app.use(`${API_V1}/auth`, createRateLimiter({ redisClient, limit: 5, window: 60 }), authRouter);
 
     server.listen(serverEnv.port, () => {
       logger.info(`Server ready on port ${serverEnv.port} (${Date.now() - start} ms)`);
@@ -91,7 +87,6 @@ async function startServer() {
   }
 }
 
-//prevents the test from trying to start the server
 if (require.main === module) {
   startServer();
 }

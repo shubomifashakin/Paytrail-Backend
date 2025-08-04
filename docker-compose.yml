@@ -1,11 +1,11 @@
 services:
   postgres:
     image: postgres:latest
-    container_name: express-starter-kit-postgres
+    container_name: paytrail_postgres
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres_123
-      POSTGRES_DB: express-starter-kit-postgres
+      POSTGRES_DB: paytrail_postgres
     ports:
       - "5432:5432"
     volumes:
@@ -18,7 +18,7 @@ services:
 
   redis:
     image: redis:latest
-    container_name: express-starter-kit-redis
+    container_name: paytrail_redis
 
     ports:
       - "6379:6379"

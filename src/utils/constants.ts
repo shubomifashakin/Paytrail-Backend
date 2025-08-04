@@ -1,3 +1,5 @@
+import serverEnv from "../serverEnv";
+
 export const FORCE_EXIT_TIMEOUT = 10000;
 
 export enum MESSAGES {
@@ -13,3 +15,20 @@ export enum MESSAGES {
 }
 
 export const API_V1 = "/api/v1";
+
+export const GOOGLE_OAUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
+export const GOOGLE_OATH_TOKEN_URL = "https://oauth2.googleapis.com/token";
+export const GOOGLE_REDIRECT_URL = `${serverEnv.baseUrl}${API_V1}/auth/google/callback`;
+
+export const SESSION_EXPIRY = 60 * 60 * 24 * 7;
+
+export const OAUTH_ERRORS = {
+  GOOGLE: {
+    INVALID_CODE: "Invalid code",
+    INVALID_STATE: "Invalid state",
+    INVALID_REDIRECT_URI: "Invalid redirect_uri",
+  },
+};
+
+export const GOOGLE_SIGN_IN_ERROR = "GoogleSignInError:";
+export const GOOGLE_TOKEN_ERROR = "GoogleTokenError:";
