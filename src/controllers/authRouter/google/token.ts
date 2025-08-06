@@ -20,7 +20,7 @@ import {
 export default async function googleToken(req: Request, res: Response) {
   const body = req.body;
 
-  if (!body.code || typeof body.code !== "string") {
+  if (!body?.code || typeof body.code !== "string") {
     logger.warn(`${GOOGLE_TOKEN_ERROR}: Invalid code`, {
       requestId: req.headers["request-id"],
       ipAddress: req.ip,
@@ -49,7 +49,13 @@ export default async function googleToken(req: Request, res: Response) {
   const data = (await googleReq.json()) as { id_token: string };
 
   if (!data?.id_token) {
-    throw new Error(`${GOOGLE_TOKEN_ERROR}: Failed to generate google token`);
+    logger.error(`${GOOGLE_TOKEN_ERROR}: No id token provided`, {
+      requestId: req.headers["request-id"],
+      ipAddress: req.ip,
+      body,
+    });
+
+    return res.status(500).json({ message: MESSAGES.INTERNAL_SERVER_ERROR });
   }
 
   const claims = jose.decodeJwt(data.id_token) as any;
@@ -59,8 +65,6 @@ export default async function googleToken(req: Request, res: Response) {
       email: claims.email!,
     },
   });
-
-  let session;
 
   if (!user) {
     user = await prisma.user.create({
@@ -85,39 +89,26 @@ export default async function googleToken(req: Request, res: Response) {
         updatedAt: new Date(),
       },
     });
-
-    session = await prisma.session.create({
-      data: {
-        id: uuid(),
-        expiresAt: new Date(Date.now() + SESSION_EXPIRY),
-        token: uuid(),
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        ipAddress: req.ip,
-        userAgent: req.get("user-agent"),
-        userId: user.id,
-      },
-    });
   } else {
     await prisma.session.deleteMany({
       where: {
         userId: user.id,
       },
     });
-
-    session = await prisma.session.create({
-      data: {
-        id: uuid(),
-        expiresAt: new Date(Date.now() + SESSION_EXPIRY),
-        token: uuid(),
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        ipAddress: req.ip,
-        userAgent: req.get("user-agent"),
-        userId: user.id,
-      },
-    });
   }
+
+  const session = await prisma.session.create({
+    data: {
+      id: uuid(),
+      token: uuid(),
+      userId: user.id,
+      ipAddress: req.ip,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      userAgent: req.get("user-agent"),
+      expiresAt: new Date(Date.now() + SESSION_EXPIRY),
+    },
+  });
 
   //return the user info back to the client
   const userResponse = {

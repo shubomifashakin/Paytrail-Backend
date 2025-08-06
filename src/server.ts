@@ -8,7 +8,7 @@ import cors, { CorsOptions } from "cors";
 import dotenv from "dotenv";
 dotenv.config();
 
-import authRouter from "./routes/authRouter";
+import createAuthRouter from "./routes/authRouter";
 import healthRouter from "./routes/healthRouter";
 
 import serverEnv from "./serverEnv";
@@ -55,22 +55,27 @@ app.use(cors(corsOptions));
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 
-app.use(`/health`, healthRouter);
-
 app.use(express.json());
-
-app.use(errorMiddleware);
 
 export const server = http.createServer(app);
 
-async function startServer() {
+export async function startServer() {
   const start = Date.now();
   try {
     logger.info("starting server");
 
     await redisClient.connect();
 
-    app.use(`${API_V1}/auth`, createRateLimiter({ redisClient, limit: 5, window: 60 }), authRouter);
+    app.use(`/health`, healthRouter);
+
+    app.use(
+      `${API_V1}/auth`,
+      createAuthRouter({
+        signInRateLimiter: createRateLimiter({ redisClient, limit: 5, window: 60 }),
+      }),
+    );
+
+    app.use(errorMiddleware);
 
     server.listen(serverEnv.port, () => {
       logger.info(`Server ready on port ${serverEnv.port} (${Date.now() - start} ms)`);
