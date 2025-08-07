@@ -12,6 +12,7 @@ export enum MESSAGES {
   GATEWAY_TIMEOUT = "Gateway Timeout",
   REQUEST_TIMEOUT = "Request Timeout",
   TOO_MANY_REQUESTS = "Too Many Requests",
+  SUCCESS = "Success",
 }
 
 export const API_V1 = "/api/v1";

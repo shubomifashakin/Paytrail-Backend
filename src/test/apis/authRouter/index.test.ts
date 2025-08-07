@@ -77,22 +77,32 @@ const create = jest.fn().mockResolvedValue({
   updatedAt: new Date(),
 });
 const createAccount = jest.fn().mockResolvedValue(null);
-const createSession = jest.fn().mockResolvedValue({ id: fakeUUid });
 
+const createSession = jest.fn().mockResolvedValue({ id: fakeUUid });
 const deleteSessions = jest.fn().mockResolvedValue(null);
+const deleteSingleSession = jest.fn().mockResolvedValue(null);
+const findSession = jest.fn().mockResolvedValue({
+  id: fakeUUid,
+  name,
+  email,
+  updatedAt: new Date(),
+  createdAt: new Date(),
+});
 
 jest.mock("../../../lib/prisma", () => {
   return {
     user: {
-      findUnique,
       create,
+      findUnique,
     },
     account: {
       create: createAccount,
     },
     session: {
       create: createSession,
+      findUnique: findSession,
       deleteMany: deleteSessions,
+      delete: deleteSingleSession,
     },
   };
 });
@@ -372,5 +382,34 @@ describe("authentication tests", () => {
 
     expect(res.status).toEqual(500);
     expect(res.body).toEqual({ message: MESSAGES.INTERNAL_SERVER_ERROR });
+  });
+
+  test("should sign out successfully", async () => {
+    const { server } = await import("../../../server");
+
+    const res = await request(server)
+      .post(`${API_V1}/auth/sign-out`)
+      .set("user-agent", "test-agent")
+      .set("authorization", `Bearer ${fakeUUid}`);
+
+    expect(findSession).toHaveBeenCalledTimes(1);
+    expect(findSession).toHaveBeenCalledWith({
+      where: {
+        id: fakeUUid,
+      },
+      include: {
+        user: true,
+      },
+    });
+
+    expect(deleteSingleSession).toHaveBeenCalledTimes(1);
+    expect(deleteSingleSession).toHaveBeenCalledWith({
+      where: {
+        id: fakeUUid,
+      },
+    });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ message: MESSAGES.SUCCESS });
   });
 });
