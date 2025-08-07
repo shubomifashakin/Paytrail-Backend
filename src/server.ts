@@ -19,7 +19,6 @@ import logger, { loggerProvider } from "./lib/logger";
 
 import createRateLimiter from "./middlewares/rateLimiter";
 import errorMiddleware from "./middlewares/errorMiddleware";
-// import isAuthorized from "./middlewares/isAuthorized";
 import morganToJson from "./middlewares/morgan";
 import tagRequest from "./middlewares/tagRequest";
 
@@ -31,13 +30,11 @@ const app = express();
 const allowedOrigins =
   serverEnv.allowedOrigins === "*" ? serverEnv.allowedOrigins : serverEnv.allowedOrigins.split(",");
 
-//configure to your project needs
 const corsOptions: CorsOptions = {
   origin: allowedOrigins,
   credentials: serverEnv.isProduction,
 };
 
-//configure to your needs (i.e you might want to limit to specific ips)
 app.set("trust proxy", true);
 
 app.use(helmet());
