@@ -145,6 +145,21 @@ describe("authentication tests", () => {
     });
   });
 
+  test("google sign in authorize request should return status 400, since redirectUri was not the baseUrl or expected scheme", async () => {
+    const state = "fake-state";
+
+    const { server } = await import("../../../server");
+
+    const res = await request(server)
+      .get(`${API_V1}/auth/google`)
+      .query({ state, redirect_uri: "https://fake.com" });
+
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({
+      message: OAUTH_ERRORS.GOOGLE.INVALID_REDIRECT_URI,
+    });
+  });
+
   test("google sign in callback should successfully redirect", async () => {
     const { server } = await import("../../../server");
 
