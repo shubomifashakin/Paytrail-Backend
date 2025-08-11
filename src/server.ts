@@ -10,6 +10,7 @@ dotenv.config();
 
 import createAuthRouter from "./routes/authRouter";
 import healthRouter from "./routes/healthRouter";
+import syncRouter from "./routes/syncRouter";
 
 import serverEnv from "./serverEnv";
 
@@ -71,6 +72,8 @@ export async function startServer() {
         signInRateLimiter: createRateLimiter({ redisClient, limit: 5, window: 60 }),
       }),
     );
+
+    app.use(`${API_V1}/sync`, syncRouter);
 
     app.use(errorMiddleware);
 

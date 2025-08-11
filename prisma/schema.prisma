@@ -1,4 +1,3 @@
-
 generator client {
   provider = "prisma-client-js"
   output   = "../node_modules/.prisma/client"
@@ -9,17 +8,98 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Months {
+  January
+  February
+  March
+  April
+  May
+  June
+  July
+  August
+  September
+  October
+  November
+  December
+}
+
+enum LogType {
+  expense
+  income
+}
+
+enum Currencies {
+  USD
+  NGN
+  EUR
+  GBP
+  CAD
+  AUD
+  JPY
+  CNY
+  INR
+  ZAR
+  GHS
+  KES
+  EGP
+  SAR
+  AED
+  TRY
+  RUB
+  CHF
+  SEK
+  NOK
+  DKK
+  SGD
+  NZD
+  MXN
+  BRL
+  ARS
+  CLP
+  COP
+  PEN
+  KRW
+  THB
+  IDR
+  PHP
+  MYR
+  VND
+  PKR
+  BDT
+  QAR
+  KWD
+  OMR
+  BHD
+  JOD
+  LBP
+  IRR
+  BOB
+  UYU
+  PLN
+  CZK
+  HUF
+  ILS
+  TZS
+  UGX
+  DZD
+  MAD
+  TND
+}
 
 model User {
-  id            String    @id
-  name          String
-  email         String
-  emailVerified Boolean
-  image         String?
-  createdAt     DateTime
-  updatedAt     DateTime
-  sessions      Session[]
-  accounts      Account[]
+  id             String           @id
+  name           String
+  email          String
+  emailVerified  Boolean
+  image          String?
+  createdAt      DateTime
+  updatedAt      DateTime
+  sessions       Session[]
+  accounts       Account[]
+  Budgets        Budgets[]
+  Categories     Categories[]
+  PaymentMethods PaymentMethods[]
+  Logs           Logs[]
 
   @@unique([email])
   @@map("user")
@@ -68,4 +148,67 @@ model Verification {
   updatedAt  DateTime?
 
   @@map("verification")
+}
+
+model Budgets {
+  id           String     @id
+  amount       Decimal    @db.Decimal(10, 2)
+  year         Int
+  budget_month Months
+  currency     Currencies
+  userId       String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime
+  updatedAt    DateTime
+  Logs         Logs[]
+}
+
+model Categories {
+  id          String   @id
+  name        String
+  color       String
+  logType     LogType
+  emoji       String
+  description String
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime
+  updatedAt   DateTime
+  Logs        Logs[]
+}
+
+model PaymentMethods {
+  id          String   @id
+  name        String
+  color       String
+  description String
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime
+  updatedAt   DateTime
+  Logs        Logs[]
+}
+
+model Logs {
+  id     String  @id
+  amount Decimal @db.Decimal(12, 2)
+
+  transactionDate DateTime
+  note            String
+  logType         LogType
+  currency        Currencies
+  categoryId      String
+  category        Categories @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  paymentMethodId String
+  paymentMethod   PaymentMethods @relation(fields: [paymentMethodId], references: [id], onDelete: Cascade)
+
+  budgetId String
+  budget   Budgets @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime
+  updatedAt DateTime
 }
