@@ -151,16 +151,19 @@ model Verification {
 }
 
 model Budgets {
-  id           String     @id
-  amount       Decimal    @db.Decimal(10, 2)
-  year         Int
-  budget_month Months
-  currency     Currencies
-  userId       String
-  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt    DateTime
-  updatedAt    DateTime
-  Logs         Logs[]
+  id          String     @id
+  amount      Decimal    @db.Decimal(10, 2)
+  year        Int
+  budgetMonth Months
+  currency    Currencies
+  userId      String
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime
+  updatedAt   DateTime
+  Logs        Logs[]
+
+  @@unique([userId, budgetMonth, year])
+  @@map("budgets")
 }
 
 model Categories {
@@ -175,6 +178,11 @@ model Categories {
   createdAt   DateTime
   updatedAt   DateTime
   Logs        Logs[]
+
+  @@unique([userId, name, logType])
+  @@unique([userId, emoji, logType])
+  @@unique([userId, color, logType])
+  @@map("categories")
 }
 
 model PaymentMethods {
@@ -187,6 +195,10 @@ model PaymentMethods {
   createdAt   DateTime
   updatedAt   DateTime
   Logs        Logs[]
+
+  @@unique([userId, name])
+  @@unique([userId, color])
+  @@map("payment_methods")
 }
 
 model Logs {
@@ -211,4 +223,6 @@ model Logs {
 
   createdAt DateTime
   updatedAt DateTime
+
+  @@map("logs")
 }

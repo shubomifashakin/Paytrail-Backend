@@ -8,7 +8,7 @@ export default async function (req: Request, res: Response) {
   const whereClause = lastPullDate ? { updatedAt: { gte: new Date(lastPullDate) } } : {};
 
   //find everything from the database newer than the last pull date
-  const data = await prisma.$transaction([
+  const [logs, categories, paymentMethods, budgets] = await prisma.$transaction([
     prisma.logs.findMany({
       where: whereClause,
     }),
@@ -23,5 +23,8 @@ export default async function (req: Request, res: Response) {
     }),
   ]);
 
-  return res.status(200).json({ data, serverTime: new Date().toISOString() });
+  return res.status(200).json({
+    data: { logs, budgets, categories, paymentMethods },
+    serverTime: new Date().toISOString(),
+  });
 }
