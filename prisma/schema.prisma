@@ -224,5 +224,6 @@ model Logs {
   createdAt DateTime
   updatedAt DateTime
 
+  //TODO: ADD INDEXES
   @@map("logs")
 }

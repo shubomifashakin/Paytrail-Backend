@@ -28,7 +28,7 @@ export default async function (req: Request, res: Response) {
               id: c.id,
               amount: c.data.amount,
               year: c.data.year,
-              budgetMonth: c.data.month,
+              budgetMonth: c.data.budgetMonth,
               currency: c.data.currency,
               userId: c.data.userId,
               createdAt: c.data.createdAt,
@@ -54,7 +54,7 @@ export default async function (req: Request, res: Response) {
               id: c.id,
               amount: c.data.amount,
               year: c.data.year,
-              budgetMonth: c.data.month,
+              budgetMonth: c.data.budgetMonth,
               currency: c.data.currency,
               userId: c.data.userId,
               createdAt: c.data.createdAt,
@@ -106,55 +106,6 @@ export default async function (req: Request, res: Response) {
           });
         }
 
-        if (c.tableName === "logs" && c.operation === "insert") {
-          return prisma.logs.create({
-            data: {
-              id: c.id,
-              amount: c.data.amount,
-              transactionDate: c.data.transactionDate,
-              note: c.data.note,
-              logType: c.data.logType,
-              currency: c.data.currency,
-              categoryId: c.data.categoryId,
-              userId: c.data.userId,
-              paymentMethodId: c.data.paymentMethodId,
-              budgetId: c.data.budgetId,
-              createdAt: c.data.createdAt,
-              updatedAt: c.data.updatedAt,
-            },
-          });
-        }
-
-        if (c.tableName === "logs" && c.operation === "delete") {
-          return prisma.logs.delete({
-            where: {
-              id: c.id,
-            },
-          });
-        }
-
-        if (c.tableName === "logs" && c.operation === "update") {
-          return prisma.logs.update({
-            where: {
-              id: c.id,
-            },
-            data: {
-              id: c.id,
-              amount: c.data.amount,
-              transactionDate: c.data.transactionDate,
-              note: c.data.note,
-              logType: c.data.logType,
-              currency: c.data.currency,
-              categoryId: c.data.categoryId,
-              userId: c.data.userId,
-              paymentMethodId: c.data.paymentMethodId,
-              budgetId: c.data.budgetId,
-              createdAt: c.data.createdAt,
-              updatedAt: c.data.updatedAt,
-            },
-          });
-        }
-
         if (c.tableName === "payment_methods" && c.operation === "insert") {
           return prisma.paymentMethods.create({
             data: {
@@ -188,6 +139,55 @@ export default async function (req: Request, res: Response) {
               color: c.data.color,
               description: c.data.description,
               userId: c.data.userId,
+              createdAt: c.data.createdAt,
+              updatedAt: c.data.updatedAt,
+            },
+          });
+        }
+
+        if (c.tableName === "logs" && c.operation === "insert") {
+          return prisma.logs.create({
+            data: {
+              id: c.id,
+              amount: c.data.amount,
+              userId: c.data.userId,
+              transactionDate: c.data.transactionDate,
+              note: c.data.note,
+              logType: c.data.logType,
+              currency: c.data.currency,
+              categoryId: c.data.categoryId,
+              paymentMethodId: c.data.paymentMethodId,
+              budgetId: c.data.budgetId,
+              createdAt: c.data.createdAt,
+              updatedAt: c.data.updatedAt,
+            },
+          });
+        }
+
+        if (c.tableName === "logs" && c.operation === "delete") {
+          return prisma.logs.delete({
+            where: {
+              id: c.id,
+            },
+          });
+        }
+
+        if (c.tableName === "logs" && c.operation === "update") {
+          return prisma.logs.update({
+            where: {
+              id: c.id,
+            },
+            data: {
+              id: c.id,
+              amount: c.data.amount,
+              transactionDate: c.data.transactionDate,
+              note: c.data.note,
+              logType: c.data.logType,
+              currency: c.data.currency,
+              categoryId: c.data.categoryId,
+              userId: c.data.userId,
+              paymentMethodId: c.data.paymentMethodId,
+              budgetId: c.data.budgetId,
               createdAt: c.data.createdAt,
               updatedAt: c.data.updatedAt,
             },
