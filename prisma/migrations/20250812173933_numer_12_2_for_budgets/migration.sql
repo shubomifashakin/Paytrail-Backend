@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "budgets" ALTER COLUMN "amount" SET DATA TYPE DECIMAL(12,2);

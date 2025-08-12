@@ -152,7 +152,7 @@ model Verification {
 
 model Budgets {
   id          String     @id
-  amount      Decimal    @db.Decimal(10, 2)
+  amount      Decimal    @db.Decimal(12, 2)
   year        Int
   budgetMonth Months
   currency    Currencies
