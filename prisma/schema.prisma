@@ -170,7 +170,6 @@ model Categories {
   id          String   @id
   name        String
   color       String
-  logType     LogType
   emoji       String
   description String
   userId      String
@@ -179,9 +178,9 @@ model Categories {
   updatedAt   DateTime
   Logs        Logs[]
 
-  @@unique([userId, name, logType])
-  @@unique([userId, emoji, logType])
-  @@unique([userId, color, logType])
+  @@unique([userId, color])
+  @@unique([userId, name])
+  @@unique([userId, emoji])
   @@map("categories")
 }
 
