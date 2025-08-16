@@ -1,5 +1,5 @@
 import { Router } from "express";
-import isAuthorized from "src/middlewares/isAuthorized";
+import isAuthorized from "../middlewares/isAuthorized";
 
 import asyncHandler from "../utils/asyncHandler";
 

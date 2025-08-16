@@ -2,17 +2,10 @@ import { Request, Response } from "express";
 
 import prisma from "../../lib/prisma";
 
-import { MESSAGES } from "../../utils/constants";
 import { pushSchemaValidator } from "../../utils/validators";
 
 export default async function (req: Request, res: Response) {
-  const body = req.body;
-
-  if (!body) {
-    return res.status(400).json({ message: MESSAGES.BAD_REQUEST });
-  }
-
-  const { success, error, data } = pushSchemaValidator.safeParse(body);
+  const { success, error, data } = pushSchemaValidator.safeParse(req?.body);
 
   if (!success) {
     //FIXME: LOG ERROR
