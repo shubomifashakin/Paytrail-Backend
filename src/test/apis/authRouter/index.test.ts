@@ -54,7 +54,7 @@ jest.mock("jose", () => ({
   }),
 }));
 
-const findUnique = jest
+const findUniqueUser = jest
   .fn()
   .mockResolvedValue({
     id: fakeUUid,
@@ -67,7 +67,7 @@ const findUnique = jest
   })
   .mockResolvedValueOnce(null);
 
-const create = jest.fn().mockResolvedValue({
+const createUser = jest.fn().mockResolvedValue({
   id: fakeUUid,
   name,
   email,
@@ -92,8 +92,8 @@ const findSession = jest.fn().mockResolvedValue({
 jest.mock("../../../lib/prisma", () => {
   return {
     user: {
-      create,
-      findUnique,
+      create: createUser,
+      findUnique: findUniqueUser,
     },
     account: {
       create: createAccount,
@@ -107,10 +107,15 @@ jest.mock("../../../lib/prisma", () => {
   };
 });
 
-import { startServer } from "../../../server";
+import { Server } from "http";
+import { server as app, startServer } from "../../../server";
 
 describe("authentication tests", () => {
+  let server: Server;
+
   beforeAll(async () => {
+    server = app;
+
     await startServer();
   });
 
@@ -123,8 +128,6 @@ describe("authentication tests", () => {
   test("google sign in authorize request should be successfully redirected", async () => {
     const state = "fake-state";
 
-    const { server } = await import("../../../server");
-
     const res = await request(server)
       .get(`${API_V1}/auth/google`)
       .query({ redirect_uri: "paytrail://", state });
@@ -134,8 +137,6 @@ describe("authentication tests", () => {
 
   test("google sign in authorize request should return status 400, since redirectUri was not sent", async () => {
     const state = "fake-state";
-
-    const { server } = await import("../../../server");
 
     const res = await request(server).get(`${API_V1}/auth/google`).query({ state });
 
@@ -148,8 +149,6 @@ describe("authentication tests", () => {
   test("google sign in authorize request should return status 400, since redirectUri was not the baseUrl or expected scheme", async () => {
     const state = "fake-state";
 
-    const { server } = await import("../../../server");
-
     const res = await request(server)
       .get(`${API_V1}/auth/google`)
       .query({ state, redirect_uri: "https://fake.com" });
@@ -161,8 +160,6 @@ describe("authentication tests", () => {
   });
 
   test("google sign in callback should successfully redirect", async () => {
-    const { server } = await import("../../../server");
-
     const res = await request(server)
       .get(`${API_V1}/auth/google/callback`)
       .query({ code: "test-code", state: "mobile|testuuid" });
@@ -172,8 +169,6 @@ describe("authentication tests", () => {
   });
 
   test("google sign in callback should return status 400 since no code was sent", async () => {
-    const { server } = await import("../../../server");
-
     const res = await request(server)
       .get(`${API_V1}/auth/google/callback`)
       .query({ state: "mobile|testuuid" });
@@ -185,8 +180,6 @@ describe("authentication tests", () => {
   });
 
   test("google sign in callback should return status 400 since no state was sent", async () => {
-    const { server } = await import("../../../server");
-
     const res = await request(server)
       .get(`${API_V1}/auth/google/callback`)
       .query({ code: "test-code" });
@@ -205,8 +198,6 @@ describe("authentication tests", () => {
       status: 200,
       json: () => Promise.resolve({ id_token: "test-id-token" }),
     } as unknown as Response);
-
-    const { server } = await import("../../../server");
 
     const res = await request(server)
       .post(`${API_V1}/auth/google/token`)
@@ -228,15 +219,15 @@ describe("authentication tests", () => {
       }),
     });
 
-    expect(findUnique).toHaveBeenCalledTimes(1);
-    expect(findUnique).toHaveBeenCalledWith({
+    expect(findUniqueUser).toHaveBeenCalledTimes(1);
+    expect(findUniqueUser).toHaveBeenCalledWith({
       where: {
         email: "test@example.com",
       },
     });
 
-    expect(create).toHaveBeenCalledTimes(1);
-    expect(create).toHaveBeenCalledWith({
+    expect(createUser).toHaveBeenCalledTimes(1);
+    expect(createUser).toHaveBeenCalledWith({
       data: {
         id: fakeUUid,
         name,
@@ -294,8 +285,6 @@ describe("authentication tests", () => {
       json: () => Promise.resolve({ id_token: "test-id-token" }),
     } as unknown as Response);
 
-    const { server } = await import("../../../server");
-
     const res = await request(server)
       .post(`${API_V1}/auth/google/token`)
       .set("user-agent", "test-agent")
@@ -316,14 +305,14 @@ describe("authentication tests", () => {
       }),
     });
 
-    expect(findUnique).toHaveBeenCalledTimes(1);
-    expect(findUnique).toHaveBeenCalledWith({
+    expect(findUniqueUser).toHaveBeenCalledTimes(1);
+    expect(findUniqueUser).toHaveBeenCalledWith({
       where: {
         email: "test@example.com",
       },
     });
 
-    expect(create).not.toHaveBeenCalled();
+    expect(createUser).not.toHaveBeenCalled();
 
     expect(createAccount).not.toHaveBeenCalled();
 
@@ -368,8 +357,6 @@ describe("authentication tests", () => {
       json: () => Promise.resolve({ id_token: "test-id-token" }),
     } as unknown as Response);
 
-    const { server } = await import("../../../server");
-
     const res = await request(server)
       .post(`${API_V1}/auth/google/token`)
       .set("user-agent", "test-agent")
@@ -388,8 +375,6 @@ describe("authentication tests", () => {
       json: () => Promise.resolve({ id_token: null }),
     } as unknown as Response);
 
-    const { server } = await import("../../../server");
-
     const res = await request(server)
       .post(`${API_V1}/auth/google/token`)
       .set("user-agent", "test-agent")
@@ -400,8 +385,6 @@ describe("authentication tests", () => {
   });
 
   test("should sign out successfully", async () => {
-    const { server } = await import("../../../server");
-
     const res = await request(server)
       .post(`${API_V1}/auth/sign-out`)
       .set("user-agent", "test-agent")
