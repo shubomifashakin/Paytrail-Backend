@@ -31,7 +31,7 @@ export default async function (req: Request, res: Response) {
         }
 
         if (c.tableName === "budgets" && c.operation === "delete") {
-          return prisma.budgets.delete({
+          return prisma.budgets.deleteMany({
             where: {
               id: c.id,
             },
@@ -39,11 +39,21 @@ export default async function (req: Request, res: Response) {
         }
 
         if (c.tableName === "budgets" && c.operation === "update") {
-          return prisma.budgets.update({
+          return prisma.budgets.upsert({
+            create: {
+              id: c.id,
+              amount: c.data.amount,
+              year: c.data.year,
+              budgetMonth: c.data.budgetMonth,
+              currency: c.data.currency,
+              userId: c.data.userId,
+              createdAt: c.data.createdAt,
+              updatedAt: c.data.updatedAt,
+            },
             where: {
               id: c.id,
             },
-            data: {
+            update: {
               id: c.id,
               amount: c.data.amount,
               year: c.data.year,
@@ -72,7 +82,7 @@ export default async function (req: Request, res: Response) {
         }
 
         if (c.tableName === "categories" && c.operation === "delete") {
-          return prisma.categories.delete({
+          return prisma.categories.deleteMany({
             where: {
               id: c.id,
             },
@@ -80,11 +90,21 @@ export default async function (req: Request, res: Response) {
         }
 
         if (c.tableName === "categories" && c.operation === "update") {
-          return prisma.categories.update({
+          return prisma.categories.upsert({
             where: {
               id: c.id,
             },
-            data: {
+            create: {
+              id: c.id,
+              name: c.data.name,
+              color: c.data.color,
+              emoji: c.data.emoji,
+              description: c.data.description,
+              userId: c.data.userId,
+              createdAt: c.data.createdAt,
+              updatedAt: c.data.updatedAt,
+            },
+            update: {
               id: c.id,
               name: c.data.name,
               color: c.data.color,
@@ -112,7 +132,7 @@ export default async function (req: Request, res: Response) {
         }
 
         if (c.tableName === "payment_methods" && c.operation === "delete") {
-          return prisma.paymentMethods.delete({
+          return prisma.paymentMethods.deleteMany({
             where: {
               id: c.id,
             },
@@ -120,11 +140,20 @@ export default async function (req: Request, res: Response) {
         }
 
         if (c.tableName === "payment_methods" && c.operation === "update") {
-          return prisma.paymentMethods.update({
+          return prisma.paymentMethods.upsert({
             where: {
               id: c.id,
             },
-            data: {
+            create: {
+              id: c.id,
+              name: c.data.name,
+              color: c.data.color,
+              description: c.data.description,
+              userId: c.data.userId,
+              createdAt: c.data.createdAt,
+              updatedAt: c.data.updatedAt,
+            },
+            update: {
               id: c.id,
               name: c.data.name,
               color: c.data.color,
@@ -156,7 +185,7 @@ export default async function (req: Request, res: Response) {
         }
 
         if (c.tableName === "logs" && c.operation === "delete") {
-          return prisma.logs.delete({
+          return prisma.logs.deleteMany({
             where: {
               id: c.id,
             },
@@ -164,11 +193,25 @@ export default async function (req: Request, res: Response) {
         }
 
         if (c.tableName === "logs" && c.operation === "update") {
-          return prisma.logs.update({
+          return prisma.logs.upsert({
             where: {
               id: c.id,
             },
-            data: {
+            create: {
+              id: c.id,
+              amount: c.data.amount,
+              transactionDate: c.data.transactionDate,
+              note: c.data.note,
+              logType: c.data.logType,
+              currency: c.data.currency,
+              categoryId: c.data.categoryId,
+              userId: c.data.userId,
+              paymentMethodId: c.data.paymentMethodId,
+              budgetId: c.data.budgetId,
+              createdAt: c.data.createdAt,
+              updatedAt: c.data.updatedAt,
+            },
+            update: {
               id: c.id,
               amount: c.data.amount,
               transactionDate: c.data.transactionDate,
