@@ -31,7 +31,7 @@ export default async function signInWithGoogleCallback(req: Request, res: Respon
   const redirect =
     platform === "web"
       ? serverEnv.baseUrl
-      : serverEnv.isProduction
+      : serverEnv.isProduction //FIXME: REMOVE exp redirect, should only redirect to app scheme
         ? `${serverEnv.appScheme}`
         : `exp://192.168.1.3:8081`;
 
