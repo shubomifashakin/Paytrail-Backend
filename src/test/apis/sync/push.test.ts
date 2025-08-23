@@ -15,20 +15,16 @@ jest.mock("../../../serverEnv", () => ({
   appScheme: "paytrail://",
 }));
 
-const createBudgets = jest.fn().mockResolvedValue(null);
-const updateBudgets = jest.fn().mockResolvedValue(null);
+const createOrUpdateBudgets = jest.fn().mockResolvedValue(null);
 const deleteBudgets = jest.fn().mockResolvedValue(null);
 
-const createCategories = jest.fn().mockResolvedValue(null);
-const updateCategories = jest.fn().mockResolvedValue(null);
+const createOrUpdateCategories = jest.fn().mockResolvedValue(null);
 const deleteCategories = jest.fn().mockResolvedValue(null);
 
-const createPaymentMethods = jest.fn().mockResolvedValue(null);
-const updatePaymentMethods = jest.fn().mockResolvedValue(null);
+const createOrUpdatePaymentMethods = jest.fn().mockResolvedValue(null);
 const deletePaymentMethods = jest.fn().mockResolvedValue(null);
 
-const createLogs = jest.fn().mockResolvedValue(null);
-const updateLogs = jest.fn().mockResolvedValue(null);
+const createOrUpdateLogs = jest.fn().mockResolvedValue(null);
 const deleteLogs = jest.fn().mockResolvedValue(null);
 
 const transaction = jest.fn().mockResolvedValue(null);
@@ -42,26 +38,22 @@ const findUniqueSession = jest.fn().mockResolvedValue({
 jest.mock("../../../lib/prisma.ts", () => {
   return {
     budgets: {
-      create: createBudgets,
-      upsert: updateBudgets,
+      upsert: createOrUpdateBudgets,
       deleteMany: deleteBudgets,
     },
 
     categories: {
-      create: createCategories,
-      upsert: updateCategories,
+      upsert: createOrUpdateCategories,
       deleteMany: deleteCategories,
     },
 
     paymentMethods: {
-      create: createPaymentMethods,
-      upsert: updatePaymentMethods,
+      upsert: createOrUpdatePaymentMethods,
       deleteMany: deletePaymentMethods,
     },
 
     logs: {
-      create: createLogs,
-      upsert: updateLogs,
+      upsert: createOrUpdateLogs,
       deleteMany: deleteLogs,
     },
 
@@ -130,18 +122,14 @@ describe("push route", () => {
       });
 
     expect(transaction).toHaveBeenCalledTimes(1);
-    expect(createBudgets).toHaveBeenCalled();
-    expect(updateBudgets).toHaveBeenCalled();
+    expect(createOrUpdateBudgets).toHaveBeenCalledTimes(2);
     expect(deleteBudgets).toHaveBeenCalled();
-    expect(createCategories).toHaveBeenCalled();
-    expect(updateCategories).toHaveBeenCalled();
+    expect(createOrUpdateCategories).toHaveBeenCalledTimes(2);
     expect(deleteCategories).toHaveBeenCalled();
-    expect(createPaymentMethods).toHaveBeenCalled();
-    expect(updatePaymentMethods).toHaveBeenCalled();
+    expect(createOrUpdatePaymentMethods).toHaveBeenCalledTimes(2);
     expect(deletePaymentMethods).toHaveBeenCalled();
-    expect(createLogs).toHaveBeenCalled();
+    expect(createOrUpdateLogs).toHaveBeenCalledTimes(2);
     expect(deleteLogs).toHaveBeenCalled();
-    expect(updateLogs).toHaveBeenCalled();
 
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty("serverTime");

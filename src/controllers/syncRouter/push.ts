@@ -15,21 +15,6 @@ export default async function (req: Request, res: Response) {
   await prisma.$transaction(
     data.data
       .map((c) => {
-        if (c.tableName === "budgets" && c.operation === "insert") {
-          return prisma.budgets.create({
-            data: {
-              id: c.id,
-              amount: c.data.amount,
-              year: c.data.year,
-              budgetMonth: c.data.budgetMonth,
-              currency: c.data.currency,
-              userId: c.data.userId,
-              createdAt: c.data.createdAt,
-              updatedAt: c.data.updatedAt,
-            },
-          });
-        }
-
         if (c.tableName === "budgets" && c.operation === "delete") {
           return prisma.budgets.deleteMany({
             where: {
@@ -38,7 +23,7 @@ export default async function (req: Request, res: Response) {
           });
         }
 
-        if (c.tableName === "budgets" && c.operation === "update") {
+        if (c.tableName === "budgets" && (c.operation === "update" || c.operation === "insert")) {
           return prisma.budgets.upsert({
             create: {
               id: c.id,
@@ -66,21 +51,6 @@ export default async function (req: Request, res: Response) {
           });
         }
 
-        if (c.tableName === "categories" && c.operation === "insert") {
-          return prisma.categories.create({
-            data: {
-              id: c.id,
-              name: c.data.name,
-              color: c.data.color,
-              emoji: c.data.emoji,
-              description: c.data.description,
-              userId: c.data.userId,
-              createdAt: c.data.createdAt,
-              updatedAt: c.data.updatedAt,
-            },
-          });
-        }
-
         if (c.tableName === "categories" && c.operation === "delete") {
           return prisma.categories.deleteMany({
             where: {
@@ -89,7 +59,10 @@ export default async function (req: Request, res: Response) {
           });
         }
 
-        if (c.tableName === "categories" && c.operation === "update") {
+        if (
+          c.tableName === "categories" &&
+          (c.operation === "update" || c.operation === "insert")
+        ) {
           return prisma.categories.upsert({
             where: {
               id: c.id,
@@ -117,20 +90,6 @@ export default async function (req: Request, res: Response) {
           });
         }
 
-        if (c.tableName === "payment_methods" && c.operation === "insert") {
-          return prisma.paymentMethods.create({
-            data: {
-              id: c.id,
-              name: c.data.name,
-              color: c.data.color,
-              description: c.data.description,
-              userId: c.data.userId,
-              createdAt: c.data.createdAt,
-              updatedAt: c.data.updatedAt,
-            },
-          });
-        }
-
         if (c.tableName === "payment_methods" && c.operation === "delete") {
           return prisma.paymentMethods.deleteMany({
             where: {
@@ -139,7 +98,10 @@ export default async function (req: Request, res: Response) {
           });
         }
 
-        if (c.tableName === "payment_methods" && c.operation === "update") {
+        if (
+          c.tableName === "payment_methods" &&
+          (c.operation === "update" || c.operation === "insert")
+        ) {
           return prisma.paymentMethods.upsert({
             where: {
               id: c.id,
@@ -165,25 +127,6 @@ export default async function (req: Request, res: Response) {
           });
         }
 
-        if (c.tableName === "logs" && c.operation === "insert") {
-          return prisma.logs.create({
-            data: {
-              id: c.id,
-              amount: c.data.amount,
-              userId: c.data.userId,
-              transactionDate: c.data.transactionDate,
-              note: c.data.note,
-              logType: c.data.logType,
-              currency: c.data.currency,
-              categoryId: c.data.categoryId,
-              paymentMethodId: c.data.paymentMethodId,
-              budgetId: c.data.budgetId,
-              createdAt: c.data.createdAt,
-              updatedAt: c.data.updatedAt,
-            },
-          });
-        }
-
         if (c.tableName === "logs" && c.operation === "delete") {
           return prisma.logs.deleteMany({
             where: {
@@ -192,7 +135,7 @@ export default async function (req: Request, res: Response) {
           });
         }
 
-        if (c.tableName === "logs" && c.operation === "update") {
+        if (c.tableName === "logs" && (c.operation === "update" || c.operation === "insert")) {
           return prisma.logs.upsert({
             where: {
               id: c.id,
