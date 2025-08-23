@@ -43,26 +43,26 @@ jest.mock("../../../lib/prisma.ts", () => {
   return {
     budgets: {
       create: createBudgets,
-      update: updateBudgets,
-      delete: deleteBudgets,
+      upsert: updateBudgets,
+      deleteMany: deleteBudgets,
     },
 
     categories: {
       create: createCategories,
-      update: updateCategories,
-      delete: deleteCategories,
+      upsert: updateCategories,
+      deleteMany: deleteCategories,
     },
 
     paymentMethods: {
       create: createPaymentMethods,
-      update: updatePaymentMethods,
-      delete: deletePaymentMethods,
+      upsert: updatePaymentMethods,
+      deleteMany: deletePaymentMethods,
     },
 
     logs: {
       create: createLogs,
-      update: updateLogs,
-      delete: deleteLogs,
+      upsert: updateLogs,
+      deleteMany: deleteLogs,
     },
 
     $transaction: transaction,
