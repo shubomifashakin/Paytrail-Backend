@@ -103,17 +103,14 @@ enum Currencies {
   KHR
   LAK
   MNT
-  BTN
   MVR
   SCR
   MUR
-  SZL
   LSL
   NAD
   BWP
   ZMW
   MWK
-  ZWL
   AOA
   CDF
   XAF
@@ -128,32 +125,19 @@ enum Currencies {
   HNL
   NIO
   CRC
-  PAB
-  VES
   GYD
   SRD
   FJD
   PGK
   WST
-  VUV
   TOP
   SBD
-  KID
   TVD
   HTG
   DOP
   CUP
   BMD
   KYD
-  AWG
-  ANG
-  GIP
-  FKP
-  SHP
-  IMP
-  JEP
-  GGP
-  IOM
   BIF
   DJF
   KMF
@@ -172,7 +156,6 @@ enum Currencies {
   SDG
   SSP
   CVE
-  MOP
   BND
 }
 
