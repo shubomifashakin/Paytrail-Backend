@@ -15,7 +15,7 @@ const createRateLimiter = ({
   limit = 10,
   window = 60,
   keyGenerator = (req: Request) => {
-    return ipKeyGenerator(req.ip as string);
+    return `${ipKeyGenerator(req.ip as string)}:${req.path}`;
   },
 }: {
   limit?: number;
