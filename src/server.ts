@@ -10,6 +10,7 @@ dotenv.config();
 
 import createAuthRouter from "./routes/authRouter";
 import healthRouter from "./routes/healthRouter";
+import statementRouter from "./routes/statementRouter";
 import syncRouter from "./routes/syncRouter";
 
 import serverEnv from "./serverEnv";
@@ -20,6 +21,7 @@ import logger, { loggerProvider } from "./lib/logger";
 
 import createRateLimiter from "./middlewares/rateLimiter";
 import errorMiddleware from "./middlewares/errorMiddleware";
+import isAuthorized from "./middlewares/isAuthorized";
 import morganToJson from "./middlewares/morgan";
 import tagRequest from "./middlewares/tagRequest";
 
@@ -74,6 +76,18 @@ export async function startServer() {
     );
 
     app.use(`${API_V1}/sync`, syncRouter);
+
+    app.use(
+      `${API_V1}/statement`,
+      isAuthorized,
+      createRateLimiter({
+        redisClient,
+        limit: 10,
+        window: 10 * 60,
+        keyGenerator: (req) => `${req.user.id}:${req.path}`,
+      }),
+      statementRouter,
+    );
 
     app.use(errorMiddleware);
 
