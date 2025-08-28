@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { Currencies } from "@prisma/client";
+import { Currencies, Months } from "@prisma/client";
 
 export const pushSchemaValidator = z.object({
   data: z
@@ -32,83 +32,24 @@ export const pushSchemaValidator = z.object({
     .nonempty(),
 });
 
-const validateCurrency = z.enum(Currencies);
+const validateCurrency = z.enum(Currencies, { error: "Invalid Currency" });
 
-export const validateQueryDate = z.object({
+export const statementQueryValidator = z.object({
   startDate: z
-    .string()
-    .optional()
-    .refine(
-      (arg) => {
-        if (!arg) return true;
-        return !isNaN(Date.parse(arg));
-      },
-      {
-        error: "startDate must be a valid date string",
-      },
-    ),
+    .object({
+      startYear: z.number({ error: "invalid startYear" }),
+      startMonth: z.enum(Months, { error: "Invalid startMonth" }),
+    })
+    .optional(),
 
-  endDate: z
-    .string()
-    .optional()
-    .refine(
-      (arg) => {
-        if (!arg) return true;
-        return !isNaN(Date.parse(arg));
-      },
-      {
-        error: "endDate must be a valid date string",
-      },
-    ),
+  endDate: z.object({
+    endYear: z.number({ error: "Invalid endYear" }),
+    endMonth: z.enum(Months, { error: "Invalid endMonth" }),
+  }),
 
-  categories: z.string().refine(
-    (arg) => {
-      try {
-        const parsed = JSON.parse(arg);
+  categories: z.array(z.string()),
 
-        z.array(z.string()).parse(parsed);
+  paymentMethods: z.array(z.string()),
 
-        return true;
-
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      } catch (err) {
-        return false;
-      }
-    },
-    { error: "Categories must be a valid string array" },
-  ),
-
-  paymentMethods: z.string().refine(
-    (arg) => {
-      try {
-        const parsed = JSON.parse(arg);
-
-        z.array(z.string()).parse(parsed);
-
-        return true;
-
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      } catch (err) {
-        return false;
-      }
-    },
-    { error: "paymentMethods must be a valid string array" },
-  ),
-
-  currencies: z.string().refine(
-    (arg) => {
-      try {
-        const parsed = JSON.parse(arg);
-
-        z.array(validateCurrency).parse(parsed);
-
-        return true;
-
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      } catch (err) {
-        return false;
-      }
-    },
-    { error: "Invalid currencies Array" },
-  ),
+  currencies: z.array(validateCurrency),
 });

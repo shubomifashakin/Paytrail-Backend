@@ -4,6 +4,6 @@ import { getStatement } from "../controllers/statementRouter/getStatement";
 
 const statementRouter = Router();
 
-statementRouter.get("/", getStatement);
+statementRouter.post("/", getStatement);
 
 export default statementRouter;
