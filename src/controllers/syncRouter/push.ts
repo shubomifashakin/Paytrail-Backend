@@ -34,6 +34,7 @@ export default async function (req: Request, res: Response) {
               userId: c.data.userId,
               createdAt: c.data.createdAt,
               updatedAt: c.data.updatedAt,
+              period:c.data.period
             },
             where: {
               id: c.id,
@@ -47,6 +48,7 @@ export default async function (req: Request, res: Response) {
               userId: c.data.userId,
               createdAt: c.data.createdAt,
               updatedAt: c.data.updatedAt,
+              period:c.data.period
             },
           });
         }

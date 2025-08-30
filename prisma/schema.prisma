@@ -230,6 +230,7 @@ model Budgets {
   budgetMonth Months
   currency    Currencies
   userId      String
+  period      Int
   user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt   DateTime
   updatedAt   DateTime
