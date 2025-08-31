@@ -13,6 +13,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@aws-sdk/client-sqs": "^3.879.0",
     "@opentelemetry/api-logs": "^0.203.0",
     "@opentelemetry/exporter-logs-otlp-http": "^0.203.0",
     "@opentelemetry/resources": "^2.0.1",

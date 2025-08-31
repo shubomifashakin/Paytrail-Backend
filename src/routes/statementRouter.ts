@@ -1,9 +1,9 @@
 import { Router } from "express";
 
-import { getStatement } from "../controllers/statementRouter/getStatement";
+import requestStatement from "../controllers/statementRouter/requestStatement";
 
 const statementRouter = Router();
 
-statementRouter.post("/", getStatement);
+statementRouter.post("/", requestStatement);
 
 export default statementRouter;

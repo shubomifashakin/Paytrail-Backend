@@ -1,9 +1,15 @@
 import { Request, Response } from "express";
 
+import { SendMessageCommand } from "@aws-sdk/client-sqs";
+
+import serverEnv from "../../serverEnv";
+
+import sqsClient from "../../lib/sqsClient";
+
 import { MESSAGES } from "../../utils/constants";
 import { statementQueryValidator } from "../../utils/validators";
 
-export async function getStatement(req: Request, res: Response) {
+export default async function requestStatement(req: Request, res: Response) {
   const { success, error, data } = statementQueryValidator.safeParse(req.body);
 
   if (!success) {
@@ -13,8 +19,12 @@ export async function getStatement(req: Request, res: Response) {
     return res.status(400).json({ message: MESSAGES.BAD_REQUEST });
   }
 
-  //FIXME: SEND THE PARAMS TO STATEMENT QUEUE INCLUDING THE USERID
-  console.log(data.startDate, data.endDate);
+  await sqsClient.send(
+    new SendMessageCommand({
+      MessageBody: JSON.stringify(data),
+      QueueUrl: serverEnv.paytrailStatementSqsQueueUrl,
+    }),
+  );
 
   return res.status(200).json({ message: "success" });
 }

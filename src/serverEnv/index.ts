@@ -15,6 +15,11 @@ const serverEnv = {
   signozIngestionKey: process.env.SIGNOZ_INGESTION_KEY!,
   appScheme: process.env.APP_SCHEME!,
   baseUrl: process.env.BASE_URL!,
+
+  paytrailStatementRegion: process.env.PAYTRAIL_STATETMENT_REGION!,
+  paytrailStatementSqsAccessKey: process.env.PAYTRAIL_STATEMENT_SQS_ACCESS_KEY!,
+  paytrailStatementSqsSecretKey: process.env.PAYTRAIL_STATEMENT_SQS_SECRET_KEY!,
+  paytrailStatementSqsQueueUrl: process.env.PAYTRAIL_STATEMENT_SQS_QUEUE_URL!,
 };
 
 export default serverEnv;
