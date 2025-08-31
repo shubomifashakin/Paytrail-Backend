@@ -21,7 +21,7 @@ export default async function requestStatement(req: Request, res: Response) {
 
   await sqsClient.send(
     new SendMessageCommand({
-      MessageBody: JSON.stringify(data),
+      MessageBody: JSON.stringify({ ...data, userId: req.user.id }),
       QueueUrl: serverEnv.paytrailStatementSqsQueueUrl,
     }),
   );
