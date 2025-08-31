@@ -11,15 +11,11 @@ import isAuthorized from "../middlewares/isAuthorized";
 
 import asyncHandler from "../utils/asyncHandler";
 
-function createAuthRouter(options?: { signInRateLimiter?: RequestHandler }) {
+function createAuthRouter(options: { signInRateLimiter: RequestHandler }) {
   const router = Router();
 
-  const googleMiddlewares = [options?.signInRateLimiter, asyncHandler(signInWithGoogle)].filter(
-    Boolean,
-  ) as RequestHandler[];
-
   router.post("/apple", asyncHandler(signInWithApple));
-  router.get("/google", ...googleMiddlewares);
+  router.get("/google", options.signInRateLimiter, asyncHandler(signInWithGoogle));
   router.get("/google/callback", asyncHandler(signInWithGoogleCallback));
   router.post("/google/token", asyncHandler(signInWithGoogleToken));
 
