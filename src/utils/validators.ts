@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { Currencies, Months } from "@prisma/client";
+import { Currencies } from "@prisma/client";
 
 export const pushSchemaValidator = z.object({
   data: z
@@ -15,8 +15,8 @@ export const pushSchemaValidator = z.object({
                 const isParsed = JSON.parse(arg);
 
                 return isParsed;
-                // eslint-disable-next-line @typescript-eslint/no-unused-vars
               } catch (error) {
+                console.log(error);
                 return false;
               }
             },
@@ -35,17 +35,9 @@ export const pushSchemaValidator = z.object({
 const validateCurrency = z.enum(Currencies, { error: "Invalid Currency" });
 
 export const statementQueryValidator = z.object({
-  startDate: z
-    .object({
-      startYear: z.number({ error: "invalid startYear" }),
-      startMonth: z.enum(Months, { error: "Invalid startMonth" }),
-    })
-    .optional(),
+  startPeriod: z.number(),
 
-  endDate: z.object({
-    endYear: z.number({ error: "Invalid endYear" }),
-    endMonth: z.enum(Months, { error: "Invalid endMonth" }),
-  }),
+  endPeriod: z.number(),
 
   categories: z.array(z.string()),
 

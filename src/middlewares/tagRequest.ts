@@ -9,6 +9,7 @@ async function tagRequest(req: Request, res: Response, next: NextFunction) {
 
   req.headers["x-request-id"] = requestId;
   res.setHeader("X-Request-ID", requestId);
+  req.requestId = requestId;
 
   next();
 }
