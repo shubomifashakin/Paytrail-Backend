@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { Currencies } from "@prisma/client";
+import { Currencies, Months } from "@prisma/client";
 
 export const pushSchemaValidator = z.object({
   data: z
@@ -35,9 +35,15 @@ export const pushSchemaValidator = z.object({
 const validateCurrency = z.enum(Currencies, { error: "Invalid Currency" });
 
 export const statementQueryValidator = z.object({
-  startPeriod: z.number(),
+  startDate: z.object({
+    year: z.number({ error: "invalid startYear" }),
+    month: z.enum(Months, { error: "Invalid startMonth" }),
+  }),
 
-  endPeriod: z.number(),
+  endDate: z.object({
+    year: z.number({ error: "Invalid endYear" }),
+    month: z.enum(Months, { error: "Invalid endMonth" }),
+  }),
 
   categories: z.array(z.string()),
 
