@@ -4,6 +4,7 @@ import { SendMessageCommand } from "@aws-sdk/client-sqs";
 
 import serverEnv from "../../serverEnv";
 
+import logger from "../../lib/logger";
 import sqsClient from "../../lib/sqsClient";
 
 import { MESSAGES } from "../../utils/constants";
@@ -13,8 +14,12 @@ export default async function requestStatement(req: Request, res: Response) {
   const { success, error, data } = statementQueryValidator.safeParse(req.body);
 
   if (!success) {
-    //FIXME: LOG THE ERROR
-    console.error(error);
+    logger.warn(MESSAGES.BAD_REQUEST, {
+      url: req.url,
+      ipAddress: req.ip,
+      error: error.issues,
+      requestId: req.headers["request-id"],
+    });
 
     return res.status(400).json({ message: MESSAGES.BAD_REQUEST });
   }
