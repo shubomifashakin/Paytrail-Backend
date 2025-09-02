@@ -1,14 +1,22 @@
 import { Request, Response } from "express";
 
+import logger from "../../lib/logger";
 import prisma from "../../lib/prisma";
 
+import { MESSAGES } from "../../utils/constants";
 import { pushSchemaValidator } from "../../utils/validators";
 
 export default async function (req: Request, res: Response) {
   const { success, error, data } = pushSchemaValidator.safeParse(req?.body);
 
   if (!success) {
-    //FIXME: LOG ERROR
+    logger.warn(MESSAGES.BAD_REQUEST, {
+      url: req.url,
+      userId: req.user.id,
+      error: error.issues,
+      requestId: req.headers["request-id"],
+    });
+
     return res.status(400).json({ message: error.issues });
   }
 
@@ -34,7 +42,7 @@ export default async function (req: Request, res: Response) {
               userId: c.data.userId,
               createdAt: c.data.createdAt,
               updatedAt: c.data.updatedAt,
-              period:c.data.period
+              period: c.data.period,
             },
             where: {
               id: c.id,
@@ -48,7 +56,7 @@ export default async function (req: Request, res: Response) {
               userId: c.data.userId,
               createdAt: c.data.createdAt,
               updatedAt: c.data.updatedAt,
-              period:c.data.period
+              period: c.data.period,
             },
           });
         }

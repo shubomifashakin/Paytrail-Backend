@@ -16,7 +16,7 @@ export default async function requestStatement(req: Request, res: Response) {
   if (!success) {
     logger.warn(MESSAGES.BAD_REQUEST, {
       url: req.url,
-      ipAddress: req.ip,
+      userId: req.user.id,
       error: error.issues,
       requestId: req.headers["request-id"],
     });
