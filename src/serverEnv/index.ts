@@ -16,9 +16,9 @@ const serverEnv = {
   appScheme: process.env.APP_SCHEME!,
   baseUrl: process.env.BASE_URL!,
 
-  paytrailStatementRegion: process.env.PAYTRAIL_STATETMENT_REGION!,
-  paytrailStatementSqsAccessKey: process.env.PAYTRAIL_STATEMENT_SQS_ACCESS_KEY!,
-  paytrailStatementSqsSecretKey: process.env.PAYTRAIL_STATEMENT_SQS_SECRET_KEY!,
+  paytrailAWSRegion: process.env.PAYTRAIL_AWS_REGION!,
+  paytrailAWSAccessKey: process.env.PAYTRAIL_AWS_ACCESS_KEY!,
+  paytrailAWSSecretKey: process.env.PAYTRAIL_AWS_SECRET_KEY!,
   paytrailStatementSqsQueueUrl: process.env.PAYTRAIL_STATEMENT_SQS_QUEUE_URL!,
 };
 
