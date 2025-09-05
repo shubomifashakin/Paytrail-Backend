@@ -159,6 +159,29 @@ enum Currencies {
   BND
 }
 
+enum Platforms {
+  Android
+  iOS
+}
+
+model DeviceToken {
+  id             String    @id @default(uuid())
+  platform       Platforms
+  deviceToken    String
+  snsEndpointArn String
+  enabled        Boolean
+  lastUsedAt     DateTime
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([deviceToken])
+  @@map("device_token")
+}
+
 model User {
   id             String           @id
   name           String
@@ -167,7 +190,7 @@ model User {
   image          String?
   createdAt      DateTime
   updatedAt      DateTime
-  deviceToken    String?
+  device         DeviceToken[]
   sessions       Session[]
   accounts       Account[]
   Budgets        Budgets[]
