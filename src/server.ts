@@ -10,6 +10,7 @@ dotenv.config();
 
 import createAuthRouter from "./routes/authRouter";
 import healthRouter from "./routes/healthRouter";
+import notificationRouter from "./routes/notifications";
 import statementRouter from "./routes/statementRouter";
 import syncRouter from "./routes/syncRouter";
 
@@ -88,6 +89,8 @@ export async function startServer() {
       }),
       statementRouter,
     );
+
+    app.use(`${API_V1}/notifications`, isAuthorized, notificationRouter);
 
     app.use(errorMiddleware);
 
