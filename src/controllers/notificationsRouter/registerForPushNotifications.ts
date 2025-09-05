@@ -7,11 +7,13 @@ import {
   SubscribeCommand,
 } from "@aws-sdk/client-sns";
 
+import logger from "../../lib/logger";
 import prisma from "../../lib/prisma";
 import snsClient from "../../lib/snsClient";
 
 import serverEnv from "../../serverEnv";
 
+import { MESSAGES } from "../../utils/constants";
 import { registerForPushNotificationsValidator } from "../../utils/validators";
 
 export default async function registerForPushNotifications(req: Request, res: Response) {
@@ -22,7 +24,13 @@ export default async function registerForPushNotifications(req: Request, res: Re
   const { success, error, data } = registerForPushNotificationsValidator.safeParse(body);
 
   if (!success) {
-    //FIXME: ADD LOGGER
+    logger.error(MESSAGES.BAD_REQUEST, {
+      url: req.url,
+      userId: req.user.id,
+      error: error.issues,
+      requestId: req.headers["request-id"],
+    });
+
     return res.status(400).json({ message: error.issues });
   }
 

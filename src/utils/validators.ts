@@ -53,6 +53,6 @@ export const statementQueryValidator = z.object({
 });
 
 export const registerForPushNotificationsValidator = z.object({
-  pushToken: z.string(),
-  platform: z.enum(Platforms),
+  pushToken: z.string({ error: "Invalid Push Token" }),
+  platform: z.enum(Platforms, { error: "Invalid Platform" }),
 });
