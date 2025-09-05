@@ -160,8 +160,8 @@ enum Currencies {
 }
 
 enum Platforms {
-  Android
-  iOS
+  android
+  ios
 }
 
 model DeviceToken {
