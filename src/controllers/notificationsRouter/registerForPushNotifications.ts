@@ -1,25 +1,117 @@
 import { Request, Response } from "express";
 
+import { Platforms } from "@prisma/client";
+import {
+  CreatePlatformEndpointCommand,
+  SetEndpointAttributesCommand,
+  SubscribeCommand,
+} from "@aws-sdk/client-sns";
+
 import prisma from "../../lib/prisma";
+import snsClient from "../../lib/snsClient";
+
+import serverEnv from "../../serverEnv";
+
+import { registerForPushNotificationsValidator } from "../../utils/validators";
 
 export default async function registerForPushNotifications(req: Request, res: Response) {
   const userId = req.user.id;
 
   const body = req.body;
 
-  if (!body.pushToken) {
-    //FIXME: LOG ERROR
-    return res.status(400).json({ message: "Missing push token" });
+  const { success, error, data } = registerForPushNotificationsValidator.safeParse(body);
+
+  if (!success) {
+    //FIXME: ADD LOGGER
+    return res.status(400).json({ message: error.issues });
   }
 
-  await prisma.user.update({
+  const endpointArn = await createPlatformApplicationEndpoint({
+    platform: data.platform,
+    deviceToken: data.pushToken,
+    attributes: { Enabled: "true" },
+  });
+
+  await prisma.deviceToken.upsert({
     where: {
       id: userId,
     },
-    data: {
-      deviceToken: body.pushToken,
+    update: {
+      platform: data.platform,
+      deviceToken: data.pushToken,
+    },
+    create: {
+      userId,
+      enabled: true,
+      lastUsedAt: new Date(),
+      platform: data.platform,
+      deviceToken: data.pushToken,
+      snsEndpointArn: endpointArn,
     },
   });
 
+  //subscribe the user to the broadcast topic so we can broadcast notifications to all users
+  await subscribeEndpointToTopic(endpointArn, serverEnv.broadcastTopicArn);
+
   return res.status(200).json({ message: "success" });
+}
+
+export async function createPlatformApplicationEndpoint({
+  platform,
+  deviceToken,
+  attributes,
+  // isSandbox = false,
+}: {
+  platform: Platforms;
+  deviceToken: string;
+  attributes?: Record<string, string>;
+  isSandbox?: boolean;
+}) {
+  const platformApplicationArn =
+    platform === "android"
+      ? serverEnv.androidPlatformApplicationArn
+      : serverEnv.iosPlatformApplicationArn;
+
+  try {
+    const res = await snsClient.send(
+      new CreatePlatformEndpointCommand({
+        Token: deviceToken,
+        Attributes: attributes ?? { Enabled: "true" },
+        PlatformApplicationArn: platformApplicationArn,
+      }),
+    );
+
+    if (!res.EndpointArn) {
+      throw new Error("Failed to create platform application endpoint");
+    }
+
+    return res.EndpointArn;
+  } catch (err: any) {
+    const msg: string = err?.message ?? "";
+    const match = msg.match(/Endpoint (arn:aws:sns:[^ ]+) already exists/);
+
+    if (match?.[1]) {
+      const endpointArn = match[1];
+
+      await snsClient.send(
+        new SetEndpointAttributesCommand({
+          EndpointArn: endpointArn,
+          Attributes: { Enabled: "true", Token: deviceToken },
+        }),
+      );
+      return endpointArn;
+    }
+
+    throw err;
+  }
+}
+
+export async function subscribeEndpointToTopic(endpointArn: string, topicArn: string) {
+  await snsClient.send(
+    new SubscribeCommand({
+      TopicArn: topicArn,
+      Endpoint: endpointArn,
+      Protocol: "application",
+    }),
+  );
 }

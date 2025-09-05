@@ -90,7 +90,17 @@ export async function startServer() {
       statementRouter,
     );
 
-    app.use(`${API_V1}/notifications`, isAuthorized, notificationRouter);
+    app.use(
+      `${API_V1}/notifications`,
+      isAuthorized,
+      createRateLimiter({
+        redisClient,
+        limit: 10,
+        window: 10 * 60,
+        keyGenerator: (req) => `${req.user.id}:${req.path}`,
+      }),
+      notificationRouter,
+    );
 
     app.use(errorMiddleware);
 

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { Currencies, Months } from "@prisma/client";
+import { Currencies, Months, Platforms } from "@prisma/client";
 
 export const pushSchemaValidator = z.object({
   data: z
@@ -50,4 +50,9 @@ export const statementQueryValidator = z.object({
   paymentMethods: z.array(z.string()),
 
   currencies: z.array(validateCurrency),
+});
+
+export const registerForPushNotificationsValidator = z.object({
+  pushToken: z.string(),
+  platform: z.enum(Platforms),
 });
