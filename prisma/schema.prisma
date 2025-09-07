@@ -177,7 +177,7 @@ model DeviceToken {
   userId String @unique
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId])
+  @@index([userId,snsEndpointArn])
   @@index([deviceToken])
   @@map("device_token")
 }
