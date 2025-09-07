@@ -43,7 +43,7 @@ export default async function registerForPushNotifications(req: Request, res: Re
 
   await prisma.deviceToken.upsert({
     where: {
-      id: userId,
+      userId: userId,
     },
     update: {
       platform: data.platform,

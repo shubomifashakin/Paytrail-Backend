@@ -172,9 +172,9 @@ model DeviceToken {
   enabled        Boolean
   lastUsedAt     DateTime
   createdAt      DateTime  @default(now())
-  updatedAt      DateTime @default(now())
+  updatedAt      DateTime  @default(now())
 
-  userId String
+  userId String @unique
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
