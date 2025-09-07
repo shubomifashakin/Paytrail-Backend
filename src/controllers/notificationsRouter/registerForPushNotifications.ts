@@ -35,6 +35,7 @@ export default async function registerForPushNotifications(req: Request, res: Re
   }
 
   const endpointArn = await createPlatformApplicationEndpoint({
+    userId: req.user.id,
     platform: data.platform,
     deviceToken: data.pushToken,
     attributes: { Enabled: "true" },
@@ -65,15 +66,17 @@ export default async function registerForPushNotifications(req: Request, res: Re
 }
 
 export async function createPlatformApplicationEndpoint({
+  userId,
   platform,
   deviceToken,
   attributes,
   // isSandbox = false,
 }: {
+  userId: string;
   platform: Platforms;
   deviceToken: string;
-  attributes?: Record<string, string>;
   isSandbox?: boolean;
+  attributes?: Record<string, string>;
 }) {
   const platformApplicationArn =
     platform === "android"
@@ -84,6 +87,7 @@ export async function createPlatformApplicationEndpoint({
     const res = await snsClient.send(
       new CreatePlatformEndpointCommand({
         Token: deviceToken,
+        CustomUserData: JSON.stringify({ userId }),
         Attributes: attributes ?? { Enabled: "true" },
         PlatformApplicationArn: platformApplicationArn,
       }),
@@ -104,7 +108,11 @@ export async function createPlatformApplicationEndpoint({
       await snsClient.send(
         new SetEndpointAttributesCommand({
           EndpointArn: endpointArn,
-          Attributes: { Enabled: "true", Token: deviceToken },
+          Attributes: {
+            Enabled: "true",
+            Token: deviceToken,
+            CustomUserData: JSON.stringify({ userId }),
+          },
         }),
       );
       return endpointArn;
