@@ -31,7 +31,7 @@ export default async function registerForPushNotifications(req: Request, res: Re
       requestId: req.headers["request-id"],
     });
 
-    return res.status(400).json({ message: error.issues });
+    return res.status(400).json({ message: MESSAGES.BAD_REQUEST });
   }
 
   const endpointArn = await createPlatformApplicationEndpoint({
