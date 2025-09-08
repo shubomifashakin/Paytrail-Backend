@@ -13,7 +13,6 @@ jest.mock("../../../serverEnv", () => ({
   databaseUrl: "postgresql://postgres:postgres_123@localhost:5432/paytrail_postgres",
   baseUrl: "https://test.com",
   appScheme: "paytrail://",
-  paytrailStatementSqsQueueUrl: "fake-statement-queue-url",
   broadcastTopicArn: "test-topic-arn",
   androidPlatformApplicationArn: "test-android-arn",
   iosPlatformApplicationArn: "test-ios-arn",
@@ -78,68 +77,178 @@ describe("registerForPushNotifications", () => {
     jest.clearAllMocks();
   });
 
-  test("it should register a push notification", async () => {
-    const res = await request(server)
-      .post(`${API_V1}/notifications/register`)
-      .set("Authorization", "Bearer fake-session-id")
-      .set("Content-Type", "application/json")
-      .send({
-        platform: "android",
-        pushToken: "test-token",
+  describe("initial registration", () => {
+    beforeAll(() => {
+      jest.clearAllMocks();
+
+      createPlatformApplicationEndpoint.mockResolvedValue({ EndpointArn: "test-endpoint-arn" });
+    });
+
+    test("it should register a push notification for android", async () => {
+      const res = await request(server)
+        .post(`${API_V1}/notifications/register`)
+        .set("Authorization", "Bearer fake-session-id")
+        .set("Content-Type", "application/json")
+        .send({
+          platform: "android",
+          pushToken: "test-token",
+        });
+
+      expect(findUniqueSession).toHaveBeenCalledWith({
+        where: {
+          id: "fake-session-id",
+        },
+        include: {
+          user: true,
+        },
       });
 
-    expect(findUniqueSession).toHaveBeenCalledWith({
-      where: {
-        id: "fake-session-id",
-      },
-      include: {
-        user: true,
-      },
+      expect(findUniqueSession).toHaveBeenCalledTimes(1);
+
+      expect(createPlatformApplicationEndpoint).toHaveBeenCalledWith({
+        Token: "test-token",
+        CustomUserData: JSON.stringify({ userId: "new-user-id" }),
+        Attributes: { Enabled: "true" },
+        PlatformApplicationArn: "test-android-arn",
+      });
+      expect(upsertDeviceToken).toHaveBeenCalledTimes(1);
+
+      expect(subscribe).toHaveBeenCalledWith({
+        TopicArn: "test-topic-arn",
+        Endpoint: "test-endpoint-arn",
+        Protocol: "application",
+      });
+      expect(subscribe).toHaveBeenCalledTimes(1);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ message: "success" });
     });
 
-    expect(findUniqueSession).toHaveBeenCalledTimes(1);
+    test("it should register a push notification for ios", async () => {
+      const res = await request(server)
+        .post(`${API_V1}/notifications/register`)
+        .set("Authorization", "Bearer fake-session-id")
+        .set("Content-Type", "application/json")
+        .send({
+          platform: "ios",
+          pushToken: "test-token",
+        });
 
-    expect(createPlatformApplicationEndpoint).toHaveBeenCalledWith({
-      Token: "test-token",
-      CustomUserData: JSON.stringify({ userId: "new-user-id" }),
-      Attributes: { Enabled: "true" },
-      PlatformApplicationArn: "test-android-arn",
+      expect(findUniqueSession).toHaveBeenCalledWith({
+        where: {
+          id: "fake-session-id",
+        },
+        include: {
+          user: true,
+        },
+      });
+
+      expect(findUniqueSession).toHaveBeenCalledTimes(1);
+
+      expect(createPlatformApplicationEndpoint).toHaveBeenCalledWith({
+        Token: "test-token",
+        CustomUserData: JSON.stringify({ userId: "new-user-id" }),
+        Attributes: { Enabled: "true" },
+        PlatformApplicationArn: "test-ios-arn",
+      });
+      expect(upsertDeviceToken).toHaveBeenCalledTimes(1);
+
+      expect(subscribe).toHaveBeenCalledWith({
+        TopicArn: "test-topic-arn",
+        Endpoint: "test-endpoint-arn",
+        Protocol: "application",
+      });
+      expect(subscribe).toHaveBeenCalledTimes(1);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ message: "success" });
     });
-    expect(upsertDeviceToken).toHaveBeenCalledTimes(1);
 
-    expect(subscribe).toHaveBeenCalledWith({
-      TopicArn: "test-topic-arn",
-      Endpoint: "test-endpoint-arn",
-      Protocol: "application",
+    test("it should fail due to invalid post body", async () => {
+      const res = await request(server)
+        .post(`${API_V1}/notifications/register`)
+        .set("Authorization", "Bearer fake-session-id")
+        .set("Content-Type", "application/json")
+        .send({
+          platform: "fake-platform",
+          pushToken: "test-token",
+        });
+
+      expect(findUniqueSession).toHaveBeenCalledWith({
+        where: {
+          id: "fake-session-id",
+        },
+        include: {
+          user: true,
+        },
+      });
+
+      expect(findUniqueSession).toHaveBeenCalledTimes(1);
+
+      expect(res.status).toBe(400);
+      expect(res.body).toEqual({ message: MESSAGES.BAD_REQUEST });
     });
-    expect(subscribe).toHaveBeenCalledTimes(1);
-
-    expect(res.status).toBe(200);
-    expect(res.body).toEqual({ message: "success" });
   });
 
-  test("it should fail due to invalid post body", async () => {
-    const res = await request(server)
-      .post(`${API_V1}/notifications/register`)
-      .set("Authorization", "Bearer fake-session-id")
-      .set("Content-Type", "application/json")
-      .send({
-        platform: "fake-platform",
-        pushToken: "test-token",
-      });
+  describe("when there is already a device token", () => {
+    beforeAll(() => {
+      jest.clearAllMocks();
 
-    expect(findUniqueSession).toHaveBeenCalledWith({
-      where: {
-        id: "fake-session-id",
-      },
-      include: {
-        user: true,
-      },
+      createPlatformApplicationEndpoint.mockRejectedValue(
+        new Error(
+          "Endpoint arn:aws:sns:us-east-1:123456789012:endpoint/APNS/my-application/11 already exists",
+        ),
+      );
     });
 
-    expect(findUniqueSession).toHaveBeenCalledTimes(1);
+    test("it should register a push notification", async () => {
+      const res = await request(server)
+        .post(`${API_V1}/notifications/register`)
+        .set("Authorization", "Bearer fake-session-id")
+        .set("Content-Type", "application/json")
+        .send({
+          platform: "android",
+          pushToken: "test-token",
+        });
 
-    expect(res.status).toBe(400);
-    expect(res.body).toEqual({ message: MESSAGES.BAD_REQUEST });
+      expect(findUniqueSession).toHaveBeenCalledWith({
+        where: {
+          id: "fake-session-id",
+        },
+        include: {
+          user: true,
+        },
+      });
+
+      expect(findUniqueSession).toHaveBeenCalledTimes(1);
+
+      expect(createPlatformApplicationEndpoint).toHaveBeenCalledWith({
+        Token: "test-token",
+        CustomUserData: JSON.stringify({ userId: "new-user-id" }),
+        Attributes: { Enabled: "true" },
+        PlatformApplicationArn: "test-android-arn",
+      });
+
+      expect(setEndpointAttributes).toHaveBeenCalledWith({
+        EndpointArn: expect.any(String),
+        Attributes: {
+          Enabled: "true",
+          Token: "test-token",
+          CustomUserData: JSON.stringify({ userId: "new-user-id" }),
+        },
+      });
+      expect(setEndpointAttributes).toHaveBeenCalledTimes(1);
+      expect(upsertDeviceToken).toHaveBeenCalledTimes(1);
+
+      expect(subscribe).toHaveBeenCalledWith({
+        TopicArn: "test-topic-arn",
+        Endpoint: expect.any(String),
+        Protocol: "application",
+      });
+      expect(subscribe).toHaveBeenCalledTimes(1);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ message: "success" });
+    });
   });
 });
