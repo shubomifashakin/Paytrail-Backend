@@ -80,8 +80,8 @@ describe("the statement router test", () => {
       categories: [],
       currencies: [],
       paymentMethods: [],
-      endDate: { endYear: 2025, endMonth: "January" },
-      startDate: { startYear: 2002, startMonth: "January" },
+      endDate: { year: 2025, month: "January" },
+      startDate: { year: 2002, month: "January" },
     };
 
     const res = await request(server)
@@ -104,7 +104,7 @@ describe("the statement router test", () => {
     expect(sqsSend).toHaveBeenCalledTimes(1);
     expect(mockSendMessageCommand).toHaveBeenCalledTimes(1);
     expect(mockSendMessageCommand).toHaveBeenCalledWith({
-      MessageBody: expect.stringContaining('"startYear":2002'),
+      MessageBody: expect.stringContaining('"year":2002'),
       QueueUrl: "fake-statement-queue-url",
     });
 
@@ -151,8 +151,8 @@ describe("the statement router test", () => {
         categories: [],
         currencies: ["FAKE-CURRENCY"],
         paymentMethods: [],
-        endDate: { endYear: 2025, endMonth: "January" },
-        startDate: { startYear: 2002, startMonth: "January" },
+        endDate: { year: 2025, month: "January" },
+        startDate: { year: 2002, month: "January" },
       });
 
     expect(findUniqueSession).not.toHaveBeenCalled();
