@@ -25,6 +25,9 @@ const serverEnv = {
   iosPlatformApplicationArn: process.env.IOS_SNS_PLATFORM_APPLICATION_ARN!,
 
   broadcastTopicArn: process.env.BROADCAST_TOPIC_ARN!,
+
+  userNotificationsTableARN: process.env.USER_NOTIFICATIONS_TABLE_ARN!,
+  broadcastNotificationsTableARN: process.env.BROADCAST_NOTIFICATIONS_TABLE_ARN!,
 };
 
 export default serverEnv;
