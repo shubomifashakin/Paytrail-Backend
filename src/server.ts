@@ -96,7 +96,7 @@ export async function startServer() {
       createRateLimiter({
         redisClient,
         limit: 10,
-        window: 10 * 60,
+        window: 60,
         keyGenerator: (req) => `${req.user.id}:${req.path}`,
       }),
       notificationRouter,
