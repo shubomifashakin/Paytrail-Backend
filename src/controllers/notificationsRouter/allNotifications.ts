@@ -18,12 +18,12 @@ export default async function getAllNotifications(req: Request, res: Response) {
 
   const userNotifications = dynamoClient.send(
     new QueryCommand({
-      Limit: 10,
+      Limit: 1, //FIXME: INCREASE TO A REASONABLE LIMIT
       ScanIndexForward: false,
       ExclusiveStartKey: userKey,
       KeyConditionExpression: "userId = :userId",
       TableName: serverEnv.userNotificationsTableARN,
-      ProjectionExpression: "id, title, body, createdAt, type",
+      ProjectionExpression: "id, message, createdAt, notificationType, image",
       ExpressionAttributeValues: {
         ":userId": userId,
       },
@@ -31,11 +31,12 @@ export default async function getAllNotifications(req: Request, res: Response) {
   );
 
   const broadcastNotifications = dynamoClient.send(
+    //FIXME: CHANGE TO QUERY COMMAND
     new ScanCommand({
-      Limit: 10,
+      Limit: 1, //FIXME: INCREASE TO A REASONABLE LIMIT
       ExclusiveStartKey: broadcastKey,
       TableName: serverEnv.broadcastNotificationsTableARN,
-      ProjectionExpression: "id, title, body, createdAt, type",
+      ProjectionExpression: "id, message, createdAt, notificationType, image",
     }),
   );
 
@@ -49,7 +50,13 @@ export default async function getAllNotifications(req: Request, res: Response) {
     userNotificationsData.Items.length &&
     !broadcastNotificationsData.Items
   ) {
-    return res.status(200).json({ notifications: userNotificationsData.Items });
+    return res.status(200).json({
+      notifications: userNotificationsData.Items,
+      hasNextPage: userNotificationsData.LastEvaluatedKey,
+      next: {
+        userKey: userNotificationsData.LastEvaluatedKey,
+      },
+    });
   }
 
   if (
@@ -57,25 +64,32 @@ export default async function getAllNotifications(req: Request, res: Response) {
     broadcastNotificationsData.Items &&
     broadcastNotificationsData.Items.length
   ) {
-    return res.status(200).json({ notifications: broadcastNotificationsData.Items });
+    return res.status(200).json({
+      notifications: broadcastNotificationsData.Items,
+      hasNextPage: broadcastNotificationsData.LastEvaluatedKey,
+      next: {
+        broadcastKey: broadcastNotificationsData.LastEvaluatedKey,
+      },
+    });
   }
 
   if (!userNotificationsData.Items || !broadcastNotificationsData.Items) {
-    return res.status(200).json({ notifications: [] });
+    return res.status(200).json({ notifications: [], hasNextPage: false, next: {} });
   }
 
-  const sortedNotifications = [
-    ...userNotificationsData.Items,
-    ...broadcastNotificationsData.Items,
-  ].sort((a, b) => {
-    return b.createdAt - a.createdAt;
-  });
+  const notifications = [...userNotificationsData.Items, ...broadcastNotificationsData.Items].sort(
+    (a, b) => {
+      return b.createdAt - a.createdAt;
+    },
+  );
 
   return res.status(200).json({
-    notifications: sortedNotifications,
+    notifications,
+    hasNextPage:
+      userNotificationsData.LastEvaluatedKey || broadcastNotificationsData.LastEvaluatedKey,
     next: {
-      userNotifications: userNotificationsData.LastEvaluatedKey,
-      broadcastNotifications: broadcastNotificationsData.LastEvaluatedKey,
+      userKey: userNotificationsData.LastEvaluatedKey,
+      broadcastKey: broadcastNotificationsData.LastEvaluatedKey,
     },
   });
 }
