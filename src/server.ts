@@ -8,6 +8,7 @@ import cors, { CorsOptions } from "cors";
 import dotenv from "dotenv";
 dotenv.config();
 
+import broadcatsRouter from "./routes/broadcasts";
 import createAuthRouter from "./routes/authRouter";
 import healthRouter from "./routes/healthRouter";
 import notificationRouter from "./routes/notifications";
@@ -100,6 +101,18 @@ export async function startServer() {
         keyGenerator: (req) => `${req.user.id}:${req.path}`,
       }),
       notificationRouter,
+    );
+
+    app.use(
+      `${API_V1}/broadcasts`,
+      isAuthorized,
+      createRateLimiter({
+        redisClient,
+        limit: 10,
+        window: 60,
+        keyGenerator: (req) => `${req.user.id}:${req.path}`,
+      }),
+      broadcatsRouter,
     );
 
     app.use(errorMiddleware);
