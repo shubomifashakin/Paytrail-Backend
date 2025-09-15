@@ -286,6 +286,7 @@ model PaymentMethods {
   id          String   @id
   name        String
   color       String
+  emoji       String
   description String
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -295,6 +296,7 @@ model PaymentMethods {
 
   @@unique([userId, name])
   @@unique([userId, color])
+  @@unique([userId, emoji])
   @@map("payment_methods")
 }
 

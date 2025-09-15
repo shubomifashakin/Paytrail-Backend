@@ -121,6 +121,7 @@ export default async function (req: Request, res: Response) {
               name: c.data.name,
               color: c.data.color,
               description: c.data.description,
+              emoji: c.data.emoji,
               userId: c.data.userId,
               createdAt: c.data.createdAt,
               updatedAt: c.data.updatedAt,
