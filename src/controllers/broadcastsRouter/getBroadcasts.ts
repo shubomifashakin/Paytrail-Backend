@@ -6,8 +6,12 @@ import dynamoClient from "../../lib/dynamo";
 import serverEnv from "../../serverEnv";
 
 export default async function getAllBroadcasts(req: Request, res: Response) {
-  const queryParam = req.query.exclusiveStartKey as string;
-  const exclusiveStartKey = JSON.parse(queryParam) as Record<string, string>;
+  const queryParam = (req.query?.exclusiveStartKey as string) || undefined;
+  let exclusiveStartKey = {};
+
+  if (queryParam) {
+    exclusiveStartKey = JSON.parse(queryParam) as Record<string, string>;
+  }
 
   const hasKeys = Object.keys(exclusiveStartKey).length > 0;
 
@@ -31,6 +35,6 @@ export default async function getAllBroadcasts(req: Request, res: Response) {
   return res.status(200).json({
     notifications: broadcasts.Items,
     next: broadcasts.LastEvaluatedKey,
-    hasNextPage: broadcasts.LastEvaluatedKey,
+    hasNextPage: broadcasts.LastEvaluatedKey ? true : false,
   });
 }

@@ -3,7 +3,7 @@ import { Server } from "http";
 import request from "supertest";
 
 jest.mock("../../../serverEnv", () => ({
-  port: "9132",
+  port: "3132",
   allowedOrigins: "*",
   googleClientId: "test-id",
   redis: "redis://localhost:6379",
@@ -16,11 +16,11 @@ jest.mock("../../../serverEnv", () => ({
   broadcastTopicArn: "test-topic-arn",
   androidPlatformApplicationArn: "test-android-arn",
   iosPlatformApplicationArn: "test-ios-arn",
-  userNotificationsTableARN: "test-user-notifications-table",
+  broadcastNotificationsTableARN: "test-broadcast-notifications-table",
 }));
 
 const mockSendCommand = jest.fn().mockImplementation((command) => command);
-const mockQueryCommand = jest.fn().mockResolvedValue({
+const mockScanCommand = jest.fn().mockResolvedValue({
   Items: [],
   LastEvaluatedKey: null,
 });
@@ -35,7 +35,7 @@ jest.mock("@aws-sdk/lib-dynamodb", () => ({
       send: mockSendCommand,
     })),
   },
-  QueryCommand: mockQueryCommand,
+  ScanCommand: mockScanCommand,
 }));
 
 const findUniqueSession = jest.fn().mockResolvedValue({
@@ -57,7 +57,6 @@ jest.mock("../../../middlewares/rateLimiter", () => ({
   default: jest
     .fn()
     .mockImplementation(() => (_req: Request, _res: Response, next: NextFunction) => {
-      console.log("rate limiter");
       next();
     }),
 }));
@@ -80,7 +79,7 @@ describe("getAllUserNotifications", () => {
   describe("when notifications do not exist", () => {
     test("it should return an empty array", async () => {
       const res = await request(server)
-        .get(`${API_V1}/notifications`)
+        .get(`${API_V1}/broadcasts`)
         .set("Authorization", "Bearer fake-session-id");
 
       expect(findUniqueSession).toHaveBeenCalledWith({
@@ -94,7 +93,7 @@ describe("getAllUserNotifications", () => {
 
       expect(findUniqueSession).toHaveBeenCalledTimes(1);
 
-      expect(mockQueryCommand).toHaveBeenCalledTimes(1);
+      expect(mockScanCommand).toHaveBeenCalledTimes(1);
 
       expect(res.status).toBe(200);
       expect(res.body).toEqual({
@@ -106,7 +105,7 @@ describe("getAllUserNotifications", () => {
 
     test("it should return an empty array -- queryparams sent", async () => {
       const res = await request(server)
-        .get(`${API_V1}/notifications`)
+        .get(`${API_V1}/broadcasts`)
         .set("Authorization", "Bearer fake-session-id")
         .query({
           exclusiveStartKey: JSON.stringify({}),
@@ -123,7 +122,7 @@ describe("getAllUserNotifications", () => {
 
       expect(findUniqueSession).toHaveBeenCalledTimes(1);
 
-      expect(mockQueryCommand).toHaveBeenCalledTimes(1);
+      expect(mockScanCommand).toHaveBeenCalledTimes(1);
 
       expect(res.status).toBe(200);
       expect(res.body).toEqual({
@@ -136,7 +135,7 @@ describe("getAllUserNotifications", () => {
 
   describe("when notifications exist", () => {
     beforeAll(async () => {
-      mockQueryCommand.mockResolvedValue({
+      mockScanCommand.mockResolvedValue({
         Items: [
           {
             id: "1",
@@ -152,7 +151,7 @@ describe("getAllUserNotifications", () => {
 
     test("it should return an array with 1 item", async () => {
       const res = await request(server)
-        .get(`${API_V1}/notifications`)
+        .get(`${API_V1}/broadcasts`)
         .set("Authorization", "Bearer fake-session-id");
 
       expect(findUniqueSession).toHaveBeenCalledWith({
@@ -166,17 +165,12 @@ describe("getAllUserNotifications", () => {
 
       expect(findUniqueSession).toHaveBeenCalledTimes(1);
 
-      expect(mockQueryCommand).toHaveBeenCalledTimes(1);
-      expect(mockQueryCommand).toHaveBeenCalledWith({
+      expect(mockScanCommand).toHaveBeenCalledTimes(1);
+      expect(mockScanCommand).toHaveBeenCalledWith({
         Limit: 10,
-        ScanIndexForward: false,
-        KeyConditionExpression: "userId = :userId",
-        TableName: "test-user-notifications-table",
+        TableName: "test-broadcast-notifications-table",
         ExclusiveStartKey: undefined,
         ProjectionExpression: "id, message, createdAt, notificationType, image",
-        ExpressionAttributeValues: {
-          ":userId": "new-user-id",
-        },
       });
 
       expect(res.status).toBe(200);
