@@ -8,8 +8,12 @@ import serverEnv from "../../serverEnv";
 export default async function getAllnotifications(req: Request, res: Response) {
   const userId = req.user.id;
 
-  const queryParam = req.query.exclusiveStartKey as string;
-  const exclusiveStartKey = JSON.parse(queryParam) as Record<string, string>;
+  const queryParam = (req.query?.exclusiveStartKey as string) || undefined;
+  let exclusiveStartKey = {};
+
+  if (queryParam) {
+    exclusiveStartKey = JSON.parse(queryParam) as Record<string, string>;
+  }
 
   const hasKeys = Object.keys(exclusiveStartKey).length > 0;
 
@@ -20,7 +24,7 @@ export default async function getAllnotifications(req: Request, res: Response) {
       KeyConditionExpression: "userId = :userId",
       TableName: serverEnv.userNotificationsTableARN,
       ExclusiveStartKey: hasKeys ? exclusiveStartKey : undefined,
-      ProjectionExpression: "id, melssage, createdAt, notificationType, image",
+      ProjectionExpression: "id, message, createdAt, notificationType, image",
       ExpressionAttributeValues: {
         ":userId": userId,
       },
@@ -38,6 +42,6 @@ export default async function getAllnotifications(req: Request, res: Response) {
   return res.status(200).json({
     notifications: notifications.Items,
     next: notifications.LastEvaluatedKey,
-    hasNextPage: notifications.LastEvaluatedKey,
+    hasNextPage: notifications.LastEvaluatedKey ? true : false,
   });
 }
