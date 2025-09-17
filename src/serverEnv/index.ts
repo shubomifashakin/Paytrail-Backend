@@ -20,6 +20,7 @@ const serverEnv = {
   paytrailAWSAccessKey: process.env.PAYTRAIL_AWS_ACCESS_KEY!,
   paytrailAWSSecretKey: process.env.PAYTRAIL_AWS_SECRET_KEY!,
   paytrailStatementSqsQueueUrl: process.env.PAYTRAIL_STATEMENT_SQS_QUEUE_URL!,
+  receiptsBucketName: process.env.RECEIPTS_BUCKET_NAME!,
 
   androidPlatformApplicationArn: process.env.ANDROID_SNS_PLATFORM_APPLICATION_ARN!,
   iosPlatformApplicationArn: process.env.IOS_SNS_PLATFORM_APPLICATION_ARN!,
