@@ -10,6 +10,7 @@ dotenv.config();
 
 import broadcatsRouter from "./routes/broadcasts";
 import createAuthRouter from "./routes/authRouter";
+import createReceiptRouter from "./routes/receiptsRouter";
 import healthRouter from "./routes/healthRouter";
 import notificationRouter from "./routes/notifications";
 import statementRouter from "./routes/statementRouter";
@@ -116,6 +117,8 @@ export async function startServer() {
     );
 
     app.use(errorMiddleware);
+
+    app.use(`${API_V1}/receipts`, createReceiptRouter({ redisClient }));
 
     server.listen(serverEnv.port, () => {
       logger.info(`Server ready on port ${serverEnv.port} (${Date.now() - start} ms)`);

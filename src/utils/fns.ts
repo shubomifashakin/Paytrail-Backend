@@ -1,4 +1,5 @@
 import { ErrorResponse } from "resend";
+import { Request } from "express";
 
 import logger from "../lib/logger";
 
@@ -161,4 +162,14 @@ export function logEmailError(
     email: user.email,
     message: error.message,
   });
+}
+
+export function clearBuffer(req: Request) {
+  if (Array.isArray(req.files)) {
+    req.files.forEach((file) => {
+      if (file.buffer) {
+        file.buffer = Buffer.alloc(0);
+      }
+    });
+  }
 }
