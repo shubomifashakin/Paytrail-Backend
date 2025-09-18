@@ -9,7 +9,14 @@ import s3Client from "../../lib/s3Client";
 import serverEnv from "../../serverEnv";
 
 export async function uploadReceipt(req: Request, res: Response) {
-  if (!req.files || !Array.isArray(req.files) || req.files.length === 0) {
+  const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
+
+  const imageReceipts = files?.receipt || [];
+  const pdfReceipts = files?.pdf || [];
+
+  const allFiles = [...imageReceipts, ...pdfReceipts];
+
+  if (!allFiles.length) {
     //FIXME: ADD AN ERROR LOGGER
     console.error("no files uploaded");
 
@@ -35,6 +42,11 @@ export async function uploadReceipt(req: Request, res: Response) {
 
   if (data.privacyMode === "true") {
     //FIXME: PROCESS ON THE SERVER
+    //PASS THE PAYMENT METHODS(ID & DESC), CATEGORIES(ID & DESC) & THE IMAGES TO THE MODEL
+    //SPECIFY THE OUTPUT THE AI MODEL SHOULD RETURN
+    //GIVE THE AI RULES FOR EXTRACTION
+    //ENSURE THAT THE OUTPUT MATCHES THE EXPECTED SCHEMA
+    //TELL THE MODEL TO GIVE IT A CONFIDENCE RATING FROM 0-1(0.1, etc)
     ///RETURN THE RESULTS TO THE USER
 
     //clear the buffer
@@ -47,7 +59,7 @@ export async function uploadReceipt(req: Request, res: Response) {
 
   const imageKeys: string[] = [];
 
-  const imagesToUpload = req.files.map((file) => {
+  const imagesToUpload = allFiles.map((file) => {
     const fileExtension = file.originalname.split(".").pop();
 
     const uniqueFilename = `receipts/${batchId}/${Date.now()}-${req.user.id}.${fileExtension}`;

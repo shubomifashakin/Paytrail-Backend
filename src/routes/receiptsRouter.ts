@@ -10,7 +10,7 @@ import { uploadReceipt } from "../controllers/receiptRouter/uploadReceipt";
 const multerConfig = multer({
   storage: multer.memoryStorage(),
 
-  limits: { fileSize: 1024 * 1024 * 5, fields: 2 },
+  limits: { fileSize: 1024 * 1024 * 15, fields: 2 },
 
   fileFilter: (_, file, cb) => {
     if (
@@ -25,7 +25,10 @@ const multerConfig = multer({
   },
 });
 
-const uploadMiddleware = multerConfig.array("receipt", 4);
+const uploadMiddleware = multerConfig.fields([
+  { name: "receipt", maxCount: 4 },
+  { name: "pdf", maxCount: 1 },
+]);
 
 export default function createReceiptRouter({ redisClient }: { redisClient: RedisClientType }) {
   const router = Router();
