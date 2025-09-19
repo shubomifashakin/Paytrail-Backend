@@ -25,10 +25,7 @@ const multerConfig = multer({
   },
 });
 
-const uploadMiddleware = multerConfig.fields([
-  { name: "receipt", maxCount: 4 },
-  { name: "pdf", maxCount: 1 },
-]);
+const uploadMiddleware = multerConfig.array("receipt", 4);
 
 export default function createReceiptRouter({ redisClient }: { redisClient: RedisClientType }) {
   const router = Router();

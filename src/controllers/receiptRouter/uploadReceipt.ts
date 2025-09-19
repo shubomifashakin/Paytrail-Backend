@@ -9,14 +9,7 @@ import s3Client from "../../lib/s3Client";
 import serverEnv from "../../serverEnv";
 
 export async function uploadReceipt(req: Request, res: Response) {
-  const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
-
-  const imageReceipts = files?.receipt || [];
-  const pdfReceipts = files?.pdf || [];
-
-  const allFiles = [...imageReceipts, ...pdfReceipts];
-
-  if (!allFiles.length) {
+  if (!req.files?.length) {
     //FIXME: ADD AN ERROR LOGGER
     console.error("no files uploaded");
 
@@ -59,7 +52,9 @@ export async function uploadReceipt(req: Request, res: Response) {
 
   const imageKeys: string[] = [];
 
-  const imagesToUpload = allFiles.map((file) => {
+  const files = req.files as Express.Multer.File[];
+
+  const imagesToUpload = files.map((file) => {
     const fileExtension = file.originalname.split(".").pop();
 
     const uniqueFilename = `receipts/${batchId}/${Date.now()}-${req.user.id}.${fileExtension}`;
