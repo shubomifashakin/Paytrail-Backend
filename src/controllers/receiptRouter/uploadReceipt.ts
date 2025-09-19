@@ -3,15 +3,22 @@ import { v4 as uuid } from "uuid";
 import z from "zod";
 import { Request, Response } from "express";
 
+import logger from "../../lib/logger";
+import s3Client from "../../lib/s3Client";
+
+import serverEnv from "../../serverEnv";
+
 import { MESSAGES } from "../../utils/constants";
 import { clearBuffer } from "../../utils/fns";
-import s3Client from "../../lib/s3Client";
-import serverEnv from "../../serverEnv";
 
 export async function uploadReceipt(req: Request, res: Response) {
   if (!req.files?.length) {
-    //FIXME: ADD AN ERROR LOGGER
-    console.error("no files uploaded");
+    logger.warn(MESSAGES.BAD_REQUEST, {
+      url: req.url,
+      userId: req.user.id,
+      error: "No files uploaded",
+      requestId: req.headers["request-id"],
+    });
 
     return res.status(400).json({
       message: MESSAGES.BAD_REQUEST,
@@ -25,8 +32,12 @@ export async function uploadReceipt(req: Request, res: Response) {
     .safeParse(req.body);
 
   if (!success) {
-    //FIXME: LOG THE ERROR
-    console.error(error);
+    logger.warn(MESSAGES.BAD_REQUEST, {
+      url: req.url,
+      userId: req.user.id,
+      error: error.issues,
+      requestId: req.headers["request-id"],
+    });
 
     return res.status(400).json({
       message: MESSAGES.BAD_REQUEST,
