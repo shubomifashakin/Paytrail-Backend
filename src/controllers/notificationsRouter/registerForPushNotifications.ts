@@ -24,7 +24,7 @@ export default async function registerForPushNotifications(req: Request, res: Re
   const { success, error, data } = registerForPushNotificationsValidator.safeParse(body);
 
   if (!success) {
-    logger.error(MESSAGES.BAD_REQUEST, {
+    logger.warn(MESSAGES.BAD_REQUEST, {
       url: req.url,
       userId: req.user.id,
       error: error.issues,
