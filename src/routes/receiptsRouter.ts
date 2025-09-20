@@ -10,7 +10,7 @@ import { uploadReceipt } from "../controllers/receiptRouter/uploadReceipt";
 const multerConfig = multer({
   storage: multer.memoryStorage(),
 
-  limits: { fileSize: 1024 * 1024 * 15, fields: 2 },
+  limits: { fileSize: 1024 * 1024 * 15, fields: 5 },
 
   fileFilter: (_, file, cb) => {
     if (
