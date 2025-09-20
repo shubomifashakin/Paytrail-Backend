@@ -236,6 +236,32 @@ describe("authentication tests", () => {
         image: picture,
         createdAt: expect.any(Date),
         updatedAt: expect.any(Date),
+        PaymentMethods: {
+          create: [
+            {
+              id: expect.any(String),
+              name: "Others",
+              color: "#FF0000",
+              emoji: "🔄",
+              description: "All other payment methods",
+              createdAt: expect.any(Date),
+              updatedAt: expect.any(Date),
+            },
+          ],
+        },
+        Categories: {
+          create: [
+            {
+              id: expect.any(String),
+              name: "Others",
+              color: "#FF0000",
+              emoji: "🔄",
+              description: "All other categories",
+              createdAt: expect.any(Date),
+              updatedAt: expect.any(Date),
+            },
+          ],
+        },
       },
     });
 

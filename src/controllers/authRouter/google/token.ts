@@ -76,6 +76,32 @@ export default async function googleToken(req: Request, res: Response) {
         image: claims.picture!,
         createdAt: new Date(),
         updatedAt: new Date(),
+        PaymentMethods: {
+          create: [
+            {
+              id: uuid(),
+              name: "Others",
+              color: "#FF0000",
+              emoji: "🔄",
+              description: "All other payment methods",
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            },
+          ],
+        },
+        Categories: {
+          create: [
+            {
+              id: uuid(),
+              name: "Others",
+              color: "#FF0000",
+              emoji: "🔄",
+              description: "All other categories",
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            },
+          ],
+        },
       },
     });
 
