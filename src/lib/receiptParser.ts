@@ -62,7 +62,7 @@ export class ReceiptParser {
       maxOutputTokens: 2500,
       schema: parsedReceiptSchema,
       system: receiptParsingPrompt,
-      abortSignal: AbortSignal.timeout(10000),
+      abortSignal: AbortSignal.timeout(15000),
       schemaName: parsedReceiptSchema.meta()?.title,
       schemaDescription: parsedReceiptSchema.meta()?.description,
       prompt: [
