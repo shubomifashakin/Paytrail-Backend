@@ -8,7 +8,11 @@ export const parsedReceiptSchema = z
   .array(
     z.object({
       amount: z.string().nonempty(),
-      transactionDate: z.string().nonoptional().describe("Transaction Date in ISO format"),
+      transactionDate: z
+        .string()
+        .refine((date) => !isNaN(Date.parse(date)), { message: "Invalid date" })
+        .nonoptional()
+        .describe("Transaction Date in ISO format"),
       note: z.string().min(10).max(30).optional(),
       logType: z.enum(LogType).nonoptional(),
       currency: z.enum(Currencies).nonoptional(),
