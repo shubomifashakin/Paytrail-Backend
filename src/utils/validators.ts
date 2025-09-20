@@ -67,11 +67,13 @@ export const receiptParseRequestValidator = z
   .object({
     categories: z.string().optional(),
     paymentMethods: z.string().optional(),
-    privacyMode: z.enum(["true", "false"], { error: "Invalid privacy mode" }),
+    privacyMode: z.enum(["true", "false"], { error: "Invalid privacy mode" }).transform((arg) => {
+      return arg === "true";
+    }),
   })
   .refine(
     (arg) => {
-      if (arg.privacyMode === "true") {
+      if (arg.privacyMode) {
         const paymentMethods = arg.paymentMethods;
         const categories = arg.categories;
 
@@ -90,7 +92,7 @@ export const receiptParseRequestValidator = z
     { error: "Invalid paymentMethods or categories" },
   )
   .transform((arg) => {
-    if (arg.privacyMode === "true" && arg.paymentMethods && arg.categories) {
+    if (arg.privacyMode && arg.paymentMethods && arg.categories) {
       return {
         ...arg,
         paymentMethods: expected.parse(JSON.parse(arg.paymentMethods)),
