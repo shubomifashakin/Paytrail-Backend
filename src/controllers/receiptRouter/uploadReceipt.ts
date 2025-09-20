@@ -1,4 +1,5 @@
 import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { google } from "@ai-sdk/google";
 import { v4 as uuid } from "uuid";
 
 import { FilePart, TextPart } from "ai";
@@ -70,7 +71,7 @@ export async function uploadReceipt(req: Request, res: Response) {
       };
     });
 
-    const receiptParser = new ReceiptParser();
+    const receiptParser = new ReceiptParser(google("gemini-2.5-flash-lite"));
     const { object, finishReason, warnings, usage, timeTaken } = await receiptParser.parse({
       categories,
       paymentMethods,
@@ -119,7 +120,7 @@ export async function uploadReceipt(req: Request, res: Response) {
     });
   }
 
-  //non-privacy users
+  //NON-PRIVACY USERS
   const batchId = uuid();
 
   const imageKeys: string[] = [];
@@ -150,10 +151,7 @@ export async function uploadReceipt(req: Request, res: Response) {
   const manifestBody = {
     batchId,
     keys: imageKeys,
-    uploadedAt: new Date().toISOString(),
-    metadata: {
-      userId: req.user.id,
-    },
+    userId: req.user.id,
   };
 
   await s3Client.send(

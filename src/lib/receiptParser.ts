@@ -1,6 +1,5 @@
-import { google } from "@ai-sdk/google";
 import z from "zod";
-import { FilePart, TextPart, generateObject } from "ai";
+import { FilePart, LanguageModel, TextPart, generateObject } from "ai";
 
 import { Currencies, LogType } from "@prisma/client";
 
@@ -35,6 +34,16 @@ Let the transactionDate be in ISO format.`;
 //FIXME: ADD CONSTRAINT TO TAG LOGS WHICH DONT HAVE A SUITABLE CATEGORY OR PAYMENT METHOD AS OTHERS
 
 export class ReceiptParser {
+  model: LanguageModel;
+
+  constructor(model: LanguageModel) {
+    if (!model) {
+      throw new Error("Model is required");
+    }
+
+    this.model = model;
+  }
+
   async parse({
     files,
     categories,
@@ -46,7 +55,7 @@ export class ReceiptParser {
   }) {
     const startTime = Date.now();
     const { object, finishReason, warnings, usage } = await generateObject({
-      model: google("gemini-2.5-flash-lite"),
+      model: this.model,
       topP: 0.2,
       maxRetries: 1,
       output: "object",
