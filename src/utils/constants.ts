@@ -13,6 +13,9 @@ export enum MESSAGES {
   REQUEST_TIMEOUT = "Request Timeout",
   TOO_MANY_REQUESTS = "Too Many Requests",
   SUCCESS = "Success",
+  AI_GENERATION_ENDED = "AI Generation Did Not Complete",
+  AI_GENERATION_WARNINGS = "AI Generation Warnings",
+  AI_GENERATION_USAGE = "AI Generation Usage",
 }
 
 export const API_V1 = "/api/v1";

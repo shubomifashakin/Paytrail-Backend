@@ -56,3 +56,51 @@ export const registerForPushNotificationsValidator = z.object({
   pushToken: z.string({ error: "Invalid Push Token" }),
   platform: z.enum(Platforms, { error: "Invalid Platform" }),
 });
+
+const expected = z.array(
+  z.object({
+    id: z.string(),
+    description: z.string(),
+  }),
+);
+export const receiptParseRequestValidator = z
+  .object({
+    categories: z.string().optional(),
+    paymentMethods: z.string().optional(),
+    privacyMode: z.enum(["true", "false"], { error: "Invalid privacy mode" }),
+  })
+  .refine(
+    (arg) => {
+      if (arg.privacyMode === "true") {
+        const paymentMethods = arg.paymentMethods;
+        const categories = arg.categories;
+
+        if (!paymentMethods || !categories) {
+          return false;
+        }
+
+        return (
+          expected.safeParse(JSON.parse(paymentMethods)).success &&
+          expected.safeParse(JSON.parse(categories)).success
+        );
+      }
+
+      return true;
+    },
+    { error: "Invalid paymentMethods or categories" },
+  )
+  .transform((arg) => {
+    if (arg.privacyMode === "true" && arg.paymentMethods && arg.categories) {
+      return {
+        ...arg,
+        paymentMethods: expected.parse(JSON.parse(arg.paymentMethods)),
+        categories: expected.parse(JSON.parse(arg.categories)),
+      };
+    }
+
+    return {
+      ...arg,
+      paymentMethods: undefined,
+      categories: undefined,
+    };
+  });
