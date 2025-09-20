@@ -15,7 +15,7 @@ import { MESSAGES } from "../../utils/constants";
 import { clearBuffer } from "../../utils/fns";
 import { receiptParseRequestValidator } from "../../utils/validators";
 
-export async function uploadReceipt(req: Request, res: Response) {
+export default async function parseReceipt(req: Request, res: Response) {
   if (!req.files?.length) {
     logger.warn(MESSAGES.BAD_REQUEST, {
       url: req.url,

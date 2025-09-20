@@ -5,7 +5,7 @@ import multer from "multer";
 import createRateLimiter from "../middlewares/rateLimiter";
 import isAuthorized from "../middlewares/isAuthorized";
 
-import { uploadReceipt } from "../controllers/receiptRouter/uploadReceipt";
+import parseReceipt from "../controllers/receiptRouter/parse";
 
 const multerConfig = multer({
   storage: multer.memoryStorage(),
@@ -40,7 +40,7 @@ export default function createReceiptRouter({ redisClient }: { redisClient: Redi
       keyGenerator: (req) => `${req.user.id}:${req.path}`,
     }),
     uploadMiddleware,
-    uploadReceipt,
+    parseReceipt,
   );
 
   return router;
