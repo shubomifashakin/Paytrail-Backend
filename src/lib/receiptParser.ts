@@ -29,7 +29,7 @@ export const parsedReceiptSchema = z
 export const receiptParsingPrompt = `You are a system that parses receipts.
 You extract all the expenses and incomes from a receipt or receipt like files and categorize them based on the payment methods and categories provided.
 You also provide a confidence rating for each expense and income you have extracted from the file.
-If one of the supplied files is not a receipt like file, do not attempt to parse it.
+If one of the supplied files or images does not look like a receipt or is not a receipt like file, ignore it.
 Let the transactionDate be in ISO format.`;
 //FIXME: ADD CONSTRAINT TO TAG LOGS WHICH DONT HAVE A SUITABLE CATEGORY OR PAYMENT METHOD AS OTHERS
 
