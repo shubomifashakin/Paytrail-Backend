@@ -8,12 +8,12 @@ import cors, { CorsOptions } from "cors";
 import dotenv from "dotenv";
 dotenv.config();
 
-import broadcatsRouter from "./routes/broadcasts";
 import createAuthRouter from "./routes/authRouter";
+import createBroadcastsRouter from "./routes/broadcasts";
 import createReceiptRouter from "./routes/receiptsRouter";
+import createStatementRouter from "./routes/statementRouter";
 import healthRouter from "./routes/healthRouter";
 import notificationRouter from "./routes/notifications";
-import statementRouter from "./routes/statementRouter";
 import syncRouter from "./routes/syncRouter";
 
 import serverEnv from "./serverEnv";
@@ -22,7 +22,6 @@ import prisma from "./lib/prisma";
 import redisClient from "./lib/redis";
 import logger, { loggerProvider } from "./lib/logger";
 
-import createRateLimiter from "./middlewares/rateLimiter";
 import errorMiddleware from "./middlewares/errorMiddleware";
 import isAuthorized from "./middlewares/isAuthorized";
 import morganToJson from "./middlewares/morgan";
@@ -74,47 +73,17 @@ export async function startServer() {
     app.use(
       `${API_V1}/auth`,
       createAuthRouter({
-        signInRateLimiter: createRateLimiter({ redisClient, limit: 5, window: 60 }),
+        redisClient,
       }),
     );
 
     app.use(`${API_V1}/sync`, syncRouter);
 
-    app.use(
-      `${API_V1}/statement`,
-      isAuthorized,
-      createRateLimiter({
-        redisClient,
-        limit: 10,
-        window: 10 * 60,
-        keyGenerator: (req) => `${req.user.id}:${req.path}`,
-      }),
-      statementRouter,
-    );
+    app.use(`${API_V1}/statement`, isAuthorized, createStatementRouter({ redisClient }));
 
-    app.use(
-      `${API_V1}/notifications`,
-      isAuthorized,
-      createRateLimiter({
-        redisClient,
-        limit: 10,
-        window: 60,
-        keyGenerator: (req) => `${req.user.id}:${req.path}`,
-      }),
-      notificationRouter,
-    );
+    app.use(`${API_V1}/notifications`, isAuthorized, notificationRouter({ redisClient }));
 
-    app.use(
-      `${API_V1}/broadcasts`,
-      isAuthorized,
-      createRateLimiter({
-        redisClient,
-        limit: 10,
-        window: 60,
-        keyGenerator: (req) => `${req.user.id}:${req.path}`,
-      }),
-      broadcatsRouter,
-    );
+    app.use(`${API_V1}/broadcasts`, isAuthorized, createBroadcastsRouter({ redisClient }));
 
     app.use(errorMiddleware);
 
