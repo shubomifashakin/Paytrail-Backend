@@ -92,13 +92,18 @@ export async function startServer() {
     server.listen(serverEnv.port, () => {
       logger.info(`Server ready on port ${serverEnv.port} (${Date.now() - start} ms)`);
     });
-  } catch (error: any) {
-    logger.error("Failed to start server", {
-      message: error?.message,
-      stack: error?.stack,
-      name: error?.name,
-      duration: `${Date.now() - start}ms`,
-    });
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      logger.error("Failed to start server", {
+        message: error?.message,
+        stack: error?.stack,
+        name: error?.name,
+        duration: `${Date.now() - start}ms`,
+      });
+    }
+    if (!(error instanceof Error)) {
+      logger.error("Failed to start server", error);
+    }
 
     process.exit(1);
   }

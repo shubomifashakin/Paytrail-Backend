@@ -23,6 +23,7 @@ export const pushSchemaValidator = z.object({
             { error: "Data not valid json" },
           )
           .transform((arg) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             return JSON.parse(arg) as any;
           }),
         operation: z.enum(["insert", "update", "delete"]),
@@ -65,44 +66,25 @@ const expected = z.array(
 );
 export const receiptParseRequestValidator = z
   .object({
-    categories: z.string().optional(),
-    paymentMethods: z.string().optional(),
-    privacyMode: z.enum(["true", "false"], { error: "Invalid privacy mode" }).transform((arg) => {
-      return arg === "true";
-    }),
+    categories: z.string(),
+    paymentMethods: z.string(),
   })
   .refine(
     (arg) => {
-      if (arg.privacyMode) {
-        const paymentMethods = arg.paymentMethods;
-        const categories = arg.categories;
+      const paymentMethods = arg.paymentMethods;
+      const categories = arg.categories;
 
-        if (!paymentMethods || !categories) {
-          return false;
-        }
-
-        return (
-          expected.safeParse(JSON.parse(paymentMethods)).success &&
-          expected.safeParse(JSON.parse(categories)).success
-        );
-      }
-
-      return true;
+      return (
+        expected.safeParse(JSON.parse(paymentMethods)).success &&
+        expected.safeParse(JSON.parse(categories)).success
+      );
     },
     { error: "Invalid paymentMethods or categories" },
   )
   .transform((arg) => {
-    if (arg.privacyMode && arg.paymentMethods && arg.categories) {
-      return {
-        ...arg,
-        paymentMethods: expected.parse(JSON.parse(arg.paymentMethods)),
-        categories: expected.parse(JSON.parse(arg.categories)),
-      };
-    }
-
     return {
       ...arg,
-      paymentMethods: undefined,
-      categories: undefined,
+      paymentMethods: expected.parse(JSON.parse(arg.paymentMethods)),
+      categories: expected.parse(JSON.parse(arg.categories)),
     };
   });
