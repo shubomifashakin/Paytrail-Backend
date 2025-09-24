@@ -85,9 +85,9 @@ export async function startServer() {
 
     app.use(`${API_V1}/broadcasts`, isAuthorized, createBroadcastsRouter({ redisClient }));
 
-    app.use(errorMiddleware);
-
     app.use(`${API_V1}/receipts`, createReceiptRouter({ redisClient }));
+
+    app.use(errorMiddleware);
 
     server.listen(serverEnv.port, () => {
       logger.info(`Server ready on port ${serverEnv.port} (${Date.now() - start} ms)`);
