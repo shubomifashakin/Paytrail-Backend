@@ -1,6 +1,6 @@
 import { google } from "@ai-sdk/google";
 
-import { FilePart, TextPart } from "ai";
+import { FilePart, NoObjectGeneratedError, TextPart } from "ai";
 import { Request, Response } from "express";
 
 import { ReceiptParser } from "../../lib/receiptParser";
@@ -66,46 +66,63 @@ export default async function parseReceipt(req: Request, res: Response) {
   });
 
   const receiptParser = new ReceiptParser(google("gemini-2.5-flash-lite"));
-  const { object, finishReason, warnings, usage, timeTaken } = await receiptParser.parse({
-    categories,
-    paymentMethods,
-    files: fileContents,
-  });
+  try {
+    const { object, finishReason, warnings, usage, timeTaken } = await receiptParser.parse({
+      categories,
+      paymentMethods,
+      files: fileContents,
+    });
 
-  logger.info(MESSAGES.AI_GENERATION_USAGE, {
-    usage,
-    timeTaken,
-    url: req.url,
-    userId: req.user.id,
-    requestId: req.headers["request-id"],
-  });
-
-  if (warnings?.length) {
-    logger.warn(MESSAGES.AI_GENERATION_WARNINGS, {
-      warnings,
+    logger.info(MESSAGES.AI_GENERATION_USAGE, {
+      usage,
+      timeTaken,
       url: req.url,
       userId: req.user.id,
       requestId: req.headers["request-id"],
     });
-  }
 
-  if (finishReason !== "stop") {
-    logger.warn(MESSAGES.AI_GENERATION_ENDED, {
-      url: req.url,
+    if (warnings?.length) {
+      logger.warn(MESSAGES.AI_GENERATION_WARNINGS, {
+        warnings,
+        url: req.url,
+        userId: req.user.id,
+        requestId: req.headers["request-id"],
+      });
+    }
+
+    if (finishReason !== "stop") {
+      logger.warn(MESSAGES.AI_GENERATION_ENDED, {
+        url: req.url,
+        userId: req.user.id,
+        reason: finishReason,
+        requestId: req.headers["request-id"],
+      });
+
+      return res.status(500).json({
+        message: MESSAGES.INTERNAL_SERVER_ERROR,
+      });
+    }
+
+    clearBuffer(req);
+
+    return res.status(200).json({
+      data: object,
       userId: req.user.id,
-      reason: finishReason,
-      requestId: req.headers["request-id"],
     });
+  } catch (error) {
+    if (NoObjectGeneratedError.isInstance(error)) {
+      logger.error(MESSAGES.AI_GENERATION_ERROR, {
+        url: req.url,
+        userId: req.user.id,
+        error: error.message,
+        cause: error.cause,
+        variant: "NO_OBJECT_GENERATED",
+        text: error.text,
+        response: error.response,
+        requestId: req.headers["request-id"],
+      });
+    }
 
-    return res.status(500).json({
-      message: MESSAGES.INTERNAL_SERVER_ERROR,
-    });
+    throw error;
   }
-
-  clearBuffer(req);
-
-  return res.status(200).json({
-    logs: object,
-    userId: req.user.id,
-  });
 }

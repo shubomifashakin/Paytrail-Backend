@@ -3,23 +3,32 @@ import { FilePart, LanguageModel, TextPart, generateObject } from "ai";
 
 import { Currencies, LogType } from "@prisma/client";
 
+const receiptOverview = z.object({
+  merchant: z.string().nonoptional(),
+  totalItemsPurchased: z.number().nonoptional(),
+  totalAmountSpent: z.number().nonoptional(),
+  currency: z.enum(Currencies).nonoptional(),
+});
+
+const receiptItem = z.object({
+  amount: z.string().nonempty(),
+  transactionDate: z
+    .string()
+    .refine((date) => !isNaN(Date.parse(date)), { message: "Invalid date" })
+    .nonoptional()
+    .describe("Transaction Date in ISO format"),
+  note: z.string().min(1).max(100).nonoptional(),
+  logType: z.enum(LogType).nonoptional(),
+  currency: z.enum(Currencies).nonoptional(),
+  categoryId: z.string().nonempty(),
+  paymentMethodId: z.string().nonempty(),
+});
+
 export const parsedReceiptSchema = z
-  .array(
-    z.object({
-      amount: z.string().nonempty(),
-      transactionDate: z
-        .string()
-        .refine((date) => !isNaN(Date.parse(date)), { message: "Invalid date" })
-        .nonoptional()
-        .describe("Transaction Date in ISO format"),
-      note: z.string().min(10).max(30).optional(),
-      logType: z.enum(LogType).nonoptional(),
-      currency: z.enum(Currencies).nonoptional(),
-      categoryId: z.string().nonempty(),
-      paymentMethodId: z.string().nonempty(),
-      confidence: z.number(),
-    }),
-  )
+  .object({
+    overview: receiptOverview,
+    items: z.array(receiptItem),
+  })
   .meta({
     title: "parsedReceiptSchema",
     description:
@@ -27,10 +36,21 @@ export const parsedReceiptSchema = z
   });
 
 export const receiptParsingPrompt = `You are a system that parses receipts.
-You extract all the expenses and incomes from a receipt or receipt like files and categorize them based on the payment methods and categories provided.
-You also provide a confidence rating for each expense and income you have extracted from the file.
-If one of the supplied files or images does not look like a receipt or is not a receipt like file, ignore it.
-Let the transactionDate be in ISO format.`;
+You extract all the expenses from receipts/receipt-like files and categorize them based on the payment methods and categories provided.
+Get the name of the merchant/store from the receipt and use it as the merchant field.
+Use the name of each item purchased on the receipt as the respective note of the log.
+
+Overview totalItemsPurchased: Extract the total number of items purchased from the receipt and use it as the totalItemsPurchased field.
+Overview totalAmountSpent: Extract the total amount spent from the receipt and use it as the totalAmountSpent field.
+Let all dates be in ISO format.
+
+IMPORTANT: Let the result be an array of objects!
+
+IMPORTANT: Ignore any files or images that do not look like a receipt or is not a receipt like file.
+
+IMPORTANT: Exclude all tax related items from the result and the overall total.
+`;
+
 //FIXME: ADD CONSTRAINT TO TAG LOGS WHICH DONT HAVE A SUITABLE CATEGORY OR PAYMENT METHOD AS OTHERS
 
 export class ReceiptParser {
@@ -58,7 +78,7 @@ export class ReceiptParser {
       model: this.model,
       topP: 0.2,
       maxRetries: 1,
-      output: "object",
+      output: "array",
       maxOutputTokens: 2500,
       schema: parsedReceiptSchema,
       system: receiptParsingPrompt,
@@ -74,14 +94,6 @@ export class ReceiptParser {
 
     const timeTaken = Date.now() - startTime;
 
-    const avgConfidence = this.#checkConfidence(object);
-    return { object, finishReason, warnings, usage, avgConfidence, timeTaken };
-  }
-
-  #checkConfidence(object: z.infer<typeof parsedReceiptSchema>) {
-    const totalConfidence = object.reduce((acc, item) => acc + item.confidence, 0);
-    const averageConfidence = totalConfidence / object.length;
-
-    return averageConfidence;
+    return { object, finishReason, warnings, usage, timeTaken };
   }
 }
