@@ -20,7 +20,7 @@ export default async function getAllBroadcasts(req: Request, res: Response) {
       Limit: 10,
       TableName: serverEnv.broadcastNotificationsTableARN,
       ExclusiveStartKey: hasKeys ? exclusiveStartKey : undefined,
-      ProjectionExpression: "id, message, createdAt, notificationType, image",
+      ProjectionExpression: "id, title, subtitle, createdAt, notificationType, image",
     }),
   );
 

@@ -24,7 +24,7 @@ export default async function getAllnotifications(req: Request, res: Response) {
       KeyConditionExpression: "userId = :userId",
       TableName: serverEnv.userNotificationsTableARN,
       ExclusiveStartKey: hasKeys ? exclusiveStartKey : undefined,
-      ProjectionExpression: "id, message, createdAt, notificationType, image",
+      ProjectionExpression: "id, title, subtitle, createdAt, notificationType, image",
       ExpressionAttributeValues: {
         ":userId": userId,
       },

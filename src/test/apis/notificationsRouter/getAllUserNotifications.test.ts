@@ -123,7 +123,8 @@ describe("getAllUserNotifications", () => {
         Items: [
           {
             id: "1",
-            message: "test",
+            title: "test",
+            subtitle: "test subtitle",
             createdAt: Date.now(),
             notificationType: "test",
             image: "test-image",
@@ -156,7 +157,7 @@ describe("getAllUserNotifications", () => {
         KeyConditionExpression: "userId = :userId",
         TableName: "fake-notifications-arn",
         ExclusiveStartKey: undefined,
-        ProjectionExpression: "id, message, createdAt, notificationType, image",
+        ProjectionExpression: "id, title, subtitle, createdAt, notificationType, image",
         ExpressionAttributeValues: {
           ":userId": "new-user-id",
         },
@@ -167,10 +168,11 @@ describe("getAllUserNotifications", () => {
         notifications: [
           {
             id: "1",
-            message: "test",
-            image: "test-image",
+            title: "test",
+            subtitle: "test subtitle",
             createdAt: Date.now(),
             notificationType: "test",
+            image: "test-image",
           },
         ],
         next: null,

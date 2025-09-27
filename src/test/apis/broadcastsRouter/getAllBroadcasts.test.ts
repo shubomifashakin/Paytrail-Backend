@@ -151,7 +151,7 @@ describe("getAllBroadcasts", () => {
         Limit: 10,
         TableName: "fake-broadcast-arn",
         ExclusiveStartKey: undefined,
-        ProjectionExpression: "id, message, createdAt, notificationType, image",
+        ProjectionExpression: "id, title, subtitle, createdAt, notificationType, image",
       });
 
       expect(res.status).toBe(200);
