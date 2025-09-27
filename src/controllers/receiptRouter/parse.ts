@@ -7,7 +7,6 @@ import { ReceiptParser } from "../../lib/receiptParser";
 import logger from "../../lib/logger";
 
 import { MESSAGES } from "../../utils/constants";
-import { clearBuffer } from "../../utils/fns";
 import { receiptParseRequestValidator } from "../../utils/validators";
 
 export default async function parseReceipt(req: Request, res: Response) {
@@ -102,8 +101,6 @@ export default async function parseReceipt(req: Request, res: Response) {
         message: MESSAGES.INTERNAL_SERVER_ERROR,
       });
     }
-
-    clearBuffer(req);
 
     return res.status(200).json({
       data: object,
