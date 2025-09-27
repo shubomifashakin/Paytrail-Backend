@@ -1,19 +1,7 @@
+import { NextFunction } from "express";
 import request from "supertest";
 
 import { API_V1 } from "../../../utils/constants";
-
-jest.mock("../../../serverEnv", () => ({
-  port: "6000",
-  allowedOrigins: "*",
-  redis: "redis://localhost:6379",
-  googleClientId: "test-id",
-  googleClientSecret: "test-secret",
-  environment: "paytrail-express-backend-test",
-  isProduction: true,
-  databaseUrl: "postgresql://postgres:postgres_123@localhost:5432/paytrail_postgres",
-  baseUrl: "https://test.com",
-  appScheme: "paytrail://",
-}));
 
 const createOrUpdateBudgets = jest.fn().mockResolvedValue(null);
 const deleteBudgets = jest.fn().mockResolvedValue(null);
@@ -34,6 +22,12 @@ const findUniqueSession = jest.fn().mockResolvedValue({
     id: "new-user-id",
   },
 });
+
+const mockRedis = {
+  get: jest.fn(),
+  set: jest.fn(),
+  del: jest.fn(),
+} as any;
 
 jest.mock("../../../lib/prisma.ts", () => {
   return {
@@ -65,27 +59,25 @@ jest.mock("../../../lib/prisma.ts", () => {
   };
 });
 
-import { server as app, startServer } from "../../../server";
+jest.mock("../../../middlewares/rateLimiter", () => ({
+  __esModule: true,
+  default: jest
+    .fn()
+    .mockImplementation(() => (_req: Request, _res: Response, next: NextFunction) => {
+      next();
+    }),
+}));
 
-import { Server } from "http";
+import createApp from "../../../app";
 
-describe("push route", () => {
-  let server: Server;
-
-  beforeAll(async () => {
-    server = app;
-
-    jest.clearAllMocks();
-    await startServer();
-  });
-
+describe("push", () => {
   afterAll(async () => {
     jest.clearAllMocks();
     jest.resetModules();
   });
 
   test("it should push the data to the database", async function () {
-    const res = await request(server)
+    const res = await request(createApp(mockRedis))
       .post(`${API_V1}/sync/push`)
       .set("Authorization", "Bearer new-session-id")
       .set("Content-Type", "application/json")
@@ -136,7 +128,7 @@ describe("push route", () => {
   });
 
   test("it should reject requests with invalid operations", async function () {
-    const res = await request(server)
+    const res = await request(createApp(mockRedis))
       .post(`${API_V1}/sync/push`)
       .set("Authorization", "Bearer new-session-id")
       .set("Content-Type", "application/json")

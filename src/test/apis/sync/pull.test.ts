@@ -1,19 +1,8 @@
 import request from "supertest";
 
-import { API_V1 } from "../../../utils/constants";
+import { NextFunction } from "express";
 
-jest.mock("../../../serverEnv", () => ({
-  port: "7000",
-  allowedOrigins: "*",
-  redis: "redis://localhost:6379",
-  googleClientId: "test-id",
-  googleClientSecret: "test-secret",
-  environment: "paytrail-express-backend-test",
-  isProduction: true,
-  databaseUrl: "postgresql://postgres:postgres_123@localhost:5432/paytrail_postgres",
-  baseUrl: "https://test.com",
-  appScheme: "paytrail://",
-}));
+import { API_V1 } from "../../../utils/constants";
 
 const findManyLogs = jest.fn().mockResolvedValue([]);
 
@@ -57,27 +46,31 @@ jest.mock("../../../lib/prisma.ts", () => {
   };
 });
 
-import { server as app, startServer } from "../../../server";
+const mockRedis = {
+  get: jest.fn(),
+  set: jest.fn(),
+  del: jest.fn(),
+} as any;
 
-import { Server } from "http";
+jest.mock("../../../middlewares/rateLimiter", () => ({
+  __esModule: true,
+  default: jest
+    .fn()
+    .mockImplementation(() => (_req: Request, _res: Response, next: NextFunction) => {
+      next();
+    }),
+}));
+
+import createApp from "../../../app";
 
 describe("pull test", () => {
-  let server: Server;
-
-  beforeAll(async () => {
-    server = app;
-
-    jest.clearAllMocks();
-    await startServer();
-  });
-
   afterAll(async () => {
     jest.clearAllMocks();
     jest.resetModules();
   });
 
   test("it should pull from the database", async function () {
-    const res = await request(server)
+    const res = await request(createApp(mockRedis))
       .get(`${API_V1}/sync/pull`)
       .set("Authorization", "Bearer new-session-id");
 

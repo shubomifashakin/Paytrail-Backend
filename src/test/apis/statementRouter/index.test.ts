@@ -1,9 +1,10 @@
 import request from "supertest";
 
+import { RedisClientType } from "redis";
+
 import { API_V1, MESSAGES } from "../../../utils/constants";
 
 import { NextFunction } from "express";
-import { Server } from "http";
 
 const sqsSend = jest.fn().mockImplementation((command) => {
   return command;
@@ -26,19 +27,11 @@ jest.mock("../../../middlewares/rateLimiter", () => ({
     .mockImplementation(() => (_req: Request, _res: Response, next: NextFunction) => next()),
 }));
 
-jest.mock("../../../serverEnv", () => ({
-  port: "9000",
-  allowedOrigins: "*",
-  googleClientId: "test-id",
-  redis: "redis://localhost:6379",
-  googleClientSecret: "test-secret",
-  environment: "paytrail-express-backend-test",
-  isProduction: true,
-  databaseUrl: "postgresql://postgres:postgres_123@localhost:5432/paytrail_postgres",
-  baseUrl: "https://test.com",
-  appScheme: "paytrail://",
-  paytrailStatementSqsQueueUrl: "fake-statement-queue-url",
-}));
+const mockRedis = {
+  get: jest.fn(),
+  set: jest.fn(),
+  del: jest.fn(),
+} as unknown as RedisClientType;
 
 const findUniqueSession = jest.fn().mockResolvedValue({
   user: {
@@ -54,18 +47,10 @@ jest.mock("../../../lib/prisma.ts", () => {
   };
 });
 
-import { server as app, startServer } from "../../../server";
+import createApp from "../../../app";
+import serverEnv from "../../../serverEnv";
 
 describe("the statement router test", () => {
-  let server: Server;
-
-  beforeAll(async () => {
-    server = app;
-
-    jest.clearAllMocks();
-    await startServer();
-  });
-
   beforeEach(async () => {
     jest.clearAllMocks();
   });
@@ -84,7 +69,7 @@ describe("the statement router test", () => {
       startDate: { year: 2002, month: "January" },
     };
 
-    const res = await request(server)
+    const res = await request(createApp(mockRedis))
       .post(`${API_V1}/statement`)
       .set("Authorization", "Bearer fake-session-id")
       .set("Content-Type", "application/json")
@@ -105,14 +90,14 @@ describe("the statement router test", () => {
     expect(mockSendMessageCommand).toHaveBeenCalledTimes(1);
     expect(mockSendMessageCommand).toHaveBeenCalledWith({
       MessageBody: expect.stringContaining('"year":2002'),
-      QueueUrl: "fake-statement-queue-url",
+      QueueUrl: serverEnv.paytrailStatementSqsQueueUrl,
     });
 
     expect(res.body).toEqual({ message: "success" });
   });
 
   test("it should fail due to invalid post body", async () => {
-    const res = await request(server)
+    const res = await request(createApp(mockRedis))
       .post(`${API_V1}/statement`)
       .set("Authorization", "Bearer fake-session-id")
       .set("Content-Type", "application/json")
@@ -143,7 +128,7 @@ describe("the statement router test", () => {
   });
 
   test("it should fail because the user is unauthorized", async () => {
-    const res = await request(server)
+    const res = await request(createApp(mockRedis))
       .post(`${API_V1}/statement`)
       .set("Authorization", "Bearer")
       .set("Content-Type", "application/json")

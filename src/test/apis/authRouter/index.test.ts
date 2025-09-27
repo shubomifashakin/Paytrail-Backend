@@ -27,19 +27,6 @@ jest.mock("../../../middlewares/rateLimiter", () => ({
     .mockImplementation(() => (_req: Request, _res: Response, next: NextFunction) => next()),
 }));
 
-jest.mock("../../../serverEnv", () => ({
-  port: "4000",
-  allowedOrigins: "*",
-  redis: "redis://localhost:6379",
-  googleClientId: "test-id",
-  googleClientSecret: "test-secret",
-  environment: "paytrail-express-backend-test",
-  isProduction: true,
-  databaseUrl: "postgresql://postgres:postgres_123@localhost:5432/paytrail_postgres",
-  baseUrl: "https://test.com",
-  appScheme: "paytrail://",
-}));
-
 const sub = "test-sub";
 const name = "Test User";
 const email = "test@example.com";
@@ -107,18 +94,16 @@ jest.mock("../../../lib/prisma", () => {
   };
 });
 
-import { Server } from "http";
-import { server as app, startServer } from "../../../server";
+const mockRedis = {
+  get: jest.fn(),
+  set: jest.fn(),
+  del: jest.fn(),
+} as any;
+
+import createApp from "../../../app";
+import serverEnv from "../../../serverEnv";
 
 describe("authentication tests", () => {
-  let server: Server;
-
-  beforeAll(async () => {
-    server = app;
-
-    await startServer();
-  });
-
   beforeEach(async () => {
     jest.clearAllMocks();
 
@@ -128,7 +113,7 @@ describe("authentication tests", () => {
   test("google sign in authorize request should be successfully redirected", async () => {
     const state = "fake-state";
 
-    const res = await request(server)
+    const res = await request(createApp(mockRedis))
       .get(`${API_V1}/auth/google`)
       .query({ redirect_uri: "paytrail://", state });
 
@@ -138,7 +123,7 @@ describe("authentication tests", () => {
   test("google sign in authorize request should return status 400, since redirectUri was not sent", async () => {
     const state = "fake-state";
 
-    const res = await request(server).get(`${API_V1}/auth/google`).query({ state });
+    const res = await request(createApp(mockRedis)).get(`${API_V1}/auth/google`).query({ state });
 
     expect(res.status).toBe(400);
     expect(res.body).toEqual({
@@ -149,7 +134,7 @@ describe("authentication tests", () => {
   test("google sign in authorize request should return status 400, since redirectUri was not the baseUrl or expected scheme", async () => {
     const state = "fake-state";
 
-    const res = await request(server)
+    const res = await request(createApp(mockRedis))
       .get(`${API_V1}/auth/google`)
       .query({ state, redirect_uri: "https://fake.com" });
 
@@ -160,16 +145,16 @@ describe("authentication tests", () => {
   });
 
   test("google sign in callback should successfully redirect", async () => {
-    const res = await request(server)
+    const res = await request(createApp(mockRedis))
       .get(`${API_V1}/auth/google/callback`)
       .query({ code: "test-code", state: "mobile|testuuid" });
 
     expect(res.status).toBe(302);
-    expect(res.headers.location).toContain("paytrail://");
+    expect(res.headers.location).toContain(serverEnv.appScheme);
   });
 
   test("google sign in callback should return status 400 since no code was sent", async () => {
-    const res = await request(server)
+    const res = await request(createApp(mockRedis))
       .get(`${API_V1}/auth/google/callback`)
       .query({ state: "mobile|testuuid" });
 
@@ -180,7 +165,7 @@ describe("authentication tests", () => {
   });
 
   test("google sign in callback should return status 400 since no state was sent", async () => {
-    const res = await request(server)
+    const res = await request(createApp(mockRedis))
       .get(`${API_V1}/auth/google/callback`)
       .query({ code: "test-code" });
 
@@ -199,7 +184,7 @@ describe("authentication tests", () => {
       json: () => Promise.resolve({ id_token: "test-id-token" }),
     } as unknown as Response);
 
-    const res = await request(server)
+    const res = await request(createApp(mockRedis))
       .post(`${API_V1}/auth/google/token`)
       .set("user-agent", "test-agent")
       .send({ code: "test-code" });
@@ -214,8 +199,8 @@ describe("authentication tests", () => {
         code: "test-code",
         grant_type: "authorization_code",
         redirect_uri: GOOGLE_REDIRECT_URL,
-        client_id: "test-id",
-        client_secret: "test-secret",
+        client_id: serverEnv.googleClientId!,
+        client_secret: serverEnv.googleClientSecret!,
       }),
     });
 
@@ -311,7 +296,7 @@ describe("authentication tests", () => {
       json: () => Promise.resolve({ id_token: "test-id-token" }),
     } as unknown as Response);
 
-    const res = await request(server)
+    const res = await request(createApp(mockRedis))
       .post(`${API_V1}/auth/google/token`)
       .set("user-agent", "test-agent")
       .send({ code: "test-code" });
@@ -326,8 +311,8 @@ describe("authentication tests", () => {
         code: "test-code",
         grant_type: "authorization_code",
         redirect_uri: GOOGLE_REDIRECT_URL,
-        client_id: "test-id",
-        client_secret: "test-secret",
+        client_id: serverEnv.googleClientId!,
+        client_secret: serverEnv.googleClientSecret!,
       }),
     });
 
@@ -383,7 +368,7 @@ describe("authentication tests", () => {
       json: () => Promise.resolve({ id_token: "test-id-token" }),
     } as unknown as Response);
 
-    const res = await request(server)
+    const res = await request(createApp(mockRedis))
       .post(`${API_V1}/auth/google/token`)
       .set("user-agent", "test-agent")
       .send({ code: null });
@@ -401,7 +386,7 @@ describe("authentication tests", () => {
       json: () => Promise.resolve({ id_token: null }),
     } as unknown as Response);
 
-    const res = await request(server)
+    const res = await request(createApp(mockRedis))
       .post(`${API_V1}/auth/google/token`)
       .set("user-agent", "test-agent")
       .send({ code: "test-code" });
@@ -411,7 +396,7 @@ describe("authentication tests", () => {
   });
 
   test("should sign out successfully", async () => {
-    const res = await request(server)
+    const res = await request(createApp(mockRedis))
       .post(`${API_V1}/auth/sign-out`)
       .set("user-agent", "test-agent")
       .set("authorization", `Bearer ${fakeUUid}`);

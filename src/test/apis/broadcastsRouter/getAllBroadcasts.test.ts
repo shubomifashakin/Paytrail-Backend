@@ -1,23 +1,5 @@
 import { NextFunction } from "express";
-import { Server } from "http";
 import request from "supertest";
-
-jest.mock("../../../serverEnv", () => ({
-  port: "3132",
-  allowedOrigins: "*",
-  googleClientId: "test-id",
-  redis: "redis://localhost:6379",
-  googleClientSecret: "test-secret",
-  environment: "paytrail-express-backend-test",
-  isProduction: true,
-  databaseUrl: "postgresql://postgres:postgres_123@localhost:5432/paytrail_postgres",
-  baseUrl: "https://test.com",
-  appScheme: "paytrail://",
-  broadcastTopicArn: "test-topic-arn",
-  androidPlatformApplicationArn: "test-android-arn",
-  iosPlatformApplicationArn: "test-ios-arn",
-  broadcastNotificationsTableARN: "test-broadcast-notifications-table",
-}));
 
 const mockSendCommand = jest.fn().mockImplementation((command) => command);
 const mockScanCommand = jest.fn().mockResolvedValue({
@@ -52,6 +34,12 @@ jest.mock("../../../lib/prisma", () => {
   };
 });
 
+const mockRedis = {
+  get: jest.fn(),
+  set: jest.fn(),
+  del: jest.fn(),
+} as any;
+
 jest.mock("../../../middlewares/rateLimiter", () => ({
   __esModule: true,
   default: jest
@@ -60,25 +48,18 @@ jest.mock("../../../middlewares/rateLimiter", () => ({
       next();
     }),
 }));
+import createApp from "../../../app";
 
 import { API_V1 } from "../../../utils/constants";
-import { server as app, startServer } from "../../../server";
 
-describe("getAllUserNotifications", () => {
-  let server: Server;
-
-  beforeAll(async () => {
-    server = app;
-    await startServer();
-  });
-
+describe("getAllBroadcasts", () => {
   beforeEach(async () => {
     jest.clearAllMocks();
   });
 
   describe("when notifications do not exist", () => {
     test("it should return an empty array", async () => {
-      const res = await request(server)
+      const res = await request(createApp(mockRedis))
         .get(`${API_V1}/broadcasts`)
         .set("Authorization", "Bearer fake-session-id");
 
@@ -104,7 +85,7 @@ describe("getAllUserNotifications", () => {
     });
 
     test("it should return an empty array -- queryparams sent", async () => {
-      const res = await request(server)
+      const res = await request(createApp(mockRedis))
         .get(`${API_V1}/broadcasts`)
         .set("Authorization", "Bearer fake-session-id")
         .query({
@@ -150,7 +131,7 @@ describe("getAllUserNotifications", () => {
     });
 
     test("it should return an array with 1 item", async () => {
-      const res = await request(server)
+      const res = await request(createApp(mockRedis))
         .get(`${API_V1}/broadcasts`)
         .set("Authorization", "Bearer fake-session-id");
 
@@ -168,7 +149,7 @@ describe("getAllUserNotifications", () => {
       expect(mockScanCommand).toHaveBeenCalledTimes(1);
       expect(mockScanCommand).toHaveBeenCalledWith({
         Limit: 10,
-        TableName: "test-broadcast-notifications-table",
+        TableName: "fake-broadcast-arn",
         ExclusiveStartKey: undefined,
         ProjectionExpression: "id, message, createdAt, notificationType, image",
       });

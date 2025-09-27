@@ -50,6 +50,8 @@ const config: Config = {
 
   roots: ["<rootDir>/src/test"],
 
+  setupFiles: ["<rootDir>/jest.setup.ts"],
+
   slowTestThreshold: 5,
 
   testEnvironment: "node",

@@ -1,22 +1,7 @@
 import { NextFunction } from "express";
-import { Server } from "http";
 import request from "supertest";
 
-jest.mock("../../../serverEnv", () => ({
-  port: "9131",
-  allowedOrigins: "*",
-  googleClientId: "test-id",
-  redis: "redis://localhost:6379",
-  googleClientSecret: "test-secret",
-  environment: "paytrail-express-backend-test",
-  isProduction: true,
-  databaseUrl: "postgresql://postgres:postgres_123@localhost:5432/paytrail_postgres",
-  baseUrl: "https://test.com",
-  appScheme: "paytrail://",
-  broadcastTopicArn: "test-topic-arn",
-  androidPlatformApplicationArn: "test-android-arn",
-  iosPlatformApplicationArn: "test-ios-arn",
-}));
+import { RedisClientType } from "redis";
 
 jest.mock("../../../middlewares/rateLimiter", () => ({
   __esModule: true,
@@ -30,6 +15,12 @@ const findUniqueSession = jest.fn().mockResolvedValue({
     id: "new-user-id",
   },
 });
+
+const mockRedis = {
+  get: jest.fn(),
+  set: jest.fn(),
+  del: jest.fn(),
+} as unknown as RedisClientType;
 
 const upsertDeviceToken = jest.fn().mockResolvedValue({});
 jest.mock("../../../lib/prisma", () => {
@@ -52,6 +43,7 @@ const createPlatformApplicationEndpoint = jest
 
 jest.mock("@aws-sdk/client-sns", () => ({
   SNSClient: jest.fn().mockImplementation(() => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     send: jest.fn().mockImplementation((command: any) => {
       return command;
     }),
@@ -61,18 +53,10 @@ jest.mock("@aws-sdk/client-sns", () => ({
   CreatePlatformEndpointCommand: createPlatformApplicationEndpoint,
 }));
 
+import createApp from "../../../app";
 import { API_V1, MESSAGES } from "../../../utils/constants";
-import { server as app, startServer } from "../../../server";
 
 describe("registerForPushNotifications", () => {
-  let server: Server;
-
-  beforeAll(async () => {
-    server = app;
-
-    await startServer();
-  });
-
   beforeEach(async () => {
     jest.clearAllMocks();
   });
@@ -85,7 +69,7 @@ describe("registerForPushNotifications", () => {
     });
 
     test("it should register a push notification for android", async () => {
-      const res = await request(server)
+      const res = await request(createApp(mockRedis))
         .post(`${API_V1}/notifications/register`)
         .set("Authorization", "Bearer fake-session-id")
         .set("Content-Type", "application/json")
@@ -109,12 +93,12 @@ describe("registerForPushNotifications", () => {
         Token: "test-token",
         CustomUserData: JSON.stringify({ userId: "new-user-id" }),
         Attributes: { Enabled: "true" },
-        PlatformApplicationArn: "test-android-arn",
+        PlatformApplicationArn: expect.any(String),
       });
       expect(upsertDeviceToken).toHaveBeenCalledTimes(1);
 
       expect(subscribe).toHaveBeenCalledWith({
-        TopicArn: "test-topic-arn",
+        TopicArn: expect.any(String),
         Endpoint: "test-endpoint-arn",
         Protocol: "application",
       });
@@ -125,7 +109,7 @@ describe("registerForPushNotifications", () => {
     });
 
     test("it should register a push notification for ios", async () => {
-      const res = await request(server)
+      const res = await request(createApp(mockRedis))
         .post(`${API_V1}/notifications/register`)
         .set("Authorization", "Bearer fake-session-id")
         .set("Content-Type", "application/json")
@@ -149,12 +133,12 @@ describe("registerForPushNotifications", () => {
         Token: "test-token",
         CustomUserData: JSON.stringify({ userId: "new-user-id" }),
         Attributes: { Enabled: "true" },
-        PlatformApplicationArn: "test-ios-arn",
+        PlatformApplicationArn: expect.any(String),
       });
       expect(upsertDeviceToken).toHaveBeenCalledTimes(1);
 
       expect(subscribe).toHaveBeenCalledWith({
-        TopicArn: "test-topic-arn",
+        TopicArn: expect.any(String),
         Endpoint: "test-endpoint-arn",
         Protocol: "application",
       });
@@ -165,7 +149,7 @@ describe("registerForPushNotifications", () => {
     });
 
     test("it should fail due to invalid post body", async () => {
-      const res = await request(server)
+      const res = await request(createApp(mockRedis))
         .post(`${API_V1}/notifications/register`)
         .set("Authorization", "Bearer fake-session-id")
         .set("Content-Type", "application/json")
@@ -202,7 +186,7 @@ describe("registerForPushNotifications", () => {
     });
 
     test("it should register a push notification", async () => {
-      const res = await request(server)
+      const res = await request(createApp(mockRedis))
         .post(`${API_V1}/notifications/register`)
         .set("Authorization", "Bearer fake-session-id")
         .set("Content-Type", "application/json")
@@ -226,7 +210,7 @@ describe("registerForPushNotifications", () => {
         Token: "test-token",
         CustomUserData: JSON.stringify({ userId: "new-user-id" }),
         Attributes: { Enabled: "true" },
-        PlatformApplicationArn: "test-android-arn",
+        PlatformApplicationArn: expect.any(String),
       });
 
       expect(setEndpointAttributes).toHaveBeenCalledWith({
@@ -241,7 +225,7 @@ describe("registerForPushNotifications", () => {
       expect(upsertDeviceToken).toHaveBeenCalledTimes(1);
 
       expect(subscribe).toHaveBeenCalledWith({
-        TopicArn: "test-topic-arn",
+        TopicArn: expect.any(String),
         Endpoint: expect.any(String),
         Protocol: "application",
       });

@@ -1,23 +1,7 @@
 import { NextFunction } from "express";
-import { Server } from "http";
 import request from "supertest";
 
-jest.mock("../../../serverEnv", () => ({
-  port: "9132",
-  allowedOrigins: "*",
-  googleClientId: "test-id",
-  redis: "redis://localhost:6379",
-  googleClientSecret: "test-secret",
-  environment: "paytrail-express-backend-test",
-  isProduction: true,
-  databaseUrl: "postgresql://postgres:postgres_123@localhost:5432/paytrail_postgres",
-  baseUrl: "https://test.com",
-  appScheme: "paytrail://",
-  broadcastTopicArn: "test-topic-arn",
-  androidPlatformApplicationArn: "test-android-arn",
-  iosPlatformApplicationArn: "test-ios-arn",
-  userNotificationsTableARN: "test-user-notifications-table",
-}));
+import { RedisClientType } from "redis";
 
 const mockSendCommand = jest.fn().mockImplementation((command) => command);
 const mockQueryCommand = jest.fn().mockResolvedValue({
@@ -57,29 +41,28 @@ jest.mock("../../../middlewares/rateLimiter", () => ({
   default: jest
     .fn()
     .mockImplementation(() => (_req: Request, _res: Response, next: NextFunction) => {
-      console.log("rate limiter");
       next();
     }),
 }));
 
+const mockRedis = {
+  get: jest.fn(),
+  set: jest.fn(),
+  del: jest.fn(),
+} as unknown as RedisClientType;
+
+import createApp from "../../../app";
+
 import { API_V1 } from "../../../utils/constants";
-import { server as app, startServer } from "../../../server";
 
 describe("getAllUserNotifications", () => {
-  let server: Server;
-
-  beforeAll(async () => {
-    server = app;
-    await startServer();
-  });
-
   beforeEach(async () => {
     jest.clearAllMocks();
   });
 
   describe("when notifications do not exist", () => {
     test("it should return an empty array", async () => {
-      const res = await request(server)
+      const res = await request(createApp(mockRedis))
         .get(`${API_V1}/notifications`)
         .set("Authorization", "Bearer fake-session-id");
 
@@ -105,7 +88,7 @@ describe("getAllUserNotifications", () => {
     });
 
     test("it should return an empty array -- queryparams sent", async () => {
-      const res = await request(server)
+      const res = await request(createApp(mockRedis))
         .get(`${API_V1}/notifications`)
         .set("Authorization", "Bearer fake-session-id")
         .query({
@@ -151,7 +134,7 @@ describe("getAllUserNotifications", () => {
     });
 
     test("it should return an array with 1 item", async () => {
-      const res = await request(server)
+      const res = await request(createApp(mockRedis))
         .get(`${API_V1}/notifications`)
         .set("Authorization", "Bearer fake-session-id");
 
@@ -171,7 +154,7 @@ describe("getAllUserNotifications", () => {
         Limit: 10,
         ScanIndexForward: false,
         KeyConditionExpression: "userId = :userId",
-        TableName: "test-user-notifications-table",
+        TableName: "fake-notifications-arn",
         ExclusiveStartKey: undefined,
         ProjectionExpression: "id, message, createdAt, notificationType, image",
         ExpressionAttributeValues: {

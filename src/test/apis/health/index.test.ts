@@ -1,27 +1,28 @@
 import request from "supertest";
 
-jest.mock("../../../serverEnv", () => ({
-  port: "5000",
-  allowedOrigins: "*",
-  redis: "redis://localhost:6379",
-  googleClientId: "test-id",
-  googleClientSecret: "test-secret",
-  environment: "paytrail-express-backend-test",
-  isProduction: true,
-  databaseUrl: "postgresql://postgres:postgres_123@localhost:5432/paytrail_postgres",
-  baseUrl: "https://test.com",
-  appScheme: "paytrail://",
+import { NextFunction } from "express";
+
+jest.mock("../../../middlewares/rateLimiter", () => ({
+  __esModule: true,
+  default: jest
+    .fn()
+    .mockImplementation(() => (_req: Request, _res: Response, next: NextFunction) => {
+      next();
+    }),
 }));
 
-import { server, startServer } from "../../../server";
+const mockRedis = {
+  get: jest.fn(),
+  set: jest.fn(),
+  del: jest.fn(),
+} as any;
+
+import createApp from "../../../app";
 
 describe("test for the health api", () => {
-  beforeAll(async () => {
-    await startServer();
-  });
-
   test("it should return a 200 status code", async () => {
-    const res = await request(server).get("/health").expect("Content-Type", /json/);
+    const app = createApp(mockRedis);
+    const res = await request(app).get("/health").expect("Content-Type", /json/);
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({

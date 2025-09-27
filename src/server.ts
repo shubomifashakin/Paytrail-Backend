@@ -1,133 +1,44 @@
-import cookieParser from "cookie-parser";
-import express from "express";
-import helmet from "helmet";
+import { Application } from "express";
 import http from "http";
-import morgan from "morgan";
-import cors, { CorsOptions } from "cors";
 
 import dotenv from "dotenv";
-dotenv.config();
-
-import createAuthRouter from "./routes/authRouter";
-import createBroadcastsRouter from "./routes/broadcasts";
-import createReceiptRouter from "./routes/receiptsRouter";
-import createStatementRouter from "./routes/statementRouter";
-import healthRouter from "./routes/healthRouter";
-import notificationRouter from "./routes/notifications";
-import syncRouter from "./routes/syncRouter";
+dotenv.config({ path: "./.env" });
 
 import serverEnv from "./serverEnv";
+
+import createApp from "./app";
 
 import prisma from "./lib/prisma";
 import redisClient from "./lib/redis";
 import logger, { loggerProvider } from "./lib/logger";
 
-import errorMiddleware from "./middlewares/errorMiddleware";
-import isAuthorized from "./middlewares/isAuthorized";
-import morganToJson from "./middlewares/morgan";
-import tagRequest from "./middlewares/tagRequest";
-
+import { FORCE_EXIT_TIMEOUT } from "./utils/constants";
 import { sleep } from "./utils/fns";
-import { API_V1, FORCE_EXIT_TIMEOUT } from "./utils/constants";
 
-const app = express();
+class Server {
+  private server;
 
-const allowedOrigins =
-  serverEnv.allowedOrigins === "*" ? serverEnv.allowedOrigins : serverEnv.allowedOrigins.split(",");
+  constructor(app: Application) {
+    this.server = http.createServer(app);
+  }
 
-const corsOptions: CorsOptions = {
-  origin: allowedOrigins,
-  credentials: serverEnv.isProduction,
-};
-
-app.set("trust proxy", true);
-
-app.use(helmet());
-
-app.use(tagRequest);
-
-morgan.token("requestId", (req) => {
-  return (req.headers["x-request-id"] as string) || "-";
-});
-
-app.use(morganToJson());
-
-app.use(cors(corsOptions));
-
-app.use(cookieParser());
-app.use(express.urlencoded({ extended: true }));
-
-app.use(express.json());
-
-export const server = http.createServer(app);
-
-export async function startServer() {
-  const start = Date.now();
-  try {
-    logger.info("starting server");
-
-    await redisClient.connect();
-
-    app.use(`/health`, healthRouter);
-
-    app.use(
-      `${API_V1}/auth`,
-      createAuthRouter({
-        redisClient,
-      }),
-    );
-
-    app.use(`${API_V1}/sync`, syncRouter);
-
-    app.use(`${API_V1}/statement`, isAuthorized, createStatementRouter({ redisClient }));
-
-    app.use(`${API_V1}/notifications`, isAuthorized, notificationRouter({ redisClient }));
-
-    app.use(`${API_V1}/broadcasts`, isAuthorized, createBroadcastsRouter({ redisClient }));
-
-    app.use(`${API_V1}/receipts`, createReceiptRouter({ redisClient }));
-
-    app.use(errorMiddleware);
-
-    server.listen(serverEnv.port, () => {
+  start() {
+    const start = Date.now();
+    this.server.listen(serverEnv.port, () => {
       logger.info(`Server ready on port ${serverEnv.port} (${Date.now() - start} ms)`);
     });
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      logger.error("Failed to start server", {
-        message: error?.message,
-        stack: error?.stack,
-        name: error?.name,
-        duration: `${Date.now() - start}ms`,
-      });
-    }
-    if (!(error instanceof Error)) {
-      logger.error("Failed to start server", error);
-    }
-
-    process.exit(1);
   }
-}
 
-if (require.main === module) {
-  startServer();
-}
+  async stop() {
+    const timeOutId = setTimeout(() => {
+      logger.warn("Forcefully exiting due to timeout");
+      process.exit(1);
+    }, FORCE_EXIT_TIMEOUT);
 
-async function handleShutdown(signal: string) {
-  logger.info(`Received Signal: ${signal} — shutting down`, {
-    signal,
-  });
-
-  const timeOutId = setTimeout(() => {
-    logger.warn("Forcefully exiting due to timeout");
-    process.exit(1);
-  }, FORCE_EXIT_TIMEOUT);
-
-  try {
-    server.closeIdleConnections();
+    this.server.closeIdleConnections();
 
     await new Promise((res, rej) => {
-      server.close((error) => {
+      this.server.close((error) => {
         if (error) {
           return rej(error);
         }
@@ -154,19 +65,22 @@ async function handleShutdown(signal: string) {
     clearTimeout(timeOutId);
 
     process.exit(0);
-  } catch (error: any) {
-    clearTimeout(timeOutId);
-
-    logger.error("Shutdown error", {
-      message: error?.message,
-      stack: error?.stack,
-      name: error?.name,
-    });
-
-    process.exit(1);
   }
 }
 
-process.on("SIGINT", () => handleShutdown("SIGINT"));
+redisClient
+  .connect()
+  .then((redis) => {
+    logger.info("Connected to Redis");
+    const app = createApp(redis);
+    const server = new Server(app);
 
-process.on("SIGTERM", () => handleShutdown("SIGTERM"));
+    server.start();
+
+    process.on("SIGINT", () => server.stop());
+    process.on("SIGTERM", () => server.stop());
+  })
+  .catch((error) => {
+    logger.error("Failed to connect to Redis:", error);
+    process.exit(1);
+  });
