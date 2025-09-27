@@ -4,6 +4,8 @@ import { Router } from "express";
 import createRateLimiter from "../middlewares/rateLimiter";
 import requestStatement from "../controllers/statementRouter/requestStatement";
 
+import asyncHandler from "../utils/asyncHandler";
+
 export default function createStatementRouter({ redisClient }: { redisClient: RedisClientType }) {
   const router = Router();
 
@@ -15,7 +17,7 @@ export default function createStatementRouter({ redisClient }: { redisClient: Re
       window: 10 * 60,
       keyGenerator: (req) => `${req.user.id}:${req.path}`,
     }),
-    requestStatement,
+    asyncHandler(requestStatement),
   );
 
   return router;
