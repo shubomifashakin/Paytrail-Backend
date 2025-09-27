@@ -266,10 +266,10 @@ model Budgets {
 
 model Categories {
   id          String   @id
-  name        String
+  name        String @db.VarChar(30)
   color       String
   emoji       String
-  description String
+  description String @db.VarChar(50)
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt   DateTime
@@ -284,10 +284,10 @@ model Categories {
 
 model PaymentMethods {
   id          String   @id
-  name        String
+  name        String @db.VarChar(30)
   color       String
   emoji       String
-  description String
+  description String @db.VarChar(50)
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt   DateTime
@@ -305,7 +305,7 @@ model Logs {
   amount Decimal @db.Decimal(12, 2)
 
   transactionDate DateTime
-  note            String
+  note            String? @db.VarChar(50)
   logType         LogType
   currency        Currencies
   categoryId      String
@@ -322,6 +322,7 @@ model Logs {
 
   createdAt DateTime
   updatedAt DateTime
+
 
   //TODO: ADD INDEXES
   @@map("logs")

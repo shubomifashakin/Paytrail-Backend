@@ -192,7 +192,7 @@ type StatementData = {
     string,
     {
       logs: {
-        note: string;
+        note: string | null;
         amount: Logs["amount"];
         category: {
           name: string;
