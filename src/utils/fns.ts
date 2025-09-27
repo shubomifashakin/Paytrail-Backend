@@ -1,7 +1,13 @@
 import { ErrorResponse } from "resend";
 import { Request } from "express";
 
+import puppeteer, { PDFOptions } from "puppeteer";
+
+import { Currencies, LogType, Logs, Months } from "@prisma/client";
+
 import logger from "../lib/logger";
+
+import { MESSAGES } from "./constants";
 
 /**
  * Sleeps for a specified number of seconds.
@@ -153,7 +159,7 @@ export function logEmailError(
   error: ErrorResponse,
   req: Request | undefined,
 ) {
-  logger.error(`Failed to send ${type} email`, {
+  logger.error(MESSAGES.EMAIL_ERROR, {
     type,
     url: req?.url,
     method: req?.method,
@@ -164,12 +170,542 @@ export function logEmailError(
   });
 }
 
-export function clearBuffer(req: Request) {
-  if (Array.isArray(req.files)) {
-    req.files.forEach((file) => {
-      if (file.buffer) {
-        file.buffer = Buffer.alloc(0);
-      }
-    });
-  }
+export function getMonthIndex(month: Months) {
+  return Object.values(Months).findIndex((c) => c === month);
+}
+
+export function makeBudgetPeriod(month: Months, year: number) {
+  const monthIndex = getMonthIndex(month).toString().padStart(2, "0");
+  const period = Number(`${year}${monthIndex}`);
+  return period;
+}
+
+type StatementData = {
+  budget: {
+    id: string;
+    year: number;
+    amount: Logs["amount"];
+    currency: Currencies;
+    budgetMonth: Months;
+  };
+  logs: Record<
+    string,
+    {
+      logs: {
+        note: string;
+        amount: Logs["amount"];
+        category: {
+          name: string;
+        };
+        logType: LogType;
+        currency: Currencies;
+        budgetId: string | null;
+        paymentMethod: {
+          name: string;
+        };
+        transactionDate: Date;
+      }[];
+      totals: {
+        expense: number;
+        income: number;
+      };
+    }
+  >;
+};
+
+export async function generatePdf(html: string, pdfOptions?: PDFOptions) {
+  const browser = await puppeteer.launch({
+    headless: true,
+    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+  });
+
+  const page = await browser.newPage();
+
+  await page.setContent(html);
+
+  const pdf = await page.pdf(pdfOptions);
+
+  await browser.close();
+
+  return pdf;
+}
+
+export async function generateStatementPdf({
+  userName,
+  endDate,
+  startDate,
+  budgetsAndLogs,
+}: {
+  userName: string;
+  budgetsAndLogs: StatementData[];
+  endDate: { month: Months; year: number };
+  startDate: { month: Months; year: number };
+}) {
+  const html = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <style>
+            * {
+              margin: 0;
+              padding: 0;
+              box-sizing: border-box;
+            }
+            @page {
+              margin: 20px;
+             }
+            
+            body {
+              font-family: 'Arial', sans-serif;
+              line-height: 1.6;
+              color: #333;
+              background-color: #fff;
+            -webkit-print-color-adjust: exact; 
+            }
+            
+            .container {
+              max-width: 800px;
+              margin: 0 auto;
+              padding: 20px;
+            }
+            
+            .header {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              border-bottom: 3px solid #000;
+              padding-bottom: 20px;
+              margin-bottom: 30px;
+            }
+            
+            .logo-section {
+              display: flex;
+              align-items: center;
+            }
+            
+            .logo {
+              width: 50px;
+              height: 50px;
+              background: #000 !important;
+              border-radius: 10px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              color: white;
+              font-weight: bold;
+              font-size: 20px;
+              margin-right: 15px;
+            }
+            
+            .brand-info a {
+              font-size: 28px;
+              font-weight: 700;
+              color: #000;
+              text-decoration: none;
+              margin-bottom: 5px;
+            }
+            
+            .brand-info p {
+              color: #000;
+              font-size: 14px;
+            }
+            
+            .user-info {
+              text-align: right;
+            }
+            
+            .user-info h2 {
+              font-size: 18px;
+              color: #000;
+              margin-bottom: 5px;
+              text-transform:uppercase;
+            }
+            
+            .user-info p {
+              color: #000;
+              font-size: 14px;
+              text-transform:uppercase;
+            }
+            
+            .statement-info {
+              background: linear-gradient(135deg, #f3f4f6, #e5e7eb) !important;
+              padding: 25px;
+              margin-bottom: 30px;
+              border-left: 5px solid #000;
+            }
+            
+            .statement-info h3 {
+              font-size: 20px;
+              color: #000;
+              margin-bottom: 15px;
+              display: flex;
+              align-items: center;
+            }
+            
+            .info-grid {
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 20px;
+            }
+            
+            .info-item {
+              background: white;
+              padding: 15px;
+              border: 1px solid #e5e7eb;
+            }
+            
+            .info-item label {
+              font-weight: 600;
+              color: #000;
+              display: block;
+              margin-bottom: 5px;
+              font-size: 14px;
+            }
+            
+            .info-item span {
+              color: #6b7280;
+              font-size: 14px;
+            }
+            
+            .summary-cards {
+              display: grid;
+              grid-template-columns: 1fr 1fr 1fr;
+              gap: 20px;
+              margin-bottom: 30px;
+            }
+            
+            .summary-card {
+              background: white;
+              padding: 20px;
+              text-align: center;
+              border: 1px solid #e5e7eb;
+            }
+            
+            .summary-card.expenses {
+              border-left: 5px solid #dc2626;
+            }
+            
+            .summary-card.incomes {
+              border-left: 5px solid #16a34a;
+            }
+            
+            .summary-card.net {
+              border-left: 5px solid #2563eb;
+            }
+            
+            .summary-card h4 {
+              font-size: 14px;
+              color: #6b7280;
+              margin-bottom: 10px;
+              text-transform: uppercase;
+              font-weight: 600;
+            }
+            
+            .summary-card .amount {
+              font-size: 24px;
+              font-weight: 700;
+              margin-bottom: 5px;
+            }
+            
+            .summary-card.expenses .amount {
+              color: #dc2626;
+            }
+            
+            .summary-card.incomes .amount {
+              color: #16a34a;
+            }
+            
+            .summary-card.net .amount {
+              color: #2563eb;
+            }
+            
+            .budget-section {
+              margin-bottom: 40px;
+              break-inside: avoid;
+            }
+            
+            .budget-header {
+              background: #000000 !important;
+              color: white;
+              padding: 20px;
+              margin-bottom: 0;
+            }
+            
+            .budget-header h3 {
+              font-size: 20px;
+              margin-bottom: 10px;
+              display: flex;
+              text-transform:uppercase;
+              align-items: center;
+              justify-content: space-between;
+            }
+            
+            .budget-details {
+              display: grid;
+              grid-template-columns: 1fr 1fr 1fr;
+              gap: 25px;
+              margin-top: 15px;
+            }
+            
+            .budget-detail {
+              background: rgba(255, 255, 255, 0.1);
+              padding: 10px;
+              border-radius: 8px;
+              backdrop-filter: blur(10px);
+            }
+            
+            .budget-detail label {
+              font-size: 12px;
+              opacity: 0.8;
+              display: block;
+              margin-bottom: 5px;
+            }
+            
+            .budget-detail span {
+              font-size: 16px;
+              font-weight: 600;
+            }
+            
+            .transactions-table {
+              width: 100%;
+              border-collapse: collapse;
+              background: white;
+              overflow: hidden;
+              text-align: center; /* Center align all table content */
+            }
+            
+            .transactions-table thead {
+              background: #f9fafb;
+            }
+            
+            .transactions-table th {
+              padding: 15px 12px;
+              text-align: center; /* Explicitly center header text */
+              font-weight: 600;
+              color: #374151;
+              font-size: 14px;
+              border-bottom: 1px solid #e5e7eb;
+            }
+    
+            
+           .transactions-table td {
+              padding: 12px;
+              border-bottom: 1px solid #f3f4f6;
+              font-size: 14px;
+              text-align: center; /* Center cell content */
+              vertical-align: middle; /* Vertically center content */
+            }
+            
+            .transactions-table tbody tr:hover {
+              background: #f9fafb;
+            }
+            
+            .amount-cell {
+              text-align: right !important;
+              padding-right: 20px !important;
+            }
+            
+            .amount-cell.expense {
+              color: #dc2626;
+            }
+            
+            .amount-cell.income {
+              color: #16a34a;
+            }
+            
+            .category-tag {
+              background: #ede9fe;
+              color: #7c3aed;
+              padding: 2px 8px;
+              border-radius: 10px;
+              font-size: 12px;
+              font-weight: 500;
+              text-transform:capitalize;
+            }
+              
+            
+            .no-transactions {
+              text-align: center;
+              color: #6b7280;
+              font-size:12px;
+              padding: 40px;
+              background: #f9fafb;
+            }
+            
+            .footer {
+              margin-top: 50px;
+              padding-top: 20px;
+              border-top: 1px solid #e5e7eb;
+              text-align: center;
+              color: #6b7280;
+              font-size: 12px;
+            }
+            
+            @media print {
+              .budget-section {
+                page-break-inside: avoid;
+              }
+              
+              .summary-cards {
+                page-break-inside: avoid;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <!-- Header -->
+            <div class="header">
+              <div class="logo-section">
+               <!-- FIXME: ADD LOGO -->
+                <img src="${""}" alt="PayTrail Logo" class="logo">
+                   
+                <div class="brand-info">
+             <!-- FIXME: CHANGE TO ACTUAL WEBSITE -->
+                  <a href="#" target="_blank">PayTrail</a>
+                </div>
+              </div>
+    
+              <div class="user-info">
+                <h2>${userName}</h2>
+              </div>
+            </div>
+            
+            <!-- Statement Information -->
+            <div class="statement-info">
+              <h3>Statement Summary</h3>
+    
+              <div class="info-grid">
+                <div class="info-item">
+                  <label>Statement Period</label>
+    
+                  <span>${startDate.month} ${startDate.year} - ${
+                    endDate.month
+                  } ${endDate.year}</span>
+                </div>
+    
+    
+                <div class="info-item">
+                  <label>Total Budgets</label>
+    
+                  <span>${budgetsAndLogs.length}</span>
+                </div>
+              </div>
+            </div>
+            
+       
+            
+           <!-- Budget Sections -->
+          ${budgetsAndLogs
+            .map(
+              ({ budget, logs }) => `
+            <div class="budget-section">
+              <div class="budget-header">
+                <h3>
+                  <span>${budget.budgetMonth} ${budget.year}</span>
+                  <span>${budget.currency} ${budget.amount.toLocaleString()}</span>
+                </h3>
+              </div>
+              
+              ${Object.entries(logs)
+                .map(
+                  ([currency, currencyData]) => `
+                  <div class="currency-section">
+                    <div class="currency-header">
+                      <h4>${currency} Summary</h4>
+                      <div class="currency-totals">
+                        <div class="total-item">
+                          <label>Total Income:</label>
+                          <span class="income">${currency} ${currencyData.totals.income.toLocaleString()}</span>
+                        </div>
+                        <div class="total-item">
+                          <label>Total Expense:</label>
+                          <span class="expense">${currency} ${currencyData.totals.expense.toLocaleString()}</span>
+                        </div>
+                        <div class="total-item">
+                          <label>Net:</label>
+                          <span class="${
+                            currencyData.totals.income - currencyData.totals.expense >= 0
+                              ? "positive"
+                              : "negative"
+                          }">
+                            ${currency} ${(
+                              currencyData.totals.income - currencyData.totals.expense
+                            ).toLocaleString()}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    ${
+                      currencyData.logs.length > 0
+                        ? `
+                      <table class="transactions-table">
+                        <thead>
+                          <tr>
+                            <th>Date</th>
+                            <th>Category</th>
+                            <th>Description</th>
+                            <th>Payment Method</th>
+                            <th>Amount</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          ${currencyData.logs
+                            .map(
+                              (log) => `
+                            <tr>
+                              <td>${new Date(log.transactionDate).toLocaleDateString()}</td>
+                              <td><span class="category-tag">${log.category.name}</span></td>
+                              <td>${log.note || "N/A"}</td>
+                              <td>${log.paymentMethod.name}</td>
+                              <td class="amount-cell ${
+                                log.logType === "expense" ? "expense" : "income"
+                              }">
+                                ${log.logType === "expense" ? "-" : ""}${
+                                  log.currency
+                                } ${String(log.amount).toLocaleString()}
+                              </td>
+                            </tr>
+                          `,
+                            )
+                            .join("")}
+                        </tbody>
+                      </table>
+                    `
+                        : `
+                      <div class="no-transactions">
+                        <p>No ${currency} Transactions For This Budget Period</p>
+                      </div>
+                    `
+                    }
+                  </div>
+                `,
+                )
+                .join("")}
+            </div>
+          `,
+            )
+            .join("")}
+            <!-- Footer -->
+            <div class="footer">
+              <p>This statement was generated automatically by PayTrail on ${new Date().toLocaleDateString(
+                "en-GB",
+              )}.</p>
+              <p>For any questions or concerns, please contact our support team.</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `;
+
+  const pdf = await generatePdf(html, {
+    width: 595,
+    height: 841,
+    timeout: 5000,
+    margin: { top: 20, bottom: 20, left: 20, right: 20 },
+  });
+
+  return pdf;
 }

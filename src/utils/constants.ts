@@ -17,6 +17,7 @@ export enum MESSAGES {
   AI_GENERATION_WARNINGS = "AI Generation Warnings",
   AI_GENERATION_USAGE = "AI Generation Usage",
   AI_GENERATION_ERROR = "AI Generation Error",
+  EMAIL_ERROR = "Email Error",
 }
 
 export const API_V1 = "/api/v1";
