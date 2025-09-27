@@ -51,12 +51,19 @@ import createApp from "../../../app";
 
 describe("parseReceipts", () => {
   it("parses a receipt with file + metadata", async () => {
+    const formData = new FormData();
+    formData.append("receipt", {
+      uri: path.join(__dirname, "../../fixtures/test-receipt.png"),
+      type: "image/png",
+      name: "test-receipt.png",
+    });
+    formData.append("paymentMethods", JSON.stringify([{ id: "pm1", description: "Card" }]));
+    formData.append("categories", JSON.stringify([{ id: "cat1", description: "Food" }]));
+
     const res = await request(createApp(mockRedis))
       .post(`${API_V1}/receipts/parse`)
       .set("Authorization", "Bearer parsed-user")
-      .field("paymentMethods", JSON.stringify([{ id: "pm1", description: "Card" }]))
-      .field("categories", JSON.stringify([{ id: "cat1", description: "Food" }]))
-      .attach("receipt", path.join(__dirname, "../../fixtures/test-receipt.png"));
+      .send(formData);
 
     expect(res.status).toBe(200);
   });
