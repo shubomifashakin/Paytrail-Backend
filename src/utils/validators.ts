@@ -35,23 +35,41 @@ export const pushSchemaValidator = z.object({
 
 const validateCurrency = z.enum(Currencies, { error: "Invalid Currency" });
 
-export const statementQueryValidator = z.object({
-  startDate: z.object({
+const periodValidator = z.object(
+  {
     year: z.number({ error: "invalid startYear" }),
     month: z.enum(Months, { error: "Invalid startMonth" }),
-  }),
+  },
+  { error: "Invalid period" },
+);
 
-  endDate: z.object({
-    year: z.number({ error: "Invalid endYear" }),
-    month: z.enum(Months, { error: "Invalid endMonth" }),
-  }),
+export const statementQueryValidator = z
+  .object({
+    startDate: z.union([periodValidator, z.date({ message: "Invalid start date" })]).optional(),
 
-  categories: z.array(z.string()),
+    endDate: z.union([periodValidator, z.iso.datetime({ message: "Invalid end date" })]),
 
-  paymentMethods: z.array(z.string()),
+    categories: z.array(z.string()),
 
-  currencies: z.array(validateCurrency),
-});
+    paymentMethods: z.array(z.string()),
+
+    currencies: z.array(validateCurrency),
+
+    statementType: z.enum(["logs", "budgets"]),
+  })
+  .refine((args) => {
+    if (args.statementType === "budgets") {
+      return (
+        periodValidator.optional().safeParse(args.startDate).success &&
+        periodValidator.safeParse(args.endDate).success
+      );
+    }
+
+    return (
+      z.iso.datetime().optional().safeParse(args.startDate).success &&
+      z.iso.datetime().safeParse(args.endDate).success
+    );
+  });
 
 export const registerForPushNotificationsValidator = z.object({
   pushToken: z.string({ error: "Invalid Push Token" }),

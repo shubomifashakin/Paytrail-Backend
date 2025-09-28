@@ -230,7 +230,7 @@ export async function generatePdf(html: string, pdfOptions?: PDFOptions) {
   return pdf;
 }
 
-export async function generateStatementPdf({
+export async function generateBudgetStatement({
   userName,
   endDate,
   startDate,
