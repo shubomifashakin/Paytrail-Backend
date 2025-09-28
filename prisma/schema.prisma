@@ -1,6 +1,7 @@
 generator client {
   provider = "prisma-client-js"
   output   = "../node_modules/.prisma/client"
+  previewFeatures = ["relationJoins"]
 }
 
 datasource db {
@@ -326,6 +327,6 @@ model Logs {
 
   @@index([budgetId, categoryId, currency])
   @@index([userId, transactionDate, currency])
-  //TODO: ADD INDEXES
+  
   @@map("logs")
 }

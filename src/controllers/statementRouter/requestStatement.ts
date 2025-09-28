@@ -65,6 +65,7 @@ export default async function requestStatement(req: Request, res: Response) {
     const budgetIds = budgets.map((budget) => budget.id);
 
     const logsForBudget = await prisma.logs.findMany({
+      relationLoadStrategy: "join",
       where: {
         budgetId: {
           in: budgetIds,
@@ -75,21 +76,21 @@ export default async function requestStatement(req: Request, res: Response) {
                 in: data.paymentMethods,
               },
             }
-          : {}),
+          : null),
         ...(data.categories.length
           ? {
               categoryId: {
                 in: data.categories,
               },
             }
-          : {}),
+          : null),
         ...(data.currencies.length
           ? {
               currency: {
                 in: data.currencies,
               },
             }
-          : {}),
+          : null),
       },
       select: {
         note: true,
@@ -196,7 +197,9 @@ export default async function requestStatement(req: Request, res: Response) {
     const endDate = data.endDate as string;
 
     const logs = await prisma.logs.findMany({
+      relationLoadStrategy: "join",
       where: {
+        userId: req.user.id,
         transactionDate: {
           gte: startDate,
           lte: endDate,
@@ -259,7 +262,7 @@ export default async function requestStatement(req: Request, res: Response) {
     const pdf = Buffer.from(pt).toString("base64");
 
     const { error: mailError } = await resend.emails.send({
-      from: resendEmailFrom, //FIXME: USE CORRECT DOMAIN
+      from: resendEmailFrom,
       to: req.user.email,
       subject: "Your PayTrail Statement",
       html: `
