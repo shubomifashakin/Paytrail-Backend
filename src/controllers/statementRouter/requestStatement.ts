@@ -3,13 +3,19 @@ import { Request, Response } from "express";
 
 import logger from "../../lib/logger";
 
-import { MESSAGES } from "../../utils/constants";
+import { MESSAGES, resendEmailFrom } from "../../utils/constants";
+
 import { statementQueryValidator } from "../../utils/validators";
 
 import prisma from "../../lib/prisma";
 import resend from "../../lib/resend";
 
-import { generateBudgetStatement, logEmailError, makeBudgetPeriod } from "../../utils/fns";
+import {
+  generateBudgetStatement,
+  generateLogsStatement,
+  logEmailError,
+  makeBudgetPeriod,
+} from "../../utils/fns";
 
 export default async function requestStatement(req: Request, res: Response) {
   const { success, error, data } = statementQueryValidator.safeParse(req.body);
@@ -46,6 +52,9 @@ export default async function requestStatement(req: Request, res: Response) {
         budgetMonth: true,
         currency: true,
         id: true,
+      },
+      orderBy: {
+        period: "asc",
       },
     });
 
@@ -148,7 +157,7 @@ export default async function requestStatement(req: Request, res: Response) {
     const pdf = Buffer.from(pt).toString("base64");
 
     const { error: mailError } = await resend.emails.send({
-      from: "Paytrail <onboarding@545plea.xyz>", //FIXME: USE CORRECT DOMAIN
+      from: resendEmailFrom,
       to: req.user.email,
       subject: "Your PayTrail Statement",
       html: `
@@ -175,13 +184,110 @@ export default async function requestStatement(req: Request, res: Response) {
 
     if (mailError) {
       logEmailError("statement", req.user, mailError, req);
-      throw new Error(mailError.name);
+
+      return res.status(500).json({ message: MESSAGES.INTERNAL_SERVER_ERROR });
     }
+
+    return res.status(200).json({ message: "success" });
   }
 
   if (data.statementType === "logs") {
-    return res.status(200).json({ message: MESSAGES.INTERNAL_SERVER_ERROR });
+    const startDate = data.startDate as string | undefined;
+    const endDate = data.endDate as string;
+
+    const logs = await prisma.logs.findMany({
+      where: {
+        transactionDate: {
+          gte: startDate,
+          lte: endDate,
+        },
+        ...(data.paymentMethods.length
+          ? {
+              paymentMethodId: {
+                in: data.paymentMethods,
+              },
+            }
+          : {}),
+        ...(data.categories.length
+          ? {
+              categoryId: {
+                in: data.categories,
+              },
+            }
+          : {}),
+        ...(data.currencies.length
+          ? {
+              currency: {
+                in: data.currencies,
+              },
+            }
+          : {}),
+      },
+      select: {
+        note: true,
+        amount: true,
+        category: {
+          select: {
+            name: true,
+          },
+        },
+        logType: true,
+        paymentMethod: {
+          select: {
+            name: true,
+          },
+        },
+        transactionDate: true,
+        currency: true,
+      },
+      orderBy: {
+        transactionDate: "asc",
+      },
+    });
+
+    if (!logs.length) {
+      return res.status(404).json({ message: "No logs found" });
+    }
+
+    const pt = await generateLogsStatement({
+      userName: req.user.name,
+      startDate: startDate || logs[0].transactionDate.toString(),
+      endDate,
+      logs,
+    });
+
+    const pdf = Buffer.from(pt).toString("base64");
+
+    const { error: mailError } = await resend.emails.send({
+      from: resendEmailFrom, //FIXME: USE CORRECT DOMAIN
+      to: req.user.email,
+      subject: "Your PayTrail Statement",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">  
+          <p>Hello ${req.user.name || "there"},</p>
+
+          <p>Your PayTrail statement for the period <strong>${startDate || logs[0].transactionDate.toDateString()}</strong> to <strong>${new Date(endDate).toDateString()}</strong> has been generated and is attached to this email.</p>
+         
+          <p>Thank you for using PayTrail to manage your finances!</p>
+          <p>Best regards,<br>The PayTrail Team</p>
+        </div>
+      `,
+      attachments: [
+        {
+          content: pdf,
+          filename: `my-paytrail-report-${Date.now()}.pdf`,
+        },
+      ],
+    });
+
+    if (mailError) {
+      logEmailError("statement", req.user, mailError, req);
+
+      return res.status(500).json({ message: MESSAGES.INTERNAL_SERVER_ERROR });
+    }
+
+    return res.status(200).json({ message: "success" });
   }
 
-  return res.status(500).json({ message: "Internal Server Error" });
+  return res.status(500).json({ message: MESSAGES.INTERNAL_SERVER_ERROR });
 }

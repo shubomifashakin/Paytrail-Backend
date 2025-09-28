@@ -709,3 +709,38 @@ export async function generateBudgetStatement({
 
   return pdf;
 }
+
+export async function generateLogsStatement({
+  userName,
+  startDate,
+  endDate,
+  logs,
+}: {
+  userName: string;
+  startDate: string;
+  endDate: string;
+  logs: (Omit<
+    Logs,
+    "id" | "budgetId" | "userId" | "paymentMethodId" | "categoryId" | "updatedAt" | "createdAt"
+  > & {
+    category: {
+      name: string;
+    };
+    paymentMethod: {
+      name: string;
+    };
+  })[];
+}) {
+  //FIXME: COME UP WITH PDF
+  console.log(userName, startDate, endDate, logs);
+  const html = "";
+
+  const pdf = await generatePdf(html, {
+    width: 595,
+    height: 841,
+    timeout: 5000,
+    margin: { top: 20, bottom: 20, left: 20, right: 20 },
+  });
+
+  return pdf;
+}

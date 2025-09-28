@@ -42,12 +42,13 @@ const periodValidator = z.object(
   },
   { error: "Invalid period" },
 );
+const dateValidator = z.iso.datetime({ error: "Invalid date" });
 
 export const statementQueryValidator = z
   .object({
-    startDate: z.union([periodValidator, z.date({ message: "Invalid start date" })]).optional(),
+    startDate: z.union([periodValidator, dateValidator]).optional(),
 
-    endDate: z.union([periodValidator, z.iso.datetime({ message: "Invalid end date" })]),
+    endDate: z.union([periodValidator, dateValidator]),
 
     categories: z.array(z.string()),
 
@@ -66,8 +67,8 @@ export const statementQueryValidator = z
     }
 
     return (
-      z.iso.datetime().optional().safeParse(args.startDate).success &&
-      z.iso.datetime().safeParse(args.endDate).success
+      dateValidator.optional().safeParse(args.startDate).success &&
+      dateValidator.safeParse(args.endDate).success
     );
   });
 
