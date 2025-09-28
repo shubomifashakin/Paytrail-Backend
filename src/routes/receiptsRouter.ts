@@ -35,7 +35,7 @@ export default function createReceiptRouter({ redisClient }: { redisClient: Redi
     isAuthorized,
     createRateLimiter({
       redisClient,
-      limit: 2, //FIXME: INCREASE ONLY WHEN WE LEAVE FREE PLAN
+      limit: 4, //FIXME: INCREASE ONLY WHEN WE LEAVE FREE PLAN
       window: 60,
       keyGenerator: (req) => `${req.user.id}:${req.path}`,
     }),
