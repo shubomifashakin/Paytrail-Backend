@@ -46,7 +46,7 @@ const logger = createLogger({
 
 export default logger;
 
-if (!serverEnv.isProduction) {
+if (serverEnv.environment !== "production") {
   logger.add(
     new transports.Console({
       format: format.simple(),

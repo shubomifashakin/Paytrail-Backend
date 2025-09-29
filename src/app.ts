@@ -14,26 +14,23 @@ import healthRouter from "./routes/healthRouter";
 import notificationRouter from "./routes/notifications";
 import syncRouter from "./routes/syncRouter";
 
-import serverEnv from "./serverEnv";
-
 import errorMiddleware from "./middlewares/errorMiddleware";
 import isAuthorized from "./middlewares/isAuthorized";
 import morganToJson from "./middlewares/morgan";
 import tagRequest from "./middlewares/tagRequest";
 
 import { API_V1 } from "./utils/constants";
+import serverEnv from "./serverEnv";
 
 export default function createApp(redisClient: RedisClientType) {
   const app = express();
 
-  const allowedOrigins =
-    serverEnv.allowedOrigins === "*"
-      ? serverEnv.allowedOrigins
-      : serverEnv.allowedOrigins.split(",");
-
   const corsOptions: CorsOptions = {
-    origin: allowedOrigins,
-    credentials: serverEnv.isProduction,
+    origin:
+      serverEnv.environment === "production"
+        ? serverEnv.baseUrl
+        : ["http://localhost:5173", "exp://*"],
+    credentials: true,
   };
 
   app.set("trust proxy", true);

@@ -25,10 +25,7 @@ export default async function signInWithGoogle(req: Request, res: Response) {
 
   let platform;
 
-  if (
-    redirectUri === serverEnv.appScheme ||
-    (!serverEnv.isProduction && redirectUri.startsWith("exp://"))
-  ) {
+  if (redirectUri === serverEnv.appScheme || redirectUri.startsWith("exp://")) {
     platform = "mobile";
   } else if (redirectUri === serverEnv.baseUrl) {
     platform = "web";

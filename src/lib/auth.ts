@@ -132,10 +132,10 @@ const auth = betterAuth({
     max: 10,
     window: 60,
     storage: "secondary-storage",
-    enabled: serverEnv.isProduction,
+    enabled: true,
   },
 
-  trustedOrigins: ["http://localhost:5173"], //TODO: add your trusted origins
+  trustedOrigins: ["http://localhost:5173", serverEnv.baseUrl], //TODO: add your trusted origins
 });
 
 export default auth;
