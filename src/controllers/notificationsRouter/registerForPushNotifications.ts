@@ -98,6 +98,7 @@ export async function createPlatformApplicationEndpoint({
     }
 
     return res.EndpointArn;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
     const msg: string = err?.message ?? "";
     const match = msg.match(/Endpoint (arn:aws:sns:[^ ]+) already exists/);

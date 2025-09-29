@@ -6,6 +6,8 @@ import prisma from "./prisma";
 import redisClient from "./redis";
 import resend from "./resend";
 
+import { Request } from "express";
+
 import serverEnv from "../serverEnv";
 
 import { logEmailError } from "../utils/fns";
@@ -34,7 +36,7 @@ const auth = betterAuth({
       });
 
       if (error) {
-        logEmailError("reset-password", user, error, request);
+        logEmailError("reset-password", user, error, request as unknown as Request);
       }
     },
 
@@ -47,7 +49,7 @@ const auth = betterAuth({
       });
 
       if (error) {
-        logEmailError("password-reset", user, error, request);
+        logEmailError("password-reset", user, error, request as unknown as Request);
       }
     },
   },
@@ -66,7 +68,7 @@ const auth = betterAuth({
       });
 
       if (error) {
-        logEmailError("verification", user, error, request);
+        logEmailError("verification", user, error, request as unknown as Request);
       }
     },
   },
