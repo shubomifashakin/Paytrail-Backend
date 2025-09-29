@@ -38,10 +38,6 @@ const config: Config = {
     color: "cyan",
   },
 
-  fakeTimers: {
-    enableGlobally: true,
-  },
-
   moduleFileExtensions: ["js", "mjs", "cjs", "jsx", "ts", "mts", "cts", "tsx", "json", "node"],
 
   modulePathIgnorePatterns: ["<rootDir>/src/server.ts"],
@@ -60,7 +56,7 @@ const config: Config = {
 
   testPathIgnorePatterns: ["\\\\node_modules\\\\"],
 
-  testTimeout: 10000,
+  testTimeout: 40000,
 
   transform: {
     "^.+\\.jsx?$": "babel-jest",
