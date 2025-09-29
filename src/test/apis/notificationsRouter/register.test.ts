@@ -43,7 +43,6 @@ const createPlatformApplicationEndpoint = jest
 
 jest.mock("@aws-sdk/client-sns", () => ({
   SNSClient: jest.fn().mockImplementation(() => ({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     send: jest.fn().mockImplementation((command: any) => {
       return command;
     }),
@@ -54,6 +53,7 @@ jest.mock("@aws-sdk/client-sns", () => ({
 }));
 
 import createApp from "../../../app";
+import serverEnv from "../../../serverEnv";
 import { API_V1, MESSAGES } from "../../../utils/constants";
 
 describe("registerForPushNotifications", () => {
@@ -93,12 +93,12 @@ describe("registerForPushNotifications", () => {
         Token: "test-token",
         CustomUserData: JSON.stringify({ userId: "new-user-id" }),
         Attributes: { Enabled: "true" },
-        PlatformApplicationArn: expect.any(String),
+        PlatformApplicationArn: serverEnv.androidPlatformApplicationArn,
       });
       expect(upsertDeviceToken).toHaveBeenCalledTimes(1);
 
       expect(subscribe).toHaveBeenCalledWith({
-        TopicArn: expect.any(String),
+        TopicArn: serverEnv.broadcastTopicArn,
         Endpoint: "test-endpoint-arn",
         Protocol: "application",
       });
@@ -133,12 +133,12 @@ describe("registerForPushNotifications", () => {
         Token: "test-token",
         CustomUserData: JSON.stringify({ userId: "new-user-id" }),
         Attributes: { Enabled: "true" },
-        PlatformApplicationArn: expect.any(String),
+        PlatformApplicationArn: serverEnv.iosPlatformApplicationArn,
       });
       expect(upsertDeviceToken).toHaveBeenCalledTimes(1);
 
       expect(subscribe).toHaveBeenCalledWith({
-        TopicArn: expect.any(String),
+        TopicArn: serverEnv.broadcastTopicArn,
         Endpoint: "test-endpoint-arn",
         Protocol: "application",
       });
@@ -210,7 +210,7 @@ describe("registerForPushNotifications", () => {
         Token: "test-token",
         CustomUserData: JSON.stringify({ userId: "new-user-id" }),
         Attributes: { Enabled: "true" },
-        PlatformApplicationArn: expect.any(String),
+        PlatformApplicationArn: serverEnv.androidPlatformApplicationArn,
       });
 
       expect(setEndpointAttributes).toHaveBeenCalledWith({
@@ -225,7 +225,7 @@ describe("registerForPushNotifications", () => {
       expect(upsertDeviceToken).toHaveBeenCalledTimes(1);
 
       expect(subscribe).toHaveBeenCalledWith({
-        TopicArn: expect.any(String),
+        TopicArn: serverEnv.broadcastTopicArn,
         Endpoint: expect.any(String),
         Protocol: "application",
       });

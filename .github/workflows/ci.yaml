@@ -6,6 +6,9 @@ on:
       - dev
   workflow_dispatch:
 
+env:
+  RESEND_API_KEY: ${{ secrets.RESEND_KEY }}
+
 jobs:
   tests:
     name: "Run Unit Tests"
@@ -13,6 +16,7 @@ jobs:
       run:
         shell: bash
     runs-on: ubuntu-latest
+    environment: development
     steps:
       - uses: actions/checkout@v5
         name: "Checkout Repository"

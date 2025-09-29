@@ -6,7 +6,7 @@
     "build": "tsc",
     "dev": "nodemon --require tsconfig-paths/register src/server.ts",
     "start": "node dist/server.js",
-    "test": "jest",
+    "test": "dotenv -e .env jest",
     "lint": "eslint src/"
   },
   "keywords": [],
@@ -59,6 +59,7 @@
     "@types/node": "^24.0.15",
     "@types/supertest": "^6.0.3",
     "babel-jest": "^30.0.5",
+    "dotenv-cli": "^10.0.0",
     "eslint": "^9.31.0",
     "jest": "^30.0.4",
     "prettier": "^3.6.2",

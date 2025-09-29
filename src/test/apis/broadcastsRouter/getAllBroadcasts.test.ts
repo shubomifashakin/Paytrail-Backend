@@ -51,6 +51,7 @@ jest.mock("../../../middlewares/rateLimiter", () => ({
 import createApp from "../../../app";
 
 import { API_V1 } from "../../../utils/constants";
+import serverEnv from "../../../serverEnv";
 
 describe("getAllBroadcasts", () => {
   beforeEach(async () => {
@@ -149,7 +150,7 @@ describe("getAllBroadcasts", () => {
       expect(mockScanCommand).toHaveBeenCalledTimes(1);
       expect(mockScanCommand).toHaveBeenCalledWith({
         Limit: 10,
-        TableName: "fake-broadcast-arn",
+        TableName: serverEnv.broadcastNotificationsTableARN,
         ExclusiveStartKey: undefined,
         ProjectionExpression: "id, title, subtitle, createdAt, notificationType, image",
       });

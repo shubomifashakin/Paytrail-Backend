@@ -54,6 +54,7 @@ const mockRedis = {
 import createApp from "../../../app";
 
 import { API_V1 } from "../../../utils/constants";
+import serverEnv from "../../../serverEnv";
 
 describe("getAllUserNotifications", () => {
   beforeEach(async () => {
@@ -155,7 +156,7 @@ describe("getAllUserNotifications", () => {
         Limit: 10,
         ScanIndexForward: false,
         KeyConditionExpression: "userId = :userId",
-        TableName: "fake-notifications-arn",
+        TableName: serverEnv.userNotificationsTableARN,
         ExclusiveStartKey: undefined,
         ProjectionExpression: "id, title, subtitle, createdAt, notificationType, image",
         ExpressionAttributeValues: {

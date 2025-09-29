@@ -115,7 +115,7 @@ describe("authentication tests", () => {
 
     const res = await request(createApp(mockRedis))
       .get(`${API_V1}/auth/google`)
-      .query({ redirect_uri: "paytrail://", state });
+      .query({ redirect_uri: serverEnv.appScheme, state });
 
     expect(res.status).toBe(302);
   });
