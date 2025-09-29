@@ -6,7 +6,7 @@
     "build": "tsc",
     "dev": "nodemon --require tsconfig-paths/register src/server.ts",
     "start": "node dist/server.js",
-    "test": "dotenv -e .env jest",
+    "test": "jest",
     "lint": "eslint src/"
   },
   "keywords": [],
