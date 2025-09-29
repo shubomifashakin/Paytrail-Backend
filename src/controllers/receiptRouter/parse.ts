@@ -40,12 +40,6 @@ export default async function parseReceipt(req: Request, res: Response) {
 
   const files = req.files as Express.Multer.File[];
 
-  if (!data.paymentMethods || !data.categories) {
-    return res.status(400).json({
-      message: MESSAGES.BAD_REQUEST,
-    });
-  }
-
   const fileContents: FilePart[] = files.map((file) => {
     return { type: "file", filename: file.filename, mediaType: file.mimetype, data: file.buffer };
   });

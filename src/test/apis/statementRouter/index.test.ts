@@ -1,10 +1,10 @@
 import request from "supertest";
+import { v4 as uuid } from "uuid";
 
 import { RedisClientType } from "redis";
 
 import { API_V1, MESSAGES } from "../../../utils/constants";
 
-import { Decimal } from "@prisma/client/runtime/library";
 import { NextFunction } from "express";
 
 jest.mock("../../../middlewares/rateLimiter", () => ({
@@ -19,72 +19,6 @@ const mockRedis = {
   set: jest.fn(),
   del: jest.fn(),
 } as unknown as RedisClientType;
-
-const userEmail = "test@example.com";
-const userName = "Test User";
-
-const findUniqueSession = jest.fn().mockResolvedValue({
-  user: {
-    id: "new-user-id",
-    email: userEmail,
-    name: userName,
-  },
-});
-
-const findManyBudgets = jest.fn().mockResolvedValue([
-  {
-    year: 2025,
-    amount: new Decimal(100),
-    budgetMonth: "January",
-    currency: "USD",
-    id: "budget-id",
-  },
-]);
-
-const findManyLogs = jest.fn().mockResolvedValue([
-  {
-    note: "Test log",
-    amount: new Decimal(100),
-    category: {
-      name: "Test category",
-    },
-    logType: "expense",
-    paymentMethod: {
-      name: "Test payment method",
-    },
-    transactionDate: new Date(),
-    currency: "USD",
-    budgetId: "budget-id",
-  },
-  {
-    note: "Test log",
-    amount: new Decimal(100),
-    category: {
-      name: "Test category",
-    },
-    logType: "income",
-    paymentMethod: {
-      name: "Test payment method",
-    },
-    transactionDate: new Date(),
-    currency: "USD",
-    budgetId: "budget-id",
-  },
-]);
-
-jest.mock("../../../lib/prisma.ts", () => {
-  return {
-    session: {
-      findUnique: findUniqueSession,
-    },
-    budgets: {
-      findMany: findManyBudgets,
-    },
-    logs: {
-      findMany: findManyLogs,
-    },
-  };
-});
 
 const sendMail = jest.fn().mockResolvedValue({
   error: null,
@@ -118,23 +52,182 @@ jest.mock("puppeteer", () => ({
 }));
 
 import createApp from "../../../app";
+import prisma from "../../../lib/prisma";
 
 describe("requestStatement", () => {
-  beforeEach(async () => {
-    jest.clearAllMocks();
+  let sessionId: string;
+  let userId: string;
+  let userName: string;
+  let userEmail: string;
+
+  beforeAll(async () => {
+    const user = await prisma.user.create({
+      data: {
+        id: uuid(),
+        name: "Test User",
+        email: "statement@example.com",
+        image: "https://example.com/test.jpg",
+        emailVerified: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      select: { id: true, name: true, email: true },
+    });
+
+    const session = await prisma.session.create({
+      data: {
+        id: uuid(),
+        token: "statement-token",
+        userId: user.id,
+        ipAddress: "127.0.0.1",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        userAgent: "test-agent",
+        expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24),
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    sessionId = session.id;
+    userId = user.id;
+    userName = user.name;
+    userEmail = user.email;
   });
 
   afterAll(async () => {
+    await prisma.session.deleteMany({
+      where: {
+        id: sessionId,
+      },
+    });
+
+    await prisma.user.deleteMany({
+      where: {
+        id: userId,
+      },
+    });
+
+    await prisma.budgets.deleteMany({
+      where: {
+        userId: userId,
+      },
+    });
+    await prisma.logs.deleteMany({
+      where: {
+        userId: userId,
+      },
+    });
+    await prisma.categories.deleteMany({
+      where: {
+        userId: userId,
+      },
+    });
+    await prisma.paymentMethods.deleteMany({
+      where: {
+        userId: userId,
+      },
+    });
+
     jest.clearAllMocks();
     jest.resetModules();
   });
 
+  beforeEach(async () => {
+    jest.clearAllMocks();
+  });
+
   describe("when there are budgets", () => {
+    let payId: string;
+    let categoryId: string;
+
+    beforeAll(async () => {
+      const payId2 = await prisma.paymentMethods.create({
+        data: {
+          id: uuid(),
+          name: "pm1",
+          color: "#000000",
+          emoji: "",
+          description: "",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          userId: userId,
+        },
+        select: { id: true },
+      });
+
+      const categoryId2 = await prisma.categories.create({
+        data: {
+          id: uuid(),
+          name: "cat1",
+          color: "#000000",
+          emoji: "",
+          description: "",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          userId: userId,
+        },
+        select: { id: true },
+      });
+
+      const budgetId = await prisma.budgets.create({
+        data: {
+          id: uuid(),
+          userId: userId,
+          amount: 100,
+          currency: "NGN",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          year: 2025,
+          budgetMonth: "January",
+          period: 202500,
+        },
+        select: { id: true },
+      });
+
+      await prisma.logs.createMany({
+        data: [
+          {
+            id: uuid(),
+            userId: userId,
+            amount: 100,
+            currency: "NGN",
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            note: "log1",
+            logType: "expense",
+            paymentMethodId: payId2.id,
+            categoryId: categoryId2.id,
+            budgetId: budgetId.id,
+            transactionDate: new Date(),
+          },
+          {
+            id: uuid(),
+            userId: userId,
+            amount: 100,
+            currency: "NGN",
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            note: "log1",
+            logType: "income",
+            paymentMethodId: payId2.id,
+            categoryId: categoryId2.id,
+            budgetId: budgetId.id,
+            transactionDate: new Date(),
+          },
+        ],
+      });
+
+      payId = payId2.id;
+      categoryId = categoryId2.id;
+    });
+
     test("it should generate the budget statement and send the email", async () => {
       const data = {
-        categories: ["cat1"],
-        currencies: ["NGN"],
-        paymentMethods: ["pm1"],
+        categories: [],
+        currencies: [],
+        paymentMethods: [],
         statementType: "budgets",
         endDate: { year: 2025, month: "January" },
         startDate: { year: 2002, month: "January" },
@@ -142,20 +235,9 @@ describe("requestStatement", () => {
 
       const res = await request(createApp(mockRedis))
         .post(`${API_V1}/statement`)
-        .set("Authorization", "Bearer fake-session-id")
+        .set("Authorization", `Bearer ${sessionId}`)
         .set("Content-Type", "application/json")
         .send(data);
-
-      expect(findUniqueSession).toHaveBeenCalledWith({
-        where: {
-          id: "fake-session-id",
-        },
-        include: {
-          user: true,
-        },
-      });
-
-      expect(findUniqueSession).toHaveBeenCalledTimes(1);
 
       expect(pdf).toHaveBeenCalledTimes(1);
       expect(setContent).toHaveBeenCalledTimes(1);
@@ -190,9 +272,9 @@ describe("requestStatement", () => {
 
       test("it should not send the mail", async () => {
         const data = {
-          categories: ["cat1"],
+          categories: [categoryId],
           currencies: ["NGN"],
-          paymentMethods: ["pm1"],
+          paymentMethods: [payId],
           statementType: "budgets",
           endDate: { year: 2025, month: "January" },
           startDate: { year: 2002, month: "January" },
@@ -200,20 +282,9 @@ describe("requestStatement", () => {
 
         const res = await request(createApp(mockRedis))
           .post(`${API_V1}/statement`)
-          .set("Authorization", "Bearer fake-session-id")
+          .set("Authorization", `Bearer ${sessionId}`)
           .set("Content-Type", "application/json")
           .send(data);
-
-        expect(findUniqueSession).toHaveBeenCalledWith({
-          where: {
-            id: "fake-session-id",
-          },
-          include: {
-            user: true,
-          },
-        });
-
-        expect(findUniqueSession).toHaveBeenCalledTimes(1);
 
         expect(pdf).toHaveBeenCalledTimes(1);
         expect(setContent).toHaveBeenCalledTimes(1);
@@ -242,8 +313,10 @@ describe("requestStatement", () => {
   });
 
   describe("when there are no budgets", () => {
-    beforeEach(() => {
-      findManyBudgets.mockResolvedValue([]);
+    beforeAll(async () => {
+      await prisma.budgets.deleteMany();
+      await prisma.categories.deleteMany();
+      await prisma.paymentMethods.deleteMany();
     });
 
     test("it should not generate the budget statement", async () => {
@@ -258,20 +331,9 @@ describe("requestStatement", () => {
 
       const res = await request(createApp(mockRedis))
         .post(`${API_V1}/statement`)
-        .set("Authorization", "Bearer fake-session-id")
+        .set("Authorization", `Bearer ${sessionId}`)
         .set("Content-Type", "application/json")
         .send(data);
-
-      expect(findUniqueSession).toHaveBeenCalledWith({
-        where: {
-          id: "fake-session-id",
-        },
-        include: {
-          user: true,
-        },
-      });
-
-      expect(findUniqueSession).toHaveBeenCalledTimes(1);
 
       expect(sendMail).not.toHaveBeenCalled();
 
@@ -280,52 +342,77 @@ describe("requestStatement", () => {
   });
 
   describe("when there are logs", () => {
-    beforeEach(() => {
-      findManyLogs.mockResolvedValue([
-        {
-          amount: new Decimal(100),
+    let payId: string;
+    let categoryId: string;
+    const startDate = new Date();
+
+    beforeAll(async () => {
+      await prisma.logs.deleteMany();
+
+      const payId2 = await prisma.paymentMethods.create({
+        data: {
+          id: uuid(),
+          name: "pm1",
+          color: "#000000",
+          emoji: "",
+          description: "",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          userId: userId,
+        },
+        select: { id: true },
+      });
+
+      const categoryId2 = await prisma.categories.create({
+        data: {
+          id: uuid(),
+          name: "cat1",
+          color: "#000000",
+          emoji: "",
+          description: "",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          userId: userId,
+        },
+        select: { id: true },
+      });
+
+      await prisma.logs.create({
+        data: {
+          id: uuid(),
+          userId: userId,
+          amount: 100,
           currency: "NGN",
-          transactionDate: new Date(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
           note: "log1",
           logType: "expense",
-          paymentMethod: {
-            name: "pm1",
-          },
-          categoryId: "category1",
+          paymentMethodId: payId2.id,
+          categoryId: categoryId2.id,
+          transactionDate: startDate,
         },
-      ]);
+        select: { id: true },
+      });
+
+      payId = payId2.id;
+      categoryId = categoryId2.id;
     });
 
     test("it should generate the statement and send the email", async () => {
       const data = {
-        categories: ["cat1"],
+        categories: [categoryId],
         currencies: ["NGN"],
-        paymentMethods: ["pm1"],
+        paymentMethods: [payId],
         statementType: "logs",
         endDate: new Date(),
-        startDate: new Date(),
+        startDate: startDate,
       };
 
       const res = await request(createApp(mockRedis))
         .post(`${API_V1}/statement`)
-        .set("Authorization", "Bearer fake-session-id")
+        .set("Authorization", `Bearer ${sessionId}`)
         .set("Content-Type", "application/json")
         .send(data);
-
-      expect(findUniqueSession).toHaveBeenCalledWith({
-        where: {
-          id: "fake-session-id",
-        },
-        include: {
-          user: true,
-        },
-      });
-
-      expect(findUniqueSession).toHaveBeenCalledTimes(1);
-
-      expect(findManyBudgets).not.toHaveBeenCalled();
-
-      expect(findManyLogs).toHaveBeenCalledTimes(1);
 
       expect(pdf).toHaveBeenCalledTimes(1);
       expect(setContent).toHaveBeenCalledTimes(1);
@@ -358,36 +445,21 @@ describe("requestStatement", () => {
         });
       });
 
-      test("it should generate the statement and send the email", async () => {
+      test("it should not send the mail", async () => {
         const data = {
-          categories: ["cat1"],
+          categories: [categoryId],
           currencies: ["NGN"],
-          paymentMethods: ["pm1"],
+          paymentMethods: [payId],
           statementType: "logs",
           endDate: new Date(),
-          startDate: new Date(),
+          startDate: startDate,
         };
 
         const res = await request(createApp(mockRedis))
           .post(`${API_V1}/statement`)
-          .set("Authorization", "Bearer fake-session-id")
+          .set("Authorization", `Bearer ${sessionId}`)
           .set("Content-Type", "application/json")
           .send(data);
-
-        expect(findUniqueSession).toHaveBeenCalledWith({
-          where: {
-            id: "fake-session-id",
-          },
-          include: {
-            user: true,
-          },
-        });
-
-        expect(findUniqueSession).toHaveBeenCalledTimes(1);
-
-        expect(findManyBudgets).not.toHaveBeenCalled();
-
-        expect(findManyLogs).toHaveBeenCalledTimes(1);
 
         expect(pdf).toHaveBeenCalledTimes(1);
         expect(setContent).toHaveBeenCalledTimes(1);
@@ -416,15 +488,15 @@ describe("requestStatement", () => {
   });
 
   describe("when there are no logs", () => {
-    beforeEach(() => {
-      findManyLogs.mockResolvedValue([]);
+    beforeAll(async () => {
+      await prisma.logs.deleteMany();
     });
 
     test("it should not generate the statement ", async () => {
       const data = {
-        categories: ["cat1"],
+        categories: [""],
         currencies: ["NGN"],
-        paymentMethods: ["pm1"],
+        paymentMethods: [""],
         statementType: "logs",
         endDate: new Date(),
         startDate: new Date(),
@@ -432,24 +504,9 @@ describe("requestStatement", () => {
 
       const res = await request(createApp(mockRedis))
         .post(`${API_V1}/statement`)
-        .set("Authorization", "Bearer fake-session-id")
+        .set("Authorization", `Bearer ${sessionId}`)
         .set("Content-Type", "application/json")
         .send(data);
-
-      expect(findUniqueSession).toHaveBeenCalledWith({
-        where: {
-          id: "fake-session-id",
-        },
-        include: {
-          user: true,
-        },
-      });
-
-      expect(findUniqueSession).toHaveBeenCalledTimes(1);
-
-      expect(findManyBudgets).not.toHaveBeenCalled();
-
-      expect(findManyLogs).toHaveBeenCalledTimes(1);
 
       expect(sendMail).not.toHaveBeenCalled();
 
@@ -461,7 +518,7 @@ describe("requestStatement", () => {
     test("it should fail due to invalid post body", async () => {
       const res = await request(createApp(mockRedis))
         .post(`${API_V1}/statement`)
-        .set("Authorization", "Bearer fake-session-id")
+        .set("Authorization", `Bearer ${sessionId}`)
         .set("Content-Type", "application/json")
         .send({
           categories: [],
@@ -470,17 +527,6 @@ describe("requestStatement", () => {
           endDate: { endYear: 2025, endMonth: "January" },
           startDate: { startYear: 2002, startMonth: "January" },
         });
-
-      expect(findUniqueSession).toHaveBeenCalledWith({
-        where: {
-          id: "fake-session-id",
-        },
-        include: {
-          user: true,
-        },
-      });
-
-      expect(findUniqueSession).toHaveBeenCalledTimes(1);
 
       expect(res.status).toBe(400);
       expect(res.body).toEqual({ message: MESSAGES.BAD_REQUEST });
@@ -498,8 +544,6 @@ describe("requestStatement", () => {
           endDate: { year: 2025, month: "January" },
           startDate: { year: 2002, month: "January" },
         });
-
-      expect(findUniqueSession).not.toHaveBeenCalled();
 
       expect(res.status).toBe(401);
       expect(res.body).toEqual({ message: MESSAGES.UNAUTHORIZED });

@@ -1,56 +1,17 @@
 import request from "supertest";
+import { v4 as uuid } from "uuid";
+
+import { RedisClientType } from "redis";
 
 import { NextFunction } from "express";
 
 import { API_V1 } from "../../../utils/constants";
 
-const findManyLogs = jest.fn().mockResolvedValue([]);
-
-const findManyPaymentMethods = jest.fn().mockResolvedValue([]);
-
-const findManyCategories = jest.fn().mockResolvedValue([]);
-
-const findManyBudgets = jest.fn().mockResolvedValue([]);
-
-const transaction = jest.fn().mockResolvedValue([[], [], [], []]);
-
-const findUniqueSession = jest.fn().mockResolvedValue({
-  user: {
-    id: "new-user-id",
-  },
-});
-
-jest.mock("../../../lib/prisma.ts", () => {
-  return {
-    budgets: {
-      findMany: findManyBudgets,
-    },
-
-    categories: {
-      findMany: findManyCategories,
-    },
-
-    paymentMethods: {
-      findMany: findManyPaymentMethods,
-    },
-
-    logs: {
-      findMany: findManyLogs,
-    },
-
-    $transaction: transaction,
-
-    session: {
-      findUnique: findUniqueSession,
-    },
-  };
-});
-
 const mockRedis = {
   get: jest.fn(),
   set: jest.fn(),
   del: jest.fn(),
-} as any;
+} as unknown as RedisClientType;
 
 jest.mock("../../../middlewares/rateLimiter", () => ({
   __esModule: true,
@@ -62,9 +23,59 @@ jest.mock("../../../middlewares/rateLimiter", () => ({
 }));
 
 import createApp from "../../../app";
+import prisma from "../../../lib/prisma";
 
 describe("pull test", () => {
+  let sessionId: string;
+  let userId: string;
+
+  beforeAll(async () => {
+    const user = await prisma.user.create({
+      data: {
+        id: uuid(),
+        name: "Test User",
+        email: "pull@example.com",
+        image: "https://example.com/test.jpg",
+        emailVerified: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      select: { id: true, name: true, email: true },
+    });
+
+    const session = await prisma.session.create({
+      data: {
+        id: uuid(),
+        token: "pull-token",
+        userId: user.id,
+        ipAddress: "127.0.0.1",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        userAgent: "test-agent",
+        expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24),
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    userId = user.id;
+    sessionId = session.id;
+  });
+
   afterAll(async () => {
+    await prisma.session.deleteMany({
+      where: {
+        id: sessionId,
+      },
+    });
+
+    await prisma.user.deleteMany({
+      where: {
+        id: userId,
+      },
+    });
+
     jest.clearAllMocks();
     jest.resetModules();
   });
@@ -72,13 +83,7 @@ describe("pull test", () => {
   test("it should pull from the database", async function () {
     const res = await request(createApp(mockRedis))
       .get(`${API_V1}/sync/pull`)
-      .set("Authorization", "Bearer new-session-id");
-
-    expect(transaction).toHaveBeenCalledTimes(1);
-    expect(findManyBudgets).toHaveBeenCalled();
-    expect(findManyCategories).toHaveBeenCalled();
-    expect(findManyPaymentMethods).toHaveBeenCalled();
-    expect(findManyLogs).toHaveBeenCalled();
+      .set("Authorization", `Bearer ${sessionId}`);
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({
