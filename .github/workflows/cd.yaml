@@ -1,0 +1,58 @@
+name: Continuous Deployment Workflow
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  test:
+    name: "Run Tests"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        name: "Checkout repository"
+
+      - name: "Install Dependencies"
+        run: npm ci
+
+      - name: "Run Tests"
+        run: npm run test
+
+  deploy:
+    name: "Deploy to Production"
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        name: "Checkout repository"
+
+      - name: "Install Dependencies"
+        run: npm ci
+
+      - name: "Build the Application"
+        run: npm run build
+
+      - name: Deploy Build to Server
+        uses: Burnett01/rsync-deployments@7.1.0
+        with:
+          switches: -avr --delete --exclude='.git/' --exclude='node_modules/' --exclude='.env'
+          path: ./dist
+          remote_path: /var/app
+          remote_host: ${{ secrets.HOSTNAME }}
+          remote_user: ${{ secrets.REMOTE_USER }}
+          remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: SSH Remote Commands
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.HOSTNAME }}
+          username: ${{ secrets.REMOTE_USER }}
+          password: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.PORT }}
+          script: |
+            cd /var/app/dist
+            pm2 start dist/index.js --name 'paytrail-express-backend' || pm2 restart 'paytrail-express-backend'
+            pm2 save
+            pm2 startup systemd -u $USER --hp $HOME
+            sudo service nginx restart
