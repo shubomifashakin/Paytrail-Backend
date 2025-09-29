@@ -4,11 +4,13 @@ on:
   push:
     branches:
       - dev
+      - refactor/*
   workflow_dispatch:
 
 jobs:
   tests:
     name: "Run Unit Tests"
+    environment: development
     defaults:
       run:
         shell: bash
@@ -16,6 +18,9 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         name: "Checkout Repository"
+
+      - name: "Write .env.test file"
+        run: echo "${{ secrets.ENV_TEST_FILE }}" > .env.test
 
       - name: "Install Dependencies"
         run: npm ci
