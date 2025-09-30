@@ -33,6 +33,8 @@ describe("push", () => {
   let categoryId: string;
   let logId: string;
 
+  const oldDate = new Date();
+
   beforeAll(async () => {
     const user = await prisma.user.create({
       data: {
@@ -181,204 +183,314 @@ describe("push", () => {
     jest.resetModules();
   });
 
-  test("it should push the data to the database", async function () {
-    const res = await request(createApp(mockRedis))
-      .post(`${API_V1}/sync/push`)
-      .set("Authorization", `Bearer ${sessionId}`)
-      .set("Content-Type", "application/json")
-      .send({
-        data: [
-          {
-            id: "1234",
-            operation: "insert",
-            tableName: "budgets",
-            data: JSON.stringify({
+  describe("first interaction with db", () => {
+    test("it should push the data to the database", async function () {
+      const res = await request(createApp(mockRedis))
+        .post(`${API_V1}/sync/push`)
+        .set("Authorization", `Bearer ${sessionId}`)
+        .set("Content-Type", "application/json")
+        .send({
+          data: [
+            {
               id: uuid(),
-              userId: userId,
-              amount: 100,
-              currency: "NGN",
-              createdAt: new Date(),
-              updatedAt: new Date(),
-              year: 2025,
-              budgetMonth: "February",
-              period: 202501,
-            }),
-          },
+              operation: "insert",
+              tableName: "budgets",
+              data: JSON.stringify({
+                userId: userId,
+                amount: "100",
+                currency: "NGN",
+                createdAt: new Date(),
+                updatedAt: new Date(),
+                year: 2025,
+                budgetMonth: "February",
+                period: 202501,
+              }),
+            },
 
-          {
-            id: budgetId,
-            operation: "update",
-            tableName: "budgets",
-            data: JSON.stringify({
-              userId: userId,
-              amount: 1000,
-              currency: "NGN",
-              createdAt: new Date(),
-              updatedAt: new Date(),
-              year: 2025,
-              budgetMonth: "January",
-              period: 202500,
-            }),
-          },
+            {
+              id: budgetId,
+              operation: "update",
+              tableName: "budgets",
+              data: JSON.stringify({
+                userId: userId,
+                amount: "1000", //changed from 100
+                currency: "NGN",
+                createdAt: new Date(),
+                updatedAt: new Date(),
+                year: 2025,
+                budgetMonth: "January",
+                period: 202500,
+              }),
+            },
 
-          {
-            id: uuid(),
-            operation: "delete",
-            tableName: "budgets",
-            data: JSON.stringify({
+            {
               id: uuid(),
-            }),
-          },
+              operation: "delete",
+              tableName: "budgets",
+              data: JSON.stringify({
+                id: uuid(),
+              }),
+            },
 
-          {
-            id: uuid(),
-            operation: "insert",
-            tableName: "categories",
-            data: JSON.stringify({
+            {
               id: uuid(),
-              name: "New Category",
-              color: "#FC3",
-              emoji: "😭",
-              description: "Test Category Description",
-              userId: userId,
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            }),
-          },
+              operation: "insert",
+              tableName: "categories",
+              data: JSON.stringify({
+                id: uuid(),
+                name: "New Category",
+                color: "#FC3",
+                emoji: "😭",
+                description: "Test Category Description",
+                userId: userId,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+              }),
+            },
 
-          {
-            id: categoryId,
-            operation: "update",
-            tableName: "categories",
-            data: JSON.stringify({
-              name: "Test Category",
-              color: "#FF2000",
-              emoji: "💰",
-              description: "Test Category Description",
-              userId: userId,
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            }),
-          },
+            {
+              id: categoryId,
+              operation: "update",
+              tableName: "categories",
+              data: JSON.stringify({
+                name: "Test Category",
+                color: "#FF2000",
+                emoji: "💰",
+                description: "Test Category Description",
+                userId: userId,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+              }),
+            },
 
-          {
-            id: uuid(),
-            operation: "delete",
-            tableName: "categories",
-            data: JSON.stringify({
+            {
               id: uuid(),
-            }),
-          },
+              operation: "delete",
+              tableName: "categories",
+              data: JSON.stringify({
+                id: uuid(),
+              }),
+            },
 
-          {
-            id: uuid(),
-            operation: "insert",
-            tableName: "payment_methods",
-            data: JSON.stringify({
-              name: "New Payment Method",
-              color: "#FF1000",
-              emoji: "�",
-              description: "Test Payment Method Description",
-              userId: userId,
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            }),
-          },
-
-          {
-            id: paymentId,
-            operation: "update",
-            tableName: "payment_methods",
-            data: JSON.stringify({
-              name: "Test Payment Method",
-              color: "#FF0000",
-              emoji: "💰",
-              description: "Test Payment Method Description",
-              userId: userId,
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            }),
-          },
-          {
-            id: uuid(),
-            operation: "delete",
-            tableName: "payment_methods",
-            data: JSON.stringify({
+            {
               id: uuid(),
-            }),
-          },
+              operation: "insert",
+              tableName: "payment_methods",
+              data: JSON.stringify({
+                name: "New Payment Method",
+                color: "#FF1000",
+                emoji: "�",
+                description: "Test Payment Method Description",
+                userId: userId,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+              }),
+            },
 
-          {
-            id: logId,
-            operation: "update",
-            tableName: "logs",
-            data: JSON.stringify({
-              amount: "100",
-              transactionDate: new Date(),
-              note: "Test Note",
-              logType: "income",
-              currency: "NGN",
-              categoryId: categoryId,
-              userId: userId,
-              paymentMethodId: paymentId,
-              budgetId: undefined,
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            }),
-          },
-          {
-            id: uuid(),
-            operation: "insert",
-            tableName: "logs",
-            data: JSON.stringify({
-              amount: "100",
-              transactionDate: new Date(),
-              note: "Test Note",
-              logType: "income",
-              currency: "NGN",
-              categoryId: categoryId,
-              userId: userId,
-              paymentMethodId: paymentId,
-              budgetId: budgetId,
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            }),
-          },
-
-          {
-            id: uuid(),
-            operation: "delete",
-            tableName: "logs",
-            data: JSON.stringify({
+            {
+              id: paymentId,
+              operation: "update",
+              tableName: "payment_methods",
+              data: JSON.stringify({
+                name: "Test Payment Method",
+                color: "#FF0000",
+                emoji: "💰",
+                description: "Test Payment Method Description",
+                userId: userId,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+              }),
+            },
+            {
               id: uuid(),
-            }),
-          },
-        ],
-      });
+              operation: "delete",
+              tableName: "payment_methods",
+              data: JSON.stringify({
+                id: uuid(),
+              }),
+            },
 
-    expect(res.status).toBe(200);
-    expect(res.body).toHaveProperty("serverTime");
+            {
+              id: logId,
+              operation: "update",
+              tableName: "logs",
+              data: JSON.stringify({
+                amount: "100",
+                transactionDate: new Date(),
+                note: "Test Note",
+                logType: "income",
+                currency: "NGN",
+                categoryId: categoryId,
+                userId: userId,
+                paymentMethodId: paymentId,
+                budgetId: undefined,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+              }),
+            },
+            {
+              id: uuid(),
+              operation: "insert",
+              tableName: "logs",
+              data: JSON.stringify({
+                amount: "100",
+                transactionDate: new Date(),
+                note: "Test Note",
+                logType: "income",
+                currency: "NGN",
+                categoryId: categoryId,
+                userId: userId,
+                paymentMethodId: paymentId,
+                budgetId: budgetId,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+              }),
+            },
+
+            {
+              id: uuid(),
+              operation: "delete",
+              tableName: "logs",
+              data: JSON.stringify({
+                id: uuid(),
+              }),
+            },
+          ],
+        });
+
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty("serverTime");
+    });
   });
 
-  test("it should reject requests with invalid operations", async function () {
-    const res = await request(createApp(mockRedis))
-      .post(`${API_V1}/sync/push`)
-      .set("Authorization", `Bearer ${sessionId}`)
-      .set("Content-Type", "application/json")
-      .send({
-        data: [
-          { id: "1234", operation: "insert", tableName: "budgets", data: JSON.stringify({}) },
-          { id: "1234", operation: "update", tableName: "budgets", data: JSON.stringify({}) },
-          { id: "1234", operation: "delete", tableName: "budgets", data: JSON.stringify({}) },
-          {
-            id: "1234",
-            operation: "wrongOperation",
-            tableName: "categories",
-            data: JSON.stringify({}),
-          },
-        ],
+  describe("second interaction with db", () => {
+    test("it should not overwite the existing data since incoming update is older", async function () {
+      const res = await request(createApp(mockRedis))
+        .post(`${API_V1}/sync/push`)
+        .set("Authorization", `Bearer ${sessionId}`)
+        .set("Content-Type", "application/json")
+        .send({
+          data: [
+            {
+              id: budgetId,
+              operation: "update",
+              tableName: "budgets",
+              data: JSON.stringify({
+                userId: userId,
+                amount: 5000,
+                currency: "NGN",
+                createdAt: new Date(),
+                updatedAt: oldDate,
+                year: 2026,
+                budgetMonth: "January",
+                period: 202600,
+              }),
+            },
+            {
+              id: logId,
+              operation: "update",
+              tableName: "logs",
+              data: JSON.stringify({
+                amount: "2000",
+                transactionDate: new Date(),
+                note: "Test Note",
+                logType: "income",
+                currency: "NGN",
+                categoryId: categoryId,
+                userId: userId,
+                paymentMethodId: paymentId,
+                budgetId: undefined,
+                createdAt: new Date(),
+                updatedAt: oldDate,
+              }),
+            },
+            {
+              id: categoryId,
+              operation: "update",
+              tableName: "categories",
+              data: JSON.stringify({
+                name: "Updated",
+                color: "#000",
+                emoji: "💰",
+                description: "Test Category Description",
+                userId: userId,
+                createdAt: new Date(),
+                updatedAt: oldDate,
+              }),
+            },
+            {
+              id: paymentId,
+              operation: "update",
+              tableName: "payment_methods",
+              data: JSON.stringify({
+                name: "Updated",
+                color: "#FF2000",
+                emoji: "💰",
+                description: "Test Category Description",
+                userId: userId,
+                createdAt: new Date(),
+                updatedAt: oldDate,
+              }),
+            },
+          ],
+        });
+
+      const data = await prisma.budgets.findUnique({
+        where: {
+          id: budgetId,
+        },
       });
 
-    expect(res.status).toBe(400);
+      const logData = await prisma.logs.findUnique({
+        where: {
+          id: logId,
+        },
+      });
+
+      const categoryData = await prisma.categories.findUnique({
+        where: {
+          id: categoryId,
+        },
+      });
+
+      const paymentData = await prisma.paymentMethods.findUnique({
+        where: {
+          id: paymentId,
+        },
+      });
+
+      expect(data?.amount.toNumber()).toEqual(1000);
+      expect(data?.period).toBe(202500);
+      expect(logData?.amount.toNumber()).toEqual(100);
+      expect(categoryData?.name).toEqual("Test Category");
+      expect(paymentData?.name).toEqual("Test Payment Method");
+
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty("serverTime");
+    });
+  });
+
+  describe("invalid requests", () => {
+    test("it should reject requests with invalid operations", async function () {
+      const res = await request(createApp(mockRedis))
+        .post(`${API_V1}/sync/push`)
+        .set("Authorization", `Bearer ${sessionId}`)
+        .set("Content-Type", "application/json")
+        .send({
+          data: [
+            { id: "1234", operation: "insert", tableName: "budgets", data: JSON.stringify({}) },
+            { id: "1234", operation: "update", tableName: "budgets", data: JSON.stringify({}) },
+            { id: "1234", operation: "delete", tableName: "budgets", data: JSON.stringify({}) },
+            {
+              id: "1234",
+              operation: "wrongOperation",
+              tableName: "categories",
+              data: JSON.stringify({}),
+            },
+          ],
+        });
+
+      expect(res.status).toBe(400);
+    });
   });
 });
