@@ -20,172 +20,218 @@ export default async function (req: Request, res: Response) {
     return res.status(400).json({ message: error.issues });
   }
 
-  await prisma.$transaction(
-    data.data
-      .map((c) => {
-        if (c.tableName === "budgets" && c.operation === "delete") {
-          return prisma.budgets.deleteMany({
-            where: {
-              id: c.id,
-            },
-          });
+  await prisma.$transaction(async (tx) => {
+    for (const c of data.data) {
+      if (c.tableName === "budgets" && c.operation === "delete") {
+        await tx.budgets.deleteMany({
+          where: {
+            id: c.id,
+          },
+        });
+      }
+
+      if (c.tableName === "budgets" && (c.operation === "update" || c.operation === "insert")) {
+        const latest = await tx.budgets.findUnique({
+          where: {
+            id: c.id,
+          },
+          select: {
+            updatedAt: true,
+          },
+        });
+
+        if (latest && latest?.updatedAt > new Date(c.data.updatedAt)) {
+          continue;
         }
 
-        if (c.tableName === "budgets" && (c.operation === "update" || c.operation === "insert")) {
-          return prisma.budgets.upsert({
-            create: {
-              id: c.id,
-              amount: c.data.amount,
-              year: c.data.year,
-              budgetMonth: c.data.budgetMonth,
-              currency: c.data.currency,
-              userId: c.data.userId,
-              createdAt: new Date(c.data.createdAt),
-              updatedAt: new Date(c.data.updatedAt),
-              period: c.data.period,
-            },
-            where: {
-              id: c.id,
-            },
-            update: {
-              id: c.id,
-              amount: c.data.amount,
-              year: c.data.year,
-              budgetMonth: c.data.budgetMonth,
-              currency: c.data.currency,
-              userId: c.data.userId,
-              createdAt: new Date(c.data.createdAt),
-              updatedAt: new Date(c.data.updatedAt),
-              period: c.data.period,
-            },
-          });
+        await tx.budgets.upsert({
+          create: {
+            id: c.id,
+            amount: c.data.amount,
+            year: c.data.year,
+            budgetMonth: c.data.budgetMonth,
+            currency: c.data.currency,
+            userId: c.data.userId,
+            createdAt: new Date(c.data.createdAt),
+            updatedAt: new Date(c.data.updatedAt),
+            period: c.data.period,
+          },
+          where: {
+            id: c.id,
+          },
+          update: {
+            id: c.id,
+            amount: c.data.amount,
+            year: c.data.year,
+            budgetMonth: c.data.budgetMonth,
+            currency: c.data.currency,
+            userId: c.data.userId,
+            createdAt: new Date(c.data.createdAt),
+            updatedAt: new Date(c.data.updatedAt),
+            period: c.data.period,
+          },
+        });
+      }
+
+      if (c.tableName === "categories" && c.operation === "delete") {
+        await tx.categories.deleteMany({
+          where: {
+            id: c.id,
+          },
+        });
+      }
+
+      if (c.tableName === "categories" && (c.operation === "update" || c.operation === "insert")) {
+        const latest = await tx.categories.findUnique({
+          where: {
+            id: c.id,
+          },
+          select: {
+            updatedAt: true,
+          },
+        });
+
+        if (latest && latest?.updatedAt > new Date(c.data.updatedAt)) {
+          continue;
         }
 
-        if (c.tableName === "categories" && c.operation === "delete") {
-          return prisma.categories.deleteMany({
-            where: {
-              id: c.id,
-            },
-          });
+        await tx.categories.upsert({
+          where: {
+            id: c.id,
+          },
+          create: {
+            id: c.id,
+            name: c.data.name,
+            color: c.data.color,
+            emoji: c.data.emoji,
+            description: c.data.description,
+            userId: c.data.userId,
+            createdAt: new Date(c.data.createdAt),
+            updatedAt: new Date(c.data.updatedAt),
+          },
+          update: {
+            id: c.id,
+            name: c.data.name,
+            color: c.data.color,
+            emoji: c.data.emoji,
+            description: c.data.description,
+            userId: c.data.userId,
+            createdAt: new Date(c.data.createdAt),
+            updatedAt: new Date(c.data.updatedAt),
+          },
+        });
+      }
+
+      if (c.tableName === "payment_methods" && c.operation === "delete") {
+        await tx.paymentMethods.deleteMany({
+          where: {
+            id: c.id,
+          },
+        });
+      }
+
+      if (
+        c.tableName === "payment_methods" &&
+        (c.operation === "update" || c.operation === "insert")
+      ) {
+        const latest = await tx.paymentMethods.findUnique({
+          where: {
+            id: c.id,
+          },
+          select: {
+            updatedAt: true,
+          },
+        });
+
+        if (latest && latest?.updatedAt > new Date(c.data.updatedAt)) {
+          continue;
         }
 
-        if (
-          c.tableName === "categories" &&
-          (c.operation === "update" || c.operation === "insert")
-        ) {
-          return prisma.categories.upsert({
-            where: {
-              id: c.id,
-            },
-            create: {
-              id: c.id,
-              name: c.data.name,
-              color: c.data.color,
-              emoji: c.data.emoji,
-              description: c.data.description,
-              userId: c.data.userId,
-              createdAt: new Date(c.data.createdAt),
-              updatedAt: new Date(c.data.updatedAt),
-            },
-            update: {
-              id: c.id,
-              name: c.data.name,
-              color: c.data.color,
-              emoji: c.data.emoji,
-              description: c.data.description,
-              userId: c.data.userId,
-              createdAt: new Date(c.data.createdAt),
-              updatedAt: new Date(c.data.updatedAt),
-            },
-          });
+        await tx.paymentMethods.upsert({
+          where: {
+            id: c.id,
+          },
+          create: {
+            id: c.id,
+            name: c.data.name,
+            color: c.data.color,
+            description: c.data.description,
+            emoji: c.data.emoji,
+            userId: c.data.userId,
+            createdAt: new Date(c.data.createdAt),
+            updatedAt: new Date(c.data.updatedAt),
+          },
+          update: {
+            id: c.id,
+            name: c.data.name,
+            color: c.data.color,
+            description: c.data.description,
+            userId: c.data.userId,
+            createdAt: new Date(c.data.createdAt),
+            updatedAt: new Date(c.data.updatedAt),
+          },
+        });
+      }
+
+      if (c.tableName === "logs" && c.operation === "delete") {
+        await tx.logs.deleteMany({
+          where: {
+            id: c.id,
+          },
+        });
+      }
+
+      if (c.tableName === "logs" && (c.operation === "update" || c.operation === "insert")) {
+        const latest = await tx.logs.findUnique({
+          where: {
+            id: c.id,
+          },
+          select: {
+            updatedAt: true,
+          },
+        });
+
+        if (latest && latest?.updatedAt > new Date(c.data.updatedAt)) {
+          continue;
         }
 
-        if (c.tableName === "payment_methods" && c.operation === "delete") {
-          return prisma.paymentMethods.deleteMany({
-            where: {
-              id: c.id,
-            },
-          });
-        }
-
-        if (
-          c.tableName === "payment_methods" &&
-          (c.operation === "update" || c.operation === "insert")
-        ) {
-          return prisma.paymentMethods.upsert({
-            where: {
-              id: c.id,
-            },
-            create: {
-              id: c.id,
-              name: c.data.name,
-              color: c.data.color,
-              description: c.data.description,
-              emoji: c.data.emoji,
-              userId: c.data.userId,
-              createdAt: new Date(c.data.createdAt),
-              updatedAt: new Date(c.data.updatedAt),
-            },
-            update: {
-              id: c.id,
-              name: c.data.name,
-              color: c.data.color,
-              description: c.data.description,
-              userId: c.data.userId,
-              createdAt: new Date(c.data.createdAt),
-              updatedAt: new Date(c.data.updatedAt),
-            },
-          });
-        }
-
-        if (c.tableName === "logs" && c.operation === "delete") {
-          return prisma.logs.deleteMany({
-            where: {
-              id: c.id,
-            },
-          });
-        }
-
-        if (c.tableName === "logs" && (c.operation === "update" || c.operation === "insert")) {
-          return prisma.logs.upsert({
-            where: {
-              id: c.id,
-            },
-            create: {
-              id: c.id,
-              amount: c.data.amount,
-              transactionDate: new Date(c.data.transactionDate),
-              note: c.data?.note || "",
-              logType: c.data.logType,
-              currency: c.data.currency,
-              categoryId: c.data.categoryId,
-              userId: c.data.userId,
-              paymentMethodId: c.data.paymentMethodId,
-              budgetId: c.data.budgetId,
-              createdAt: new Date(c.data.createdAt),
-              updatedAt: new Date(c.data.updatedAt),
-            },
-            update: {
-              id: c.id,
-              amount: c.data.amount,
-              transactionDate: new Date(c.data.transactionDate),
-              note: c.data?.note || "",
-              logType: c.data.logType,
-              currency: c.data.currency,
-              categoryId: c.data.categoryId,
-              userId: c.data.userId,
-              paymentMethodId: c.data.paymentMethodId,
-              budgetId: c.data.budgetId,
-              createdAt: new Date(c.data.createdAt),
-              updatedAt: new Date(c.data.updatedAt),
-            },
-          });
-        }
-
-        return null;
-      })
-      .filter((item) => item !== null),
-  );
+        await tx.logs.upsert({
+          where: {
+            id: c.id,
+          },
+          create: {
+            id: c.id,
+            amount: c.data.amount,
+            transactionDate: new Date(c.data.transactionDate),
+            note: c.data?.note || "",
+            logType: c.data.logType,
+            currency: c.data.currency,
+            categoryId: c.data.categoryId,
+            userId: c.data.userId,
+            paymentMethodId: c.data.paymentMethodId,
+            budgetId: c.data.budgetId,
+            createdAt: new Date(c.data.createdAt),
+            updatedAt: new Date(c.data.updatedAt),
+          },
+          update: {
+            id: c.id,
+            amount: c.data.amount,
+            transactionDate: new Date(c.data.transactionDate),
+            note: c.data?.note || "",
+            logType: c.data.logType,
+            currency: c.data.currency,
+            categoryId: c.data.categoryId,
+            userId: c.data.userId,
+            paymentMethodId: c.data.paymentMethodId,
+            budgetId: c.data.budgetId,
+            createdAt: new Date(c.data.createdAt),
+            updatedAt: new Date(c.data.updatedAt),
+          },
+        });
+      }
+    }
+    return null;
+  });
 
   return res.status(200).json({ serverTime: new Date().toISOString() });
 }

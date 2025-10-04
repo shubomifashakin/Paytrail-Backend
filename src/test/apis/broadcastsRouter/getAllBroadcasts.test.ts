@@ -1,5 +1,6 @@
 import { NextFunction } from "express";
 import request from "supertest";
+import { v4 as uuid } from "uuid";
 
 const mockSendCommand = jest.fn().mockImplementation((command) => command);
 const mockScanCommand = jest.fn().mockResolvedValue({
@@ -20,20 +21,6 @@ jest.mock("@aws-sdk/lib-dynamodb", () => ({
   ScanCommand: mockScanCommand,
 }));
 
-const findUniqueSession = jest.fn().mockResolvedValue({
-  user: {
-    id: "new-user-id",
-  },
-});
-
-jest.mock("../../../lib/prisma", () => {
-  return {
-    session: {
-      findUnique: findUniqueSession,
-    },
-  };
-});
-
 const mockRedis = {
   get: jest.fn(),
   set: jest.fn(),
@@ -53,7 +40,60 @@ import createApp from "../../../app";
 import { API_V1 } from "../../../utils/constants";
 import serverEnv from "../../../serverEnv";
 
+import prisma from "../../../lib/prisma";
+
 describe("getAllBroadcasts", () => {
+  let sessionId: string;
+  let userId: string;
+
+  beforeAll(async () => {
+    const user = await prisma.user.create({
+      data: {
+        id: uuid(),
+        name: "Test User",
+        email: "broadcast@example.com",
+        image: "https://example.com/test.jpg",
+        emailVerified: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      select: { id: true },
+    });
+
+    const session = await prisma.session.create({
+      data: {
+        id: uuid(),
+        token: "broadcast-token",
+        userId: user.id,
+        ipAddress: "127.0.0.1",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        userAgent: "test-agent",
+        expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24),
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    sessionId = session.id;
+    userId = user.id;
+  });
+
+  afterAll(async () => {
+    await prisma.session.deleteMany({
+      where: {
+        id: sessionId,
+      },
+    });
+
+    await prisma.user.deleteMany({
+      where: {
+        id: userId,
+      },
+    });
+  });
+
   beforeEach(async () => {
     jest.clearAllMocks();
   });
@@ -62,18 +102,7 @@ describe("getAllBroadcasts", () => {
     test("it should return an empty array", async () => {
       const res = await request(createApp(mockRedis))
         .get(`${API_V1}/broadcasts`)
-        .set("Authorization", "Bearer fake-session-id");
-
-      expect(findUniqueSession).toHaveBeenCalledWith({
-        where: {
-          id: "fake-session-id",
-        },
-        include: {
-          user: true,
-        },
-      });
-
-      expect(findUniqueSession).toHaveBeenCalledTimes(1);
+        .set("Authorization", `Bearer ${sessionId}`);
 
       expect(mockScanCommand).toHaveBeenCalledTimes(1);
 
@@ -88,21 +117,10 @@ describe("getAllBroadcasts", () => {
     test("it should return an empty array -- queryparams sent", async () => {
       const res = await request(createApp(mockRedis))
         .get(`${API_V1}/broadcasts`)
-        .set("Authorization", "Bearer fake-session-id")
+        .set("Authorization", `Bearer ${sessionId}`)
         .query({
           exclusiveStartKey: JSON.stringify({}),
         });
-
-      expect(findUniqueSession).toHaveBeenCalledWith({
-        where: {
-          id: "fake-session-id",
-        },
-        include: {
-          user: true,
-        },
-      });
-
-      expect(findUniqueSession).toHaveBeenCalledTimes(1);
 
       expect(mockScanCommand).toHaveBeenCalledTimes(1);
 
@@ -122,7 +140,7 @@ describe("getAllBroadcasts", () => {
           {
             id: "1",
             message: "test",
-            createdAt: Date.now(),
+            createdAt: 12345,
             notificationType: "test",
             image: "test-image",
           },
@@ -134,18 +152,7 @@ describe("getAllBroadcasts", () => {
     test("it should return an array with 1 item", async () => {
       const res = await request(createApp(mockRedis))
         .get(`${API_V1}/broadcasts`)
-        .set("Authorization", "Bearer fake-session-id");
-
-      expect(findUniqueSession).toHaveBeenCalledWith({
-        where: {
-          id: "fake-session-id",
-        },
-        include: {
-          user: true,
-        },
-      });
-
-      expect(findUniqueSession).toHaveBeenCalledTimes(1);
+        .set("Authorization", `Bearer ${sessionId}`);
 
       expect(mockScanCommand).toHaveBeenCalledTimes(1);
       expect(mockScanCommand).toHaveBeenCalledWith({
@@ -162,7 +169,7 @@ describe("getAllBroadcasts", () => {
             id: "1",
             message: "test",
             image: "test-image",
-            createdAt: Date.now(),
+            createdAt: 12345,
             notificationType: "test",
           },
         ],
