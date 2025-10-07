@@ -54,6 +54,7 @@ describe("getAllUserNotifications", () => {
       data: {
         id: uuid(),
         name: "Test User",
+        currency: "USD",
         email: "getUserNotif@example.com",
         image: "https://example.com/test.jpg",
         emailVerified: true,

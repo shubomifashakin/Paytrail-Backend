@@ -40,6 +40,7 @@ describe("push", () => {
       data: {
         id: uuid(),
         name: "Test User",
+        currency: "USD",
         email: "push@example.com",
         image: "https://example.com/test.jpg",
         emailVerified: true,

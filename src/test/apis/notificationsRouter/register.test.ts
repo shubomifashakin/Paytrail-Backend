@@ -53,6 +53,7 @@ describe("registerForPushNotifications", () => {
       data: {
         id: uuid(),
         name: "Test User",
+        currency: "USD",
         email: "register@example.com",
         image: "https://example.com/test.jpg",
         emailVerified: true,
