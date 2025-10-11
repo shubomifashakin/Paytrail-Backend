@@ -27,7 +27,7 @@ export const pushSchemaValidator = z.object({
             return JSON.parse(arg) as any;
           }),
         operation: z.enum(["insert", "update", "delete"]),
-        tableName: z.enum(["budgets", "logs", "categories", "payment_methods"]),
+        tableName: z.enum(["budgets", "logs", "categories", "payment_methods", "user"]),
       }),
     )
     .nonempty(),

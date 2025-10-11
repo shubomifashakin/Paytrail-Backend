@@ -53,6 +53,7 @@ describe("parseReceipts", () => {
       data: {
         id: uuid(),
         name: "Test User",
+        currency: "USD",
         email: "receipts@example.com",
         image: "https://example.com/test.jpg",
         emailVerified: true,

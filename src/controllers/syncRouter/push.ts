@@ -30,6 +30,17 @@ export default async function (req: Request, res: Response) {
         });
       }
 
+      if (c.tableName === "user" && c.operation === "update") {
+        await tx.user.update({
+          where: {
+            id: c.id,
+          },
+          data: {
+            currency: c.data.currency,
+          },
+        });
+      }
+
       if (c.tableName === "budgets" && (c.operation === "update" || c.operation === "insert")) {
         const latest = await tx.budgets.findUnique({
           where: {

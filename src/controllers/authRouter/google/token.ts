@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 
 import * as jose from "jose";
 
+import { Currencies } from "@prisma/client";
 import { v4 as uuid } from "uuid";
 
 import serverEnv from "../../../serverEnv";
@@ -60,6 +61,20 @@ export default async function googleToken(req: Request, res: Response) {
 
   const claims = jose.decodeJwt(data.id_token) as any;
 
+  const currencyRequest = await fetch(`https://ipapi.co/${req.ip}/json/`).catch(() => {
+    return {
+      json: () => {
+        return {
+          currency: Currencies.USD,
+        };
+      },
+    };
+  });
+
+  const currencyData = (await currencyRequest.json()) as { currency: Currencies };
+
+  const currency = Currencies?.[currencyData?.currency] || Currencies.USD;
+
   let user = await prisma.user.findUnique({
     where: {
       email: claims.email!,
@@ -76,6 +91,7 @@ export default async function googleToken(req: Request, res: Response) {
         image: claims.picture!,
         createdAt: new Date(),
         updatedAt: new Date(),
+        currency: currency,
         PaymentMethods: {
           create: [
             {
@@ -142,6 +158,7 @@ export default async function googleToken(req: Request, res: Response) {
     userId: user.id,
     email: user.email,
     sessionId: session.id,
+    currency: user.currency,
     profileImage: user.image,
     createdAt: user.createdAt,
   };

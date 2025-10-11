@@ -56,6 +56,7 @@ describe("getAllBroadcasts", () => {
         emailVerified: true,
         createdAt: new Date(),
         updatedAt: new Date(),
+        currency: "USD",
       },
       select: { id: true },
     });

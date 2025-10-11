@@ -34,6 +34,7 @@ describe("pull test", () => {
       data: {
         id: uuid(),
         name: "Test User",
+        currency: "USD",
         email: "pull@example.com",
         image: "https://example.com/test.jpg",
         emailVerified: true,

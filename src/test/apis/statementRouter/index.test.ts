@@ -65,6 +65,7 @@ describe("requestStatement", () => {
       data: {
         id: uuid(),
         name: "Test User",
+        currency: "USD",
         email: "statement@example.com",
         image: "https://example.com/test.jpg",
         emailVerified: true,

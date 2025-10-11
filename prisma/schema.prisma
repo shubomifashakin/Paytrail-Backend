@@ -190,6 +190,7 @@ model User {
   emailVerified  Boolean
   image          String?
   createdAt      DateTime
+  currency       Currencies
   updatedAt      DateTime
   device         DeviceToken[]
   sessions       Session[]

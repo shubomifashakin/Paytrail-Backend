@@ -41,17 +41,16 @@ Get the name of the merchant/store from the receipt and use it as the merchant f
 Use the name of each item purchased on the receipt as the respective note of the log.
 
 Overview totalItemsPurchased: Extract the total number of items purchased from the receipt and use it as the totalItemsPurchased field.
-Overview totalAmountSpent: Extract the total amount spent from the receipt and use it as the totalAmountSpent field.
+Overview totalAmountSpent: Extract the total amount spent from the receipt and use it as the totalAmountSpent field. It should match the sum of the amounts of all the items you extracted from the receipt.
 Let all dates be in ISO format.
 
-IMPORTANT: Let the result be an array of objects!
+IMPORTANT: Do not try to parse images/files that are not receipts or receipt-like. If an image uploaded is not a receipt throw an error/FAIL.
+IMPORTANT: Include the tax amount in the total amount spent. Let the total amount of all the items returned match the total amount spent.
 
-IMPORTANT: Ignore any files or images that do not look like a receipt or is not a receipt like file.
+IMPORTANT: For any item you extracted that does not have an appropriate category or paymentMethod description and id supplied, default to the category or paymentMethod with description "All other categories/paymentMethods" for it.
+If there is no category for "Tax" use the category with description "All other categories" for it.
 
-IMPORTANT: Exclude all tax related items from the result and the overall total.
-`;
-
-//FIXME: ADD CONSTRAINT TO TAG LOGS WHICH DONT HAVE A SUITABLE CATEGORY OR PAYMENT METHOD AS OTHERS
+IMPORTANT: Let the result be an array of objects!`;
 
 export class ReceiptParser {
   model: LanguageModel;
@@ -87,8 +86,8 @@ export class ReceiptParser {
       schemaDescription: parsedReceiptSchema.meta()?.description,
       prompt: [
         { role: "user", content: files },
-        { role: "assistant", content: categories },
-        { role: "assistant", content: paymentMethods },
+        { role: "user", content: categories },
+        { role: "user", content: paymentMethods },
       ],
     });
 
