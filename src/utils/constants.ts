@@ -39,4 +39,4 @@ export const OAUTH_ERRORS = {
 export const GOOGLE_SIGN_IN_ERROR = "GoogleSignInError:";
 export const GOOGLE_TOKEN_ERROR = "GoogleTokenError:";
 
-export const resendEmailFrom = "Paytrail <no-reply@notifications.paytrail.app>";
+export const resendEmailFrom = "Paytrail <hello@notifications.paytrail.app>";
