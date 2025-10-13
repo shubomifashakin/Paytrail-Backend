@@ -23,10 +23,10 @@ class Server {
 
   async start() {
     try {
-      await redisClient.connect();
+      const redis = await redisClient.connect();
       logger.info("Connected to Redis");
 
-      this.app = createApp(redisClient);
+      this.app = createApp(redis);
       this.server = http.createServer(this.app);
 
       const start = Date.now();
