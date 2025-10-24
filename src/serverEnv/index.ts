@@ -24,8 +24,6 @@ const serverEnv = {
 
   userNotificationsTableARN: process.env.USER_NOTIFICATIONS_TABLE_ARN!,
   broadcastNotificationsTableARN: process.env.BROADCAST_NOTIFICATIONS_TABLE_ARN!,
-
-  googleFormsJwtSecret: process.env.GOOGLE_FORMS_JWT_SECRET!,
 };
 
 export default serverEnv;

@@ -1,17 +1,14 @@
 import { Router } from "express";
 
 import isAuthorized from "../middlewares/isAuthorized";
-import validateRequestDeleteJwt from "../middlewares/validateRequestDeleteJwt";
 
-import { deleteUserAccount } from "../controllers/accountsRouter/deleteAccount";
-import handleRequestDelete from "../controllers/accountsRouter/deletionRequests";
+import asyncHandler from "../utils/asyncHandler";
+import deleteUserAccount from "../controllers/accountsRouter/deleteAccount";
 
 export default function createAccountRouter() {
   const router = Router();
 
-  router.delete("/deletion-requests", validateRequestDeleteJwt, handleRequestDelete);
-
-  router.delete("/me", isAuthorized, deleteUserAccount);
+  router.delete("/me", isAuthorized, asyncHandler(deleteUserAccount));
 
   return router;
 }
