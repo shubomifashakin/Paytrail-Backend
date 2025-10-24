@@ -52,7 +52,7 @@ import serverEnv from "../../../serverEnv";
 
 import prisma from "../../../lib/prisma";
 
-describe("authentication tests", () => {
+describe("Auth Router", () => {
   afterAll(async () => {
     await prisma.user.deleteMany({
       where: {
@@ -72,184 +72,189 @@ describe("authentication tests", () => {
 
     await prisma.$disconnect();
   });
+
   beforeEach(async () => {
     jest.clearAllMocks();
 
     global.fetch = jest.fn();
   });
 
-  describe("authorize request", () => {
-    test("google sign in authorize request should be successfully redirected", async () => {
-      const state = "fake-state";
+  describe("Google Oauth", () => {
+    describe("GET /auth/google", () => {
+      test("google sign in authorize request should be successfully redirected", async () => {
+        const state = "fake-state";
 
-      const res = await request(createApp(mockRedis))
-        .get(`${API_V1}/auth/google`)
-        .query({ redirect_uri: serverEnv.appScheme, state });
+        const res = await request(createApp(mockRedis))
+          .get(`${API_V1}/auth/google`)
+          .query({ redirect_uri: serverEnv.appScheme, state });
 
-      expect(res.status).toBe(302);
-    });
+        expect(res.status).toBe(302);
+      });
 
-    test("google sign in authorize request should return status 400, since redirectUri was not sent", async () => {
-      const state = "fake-state";
+      test("google sign in authorize request should return status 400, since redirectUri was not sent", async () => {
+        const state = "fake-state";
 
-      const res = await request(createApp(mockRedis)).get(`${API_V1}/auth/google`).query({ state });
+        const res = await request(createApp(mockRedis))
+          .get(`${API_V1}/auth/google`)
+          .query({ state });
 
-      expect(res.status).toBe(400);
-      expect(res.body).toEqual({
-        message: OAUTH_ERRORS.GOOGLE.INVALID_REDIRECT_URI,
+        expect(res.status).toBe(400);
+        expect(res.body).toEqual({
+          message: OAUTH_ERRORS.GOOGLE.INVALID_REDIRECT_URI,
+        });
+      });
+
+      test("google sign in authorize request should return status 400, since redirectUri was not the baseUrl or expected scheme", async () => {
+        const state = "fake-state";
+
+        const res = await request(createApp(mockRedis))
+          .get(`${API_V1}/auth/google`)
+          .query({ state, redirect_uri: "https://fake.com" });
+
+        expect(res.status).toBe(400);
+        expect(res.body).toEqual({
+          message: OAUTH_ERRORS.GOOGLE.INVALID_REDIRECT_URI,
+        });
       });
     });
 
-    test("google sign in authorize request should return status 400, since redirectUri was not the baseUrl or expected scheme", async () => {
-      const state = "fake-state";
+    describe("GET /auth/google/callback", () => {
+      test("google sign in callback should successfully redirect", async () => {
+        const res = await request(createApp(mockRedis))
+          .get(`${API_V1}/auth/google/callback`)
+          .query({ code: "test-code", state: "mobile|testuuid" });
 
-      const res = await request(createApp(mockRedis))
-        .get(`${API_V1}/auth/google`)
-        .query({ state, redirect_uri: "https://fake.com" });
+        expect(res.status).toBe(302);
+        expect(res.headers.location).toContain(serverEnv.appScheme);
+      });
 
-      expect(res.status).toBe(400);
-      expect(res.body).toEqual({
-        message: OAUTH_ERRORS.GOOGLE.INVALID_REDIRECT_URI,
+      test("google sign in callback should return status 400 since no code was sent", async () => {
+        const res = await request(createApp(mockRedis))
+          .get(`${API_V1}/auth/google/callback`)
+          .query({ state: "mobile|testuuid" });
+
+        expect(res.status).toBe(400);
+        expect(res.body).toEqual({
+          message: OAUTH_ERRORS.GOOGLE.INVALID_CODE,
+        });
+      });
+
+      test("google sign in callback should return status 400 since no state was sent", async () => {
+        const res = await request(createApp(mockRedis))
+          .get(`${API_V1}/auth/google/callback`)
+          .query({ code: "test-code" });
+
+        expect(res.status).toBe(400);
+        expect(res.body).toEqual({
+          message: OAUTH_ERRORS.GOOGLE.INVALID_STATE,
+        });
+      });
+    });
+
+    describe("POST /auth/google/token", () => {
+      test("google sign in token, user should be created and signed in successfully if no account exists", async () => {
+        const mockedFetch = global.fetch as jest.MockedFunction<typeof fetch>;
+
+        mockedFetch.mockResolvedValue({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({ id_token: "test-id-token" }),
+        } as unknown as Response);
+
+        const res = await request(createApp(mockRedis))
+          .post(`${API_V1}/auth/google/token`)
+          .set("user-agent", "test-agent")
+          .send({ code: "test-code" });
+
+        expect(mockedFetch).toHaveBeenCalledTimes(2);
+        expect(mockedFetch).toHaveBeenCalledWith(GOOGLE_OATH_TOKEN_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: new URLSearchParams({
+            code: "test-code",
+            grant_type: "authorization_code",
+            redirect_uri: GOOGLE_REDIRECT_URL,
+            client_id: serverEnv.googleClientId!,
+            client_secret: serverEnv.googleClientSecret!,
+          }),
+        });
+
+        expect(res.status).toBe(200);
+      });
+
+      test("google sign in token, users previous sessions should be cancelled & signed in successfully if user already exists", async () => {
+        const mockedFetch = global.fetch as jest.MockedFunction<typeof fetch>;
+
+        mockedFetch.mockResolvedValue({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({ id_token: "test-id-token" }),
+        } as unknown as Response);
+
+        const res = await request(createApp(mockRedis))
+          .post(`${API_V1}/auth/google/token`)
+          .set("user-agent", "test-agent")
+          .send({ code: "test-code" });
+
+        expect(mockedFetch).toHaveBeenCalledTimes(2);
+        expect(mockedFetch).toHaveBeenCalledWith(GOOGLE_OATH_TOKEN_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: new URLSearchParams({
+            code: "test-code",
+            grant_type: "authorization_code",
+            redirect_uri: GOOGLE_REDIRECT_URL,
+            client_id: serverEnv.googleClientId!,
+            client_secret: serverEnv.googleClientSecret!,
+          }),
+        });
+
+        expect(res.status).toBe(200);
+      });
+
+      test("google sign in token, should return status 400 since no code was sent", async () => {
+        const mockedFetch = global.fetch as jest.MockedFunction<typeof fetch>;
+
+        mockedFetch.mockResolvedValue({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({ id_token: "test-id-token" }),
+        } as unknown as Response);
+
+        const res = await request(createApp(mockRedis))
+          .post(`${API_V1}/auth/google/token`)
+          .set("user-agent", "test-agent")
+          .send({ code: null });
+
+        expect(res.status).toBe(400);
+        expect(res.body).toEqual({ message: MESSAGES.BAD_REQUEST });
+      });
+
+      test("google sign in token, should return status 500 since no id token was provided by google", async () => {
+        const mockedFetch = global.fetch as jest.MockedFunction<typeof fetch>;
+
+        mockedFetch.mockResolvedValue({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({ id_token: null }),
+        } as unknown as Response);
+
+        const res = await request(createApp(mockRedis))
+          .post(`${API_V1}/auth/google/token`)
+          .set("user-agent", "test-agent")
+          .send({ code: "test-code" });
+
+        expect(res.status).toEqual(500);
+        expect(res.body).toEqual({ message: MESSAGES.INTERNAL_SERVER_ERROR });
       });
     });
   });
 
-  describe("callback request", () => {
-    test("google sign in callback should successfully redirect", async () => {
-      const res = await request(createApp(mockRedis))
-        .get(`${API_V1}/auth/google/callback`)
-        .query({ code: "test-code", state: "mobile|testuuid" });
-
-      expect(res.status).toBe(302);
-      expect(res.headers.location).toContain(serverEnv.appScheme);
-    });
-
-    test("google sign in callback should return status 400 since no code was sent", async () => {
-      const res = await request(createApp(mockRedis))
-        .get(`${API_V1}/auth/google/callback`)
-        .query({ state: "mobile|testuuid" });
-
-      expect(res.status).toBe(400);
-      expect(res.body).toEqual({
-        message: OAUTH_ERRORS.GOOGLE.INVALID_CODE,
-      });
-    });
-
-    test("google sign in callback should return status 400 since no state was sent", async () => {
-      const res = await request(createApp(mockRedis))
-        .get(`${API_V1}/auth/google/callback`)
-        .query({ code: "test-code" });
-
-      expect(res.status).toBe(400);
-      expect(res.body).toEqual({
-        message: OAUTH_ERRORS.GOOGLE.INVALID_STATE,
-      });
-    });
-  });
-
-  describe("sign in request", () => {
-    test("google sign in token, user should be created and signed in successfully if no account exists", async () => {
-      const mockedFetch = global.fetch as jest.MockedFunction<typeof fetch>;
-
-      mockedFetch.mockResolvedValue({
-        ok: true,
-        status: 200,
-        json: () => Promise.resolve({ id_token: "test-id-token" }),
-      } as unknown as Response);
-
-      const res = await request(createApp(mockRedis))
-        .post(`${API_V1}/auth/google/token`)
-        .set("user-agent", "test-agent")
-        .send({ code: "test-code" });
-
-      expect(mockedFetch).toHaveBeenCalledTimes(2);
-      expect(mockedFetch).toHaveBeenCalledWith(GOOGLE_OATH_TOKEN_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: new URLSearchParams({
-          code: "test-code",
-          grant_type: "authorization_code",
-          redirect_uri: GOOGLE_REDIRECT_URL,
-          client_id: serverEnv.googleClientId!,
-          client_secret: serverEnv.googleClientSecret!,
-        }),
-      });
-
-      expect(res.status).toBe(200);
-    });
-
-    test("google sign in token, users previous sessions should be cancelled & signed in successfully if user already exists", async () => {
-      const mockedFetch = global.fetch as jest.MockedFunction<typeof fetch>;
-
-      mockedFetch.mockResolvedValue({
-        ok: true,
-        status: 200,
-        json: () => Promise.resolve({ id_token: "test-id-token" }),
-      } as unknown as Response);
-
-      const res = await request(createApp(mockRedis))
-        .post(`${API_V1}/auth/google/token`)
-        .set("user-agent", "test-agent")
-        .send({ code: "test-code" });
-
-      expect(mockedFetch).toHaveBeenCalledTimes(2);
-      expect(mockedFetch).toHaveBeenCalledWith(GOOGLE_OATH_TOKEN_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: new URLSearchParams({
-          code: "test-code",
-          grant_type: "authorization_code",
-          redirect_uri: GOOGLE_REDIRECT_URL,
-          client_id: serverEnv.googleClientId!,
-          client_secret: serverEnv.googleClientSecret!,
-        }),
-      });
-
-      expect(res.status).toBe(200);
-    });
-
-    test("google sign in token, should return status 400 since no code was sent", async () => {
-      const mockedFetch = global.fetch as jest.MockedFunction<typeof fetch>;
-
-      mockedFetch.mockResolvedValue({
-        ok: true,
-        status: 200,
-        json: () => Promise.resolve({ id_token: "test-id-token" }),
-      } as unknown as Response);
-
-      const res = await request(createApp(mockRedis))
-        .post(`${API_V1}/auth/google/token`)
-        .set("user-agent", "test-agent")
-        .send({ code: null });
-
-      expect(res.status).toBe(400);
-      expect(res.body).toEqual({ message: MESSAGES.BAD_REQUEST });
-    });
-
-    test("google sign in token, should return status 500 since no id token was provided by google", async () => {
-      const mockedFetch = global.fetch as jest.MockedFunction<typeof fetch>;
-
-      mockedFetch.mockResolvedValue({
-        ok: true,
-        status: 200,
-        json: () => Promise.resolve({ id_token: null }),
-      } as unknown as Response);
-
-      const res = await request(createApp(mockRedis))
-        .post(`${API_V1}/auth/google/token`)
-        .set("user-agent", "test-agent")
-        .send({ code: "test-code" });
-
-      expect(res.status).toEqual(500);
-      expect(res.body).toEqual({ message: MESSAGES.INTERNAL_SERVER_ERROR });
-    });
-  });
-
-  describe("sign out request", () => {
+  describe("Sign Out", () => {
     test("should sign out successfully", async () => {
       const res = await request(createApp(mockRedis))
         .post(`${API_V1}/auth/sign-out`)

@@ -6,6 +6,7 @@ import cors, { CorsOptions } from "cors";
 
 import { RedisClientType } from "redis";
 
+import createAccountRouter from "./routes/accounts";
 import createAuthRouter from "./routes/authRouter";
 import createBroadcastsRouter from "./routes/broadcasts";
 import createReceiptRouter from "./routes/receiptsRouter";
@@ -70,6 +71,8 @@ export default function createApp(redisClient: RedisClientType) {
   app.use(`${API_V1}/broadcasts`, isAuthorized, createBroadcastsRouter({ redisClient }));
 
   app.use(`${API_V1}/receipts`, createReceiptRouter({ redisClient }));
+
+  app.use(`${API_V1}/accounts`, isAuthorized, createAccountRouter({ redisClient }));
 
   app.use(errorMiddleware);
 

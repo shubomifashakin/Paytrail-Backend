@@ -42,7 +42,7 @@ import serverEnv from "../../../serverEnv";
 
 import prisma from "../../../lib/prisma";
 
-describe("getAllBroadcasts", () => {
+describe("Broadcasts Router", () => {
   let sessionId: string;
   let userId: string;
 
@@ -99,7 +99,7 @@ describe("getAllBroadcasts", () => {
     jest.clearAllMocks();
   });
 
-  describe("when notifications do not exist", () => {
+  describe("GET /broadcasts (empty notifications)", () => {
     test("it should return an empty array", async () => {
       const res = await request(createApp(mockRedis))
         .get(`${API_V1}/broadcasts`)
@@ -134,7 +134,7 @@ describe("getAllBroadcasts", () => {
     });
   });
 
-  describe("when notifications exist", () => {
+  describe("GET /broadcasts (notifications exist)", () => {
     beforeAll(async () => {
       mockScanCommand.mockResolvedValue({
         Items: [

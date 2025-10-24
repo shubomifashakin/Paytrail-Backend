@@ -19,8 +19,8 @@ const mockRedis = {
 
 import createApp from "../../../app";
 
-describe("test for the health api", () => {
-  test("it should return a 200 status code", async () => {
+describe("Health Router", () => {
+  test("GET /health should return a 200 status code", async () => {
     const app = createApp(mockRedis);
     const res = await request(app).get("/health").expect("Content-Type", /json/);
 
