@@ -25,18 +25,20 @@ export default async function deleteUserAccount(req: Request, res: Response) {
   });
 
   //not necessarilyy an error that warrants a 500
-  await snsClient
-    .send(
-      new DeleteEndpointCommand({
-        EndpointArn: user.device[0].deviceToken,
-      }),
-    )
-    .catch(() => {
-      logger.error(MESSAGES.FAILED_TO_DELETE_ENDPOINT_ARN, {
-        userId: req.user.id,
-        requestId: req.headers["request-id"],
+  if (user.device.length > 0) {
+    await snsClient
+      .send(
+        new DeleteEndpointCommand({
+          EndpointArn: user.device[0].deviceToken,
+        }),
+      )
+      .catch(() => {
+        logger.error(MESSAGES.FAILED_TO_DELETE_ENDPOINT_ARN, {
+          userId: req.user.id,
+          requestId: req.headers["request-id"],
+        });
       });
-    });
+  }
 
   return res.status(200).json({ message: "User deleted" });
 }

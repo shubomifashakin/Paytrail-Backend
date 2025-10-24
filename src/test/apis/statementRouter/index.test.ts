@@ -54,7 +54,7 @@ jest.mock("puppeteer", () => ({
 import createApp from "../../../app";
 import prisma from "../../../lib/prisma";
 
-describe("requestStatement", () => {
+describe("Statement Router", () => {
   let sessionId: string;
   let userId: string;
   let userName: string;
@@ -139,143 +139,97 @@ describe("requestStatement", () => {
     jest.clearAllMocks();
   });
 
-  describe("when there are budgets", () => {
-    let payId: string;
-    let categoryId: string;
+  describe("POST /statement", () => {
+    describe("when there are budgets", () => {
+      let payId: string;
+      let categoryId: string;
 
-    beforeAll(async () => {
-      const payId2 = await prisma.paymentMethods.create({
-        data: {
-          id: uuid(),
-          name: "pm1",
-          color: "#000000",
-          emoji: "",
-          description: "",
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          userId: userId,
-        },
-        select: { id: true },
-      });
-
-      const categoryId2 = await prisma.categories.create({
-        data: {
-          id: uuid(),
-          name: "cat1",
-          color: "#000000",
-          emoji: "",
-          description: "",
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          userId: userId,
-        },
-        select: { id: true },
-      });
-
-      const budgetId = await prisma.budgets.create({
-        data: {
-          id: uuid(),
-          userId: userId,
-          amount: 100,
-          currency: "NGN",
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          year: 2025,
-          budgetMonth: "January",
-          period: 202500,
-        },
-        select: { id: true },
-      });
-
-      await prisma.logs.createMany({
-        data: [
-          {
+      beforeAll(async () => {
+        const payId2 = await prisma.paymentMethods.create({
+          data: {
             id: uuid(),
-            userId: userId,
-            amount: 100,
-            currency: "NGN",
+            name: "pm1",
+            color: "#000000",
+            emoji: "",
+            description: "",
             createdAt: new Date(),
             updatedAt: new Date(),
-            note: "log1",
-            logType: "expense",
-            paymentMethodId: payId2.id,
-            categoryId: categoryId2.id,
-            budgetId: budgetId.id,
-            transactionDate: new Date(),
-          },
-          {
-            id: uuid(),
             userId: userId,
-            amount: 100,
-            currency: "NGN",
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            note: "log1",
-            logType: "income",
-            paymentMethodId: payId2.id,
-            categoryId: categoryId2.id,
-            budgetId: budgetId.id,
-            transactionDate: new Date(),
           },
-        ],
-      });
-
-      payId = payId2.id;
-      categoryId = categoryId2.id;
-    });
-
-    test("it should generate the budget statement and send the email", async () => {
-      const data = {
-        categories: [],
-        currencies: [],
-        paymentMethods: [],
-        statementType: "budgets",
-        endDate: { year: 2025, month: "January" },
-        startDate: { year: 2002, month: "January" },
-      };
-
-      const res = await request(createApp(mockRedis))
-        .post(`${API_V1}/statement`)
-        .set("Authorization", `Bearer ${sessionId}`)
-        .set("Content-Type", "application/json")
-        .send(data);
-
-      expect(pdf).toHaveBeenCalledTimes(1);
-      expect(setContent).toHaveBeenCalledTimes(1);
-      expect(setContent).toHaveBeenCalledWith(expect.any(String));
-      expect(newPage).toHaveBeenCalledTimes(1);
-      expect(close).toHaveBeenCalledTimes(1);
-
-      expect(sendMail).toHaveBeenCalledTimes(1);
-      expect(sendMail).toHaveBeenCalledWith({
-        from: expect.stringContaining("Paytrail"),
-        to: userEmail,
-        subject: "Your PayTrail Statement",
-        html: expect.stringContaining(userName),
-
-        attachments: expect.arrayContaining([
-          expect.objectContaining({
-            filename: expect.stringContaining("my-paytrail-report-"),
-            content: expect.any(String),
-          }),
-        ]),
-      });
-
-      expect(res.body).toEqual({ message: "success" });
-    });
-
-    describe("when mailing fails", () => {
-      beforeEach(() => {
-        sendMail.mockResolvedValueOnce({
-          error: new Error("mailing failed"),
+          select: { id: true },
         });
+
+        const categoryId2 = await prisma.categories.create({
+          data: {
+            id: uuid(),
+            name: "cat1",
+            color: "#000000",
+            emoji: "",
+            description: "",
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            userId: userId,
+          },
+          select: { id: true },
+        });
+
+        const budgetId = await prisma.budgets.create({
+          data: {
+            id: uuid(),
+            userId: userId,
+            amount: 100,
+            currency: "NGN",
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            year: 2025,
+            budgetMonth: "January",
+            period: 202500,
+          },
+          select: { id: true },
+        });
+
+        await prisma.logs.createMany({
+          data: [
+            {
+              id: uuid(),
+              userId: userId,
+              amount: 100,
+              currency: "NGN",
+              createdAt: new Date(),
+              updatedAt: new Date(),
+              note: "log1",
+              logType: "expense",
+              paymentMethodId: payId2.id,
+              categoryId: categoryId2.id,
+              budgetId: budgetId.id,
+              transactionDate: new Date(),
+            },
+            {
+              id: uuid(),
+              userId: userId,
+              amount: 100,
+              currency: "NGN",
+              createdAt: new Date(),
+              updatedAt: new Date(),
+              note: "log1",
+              logType: "income",
+              paymentMethodId: payId2.id,
+              categoryId: categoryId2.id,
+              budgetId: budgetId.id,
+              transactionDate: new Date(),
+            },
+          ],
+        });
+
+        payId = payId2.id;
+        categoryId = categoryId2.id;
       });
 
-      test("it should not send the mail", async () => {
+      test("it should generate the budget statement and send the email", async () => {
         const data = {
-          categories: [categoryId],
-          currencies: ["NGN"],
-          paymentMethods: [payId],
+          categories: [],
+          currencies: [],
+          paymentMethods: [],
           statementType: "budgets",
           endDate: { year: 2025, month: "January" },
           startDate: { year: 2002, month: "January" },
@@ -308,145 +262,145 @@ describe("requestStatement", () => {
           ]),
         });
 
-        expect(res.statusCode).toEqual(500);
-      });
-    });
-  });
-
-  describe("when there are no budgets", () => {
-    beforeAll(async () => {
-      await prisma.budgets.deleteMany();
-      await prisma.categories.deleteMany();
-      await prisma.paymentMethods.deleteMany();
-    });
-
-    test("it should not generate the budget statement", async () => {
-      const data = {
-        categories: ["cat1"],
-        currencies: ["NGN"],
-        paymentMethods: ["pm1"],
-        statementType: "budgets",
-        endDate: { year: 2025, month: "January" },
-        startDate: { year: 2002, month: "January" },
-      };
-
-      const res = await request(createApp(mockRedis))
-        .post(`${API_V1}/statement`)
-        .set("Authorization", `Bearer ${sessionId}`)
-        .set("Content-Type", "application/json")
-        .send(data);
-
-      expect(sendMail).not.toHaveBeenCalled();
-
-      expect(res.status).toBe(404);
-    });
-  });
-
-  describe("when there are logs", () => {
-    let payId: string;
-    let categoryId: string;
-    const startDate = new Date();
-
-    beforeAll(async () => {
-      await prisma.logs.deleteMany();
-
-      const payId2 = await prisma.paymentMethods.create({
-        data: {
-          id: uuid(),
-          name: "pm1",
-          color: "#000000",
-          emoji: "",
-          description: "",
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          userId: userId,
-        },
-        select: { id: true },
+        expect(res.body).toEqual({ message: "success" });
       });
 
-      const categoryId2 = await prisma.categories.create({
-        data: {
-          id: uuid(),
-          name: "cat1",
-          color: "#000000",
-          emoji: "",
-          description: "",
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          userId: userId,
-        },
-        select: { id: true },
-      });
+      describe("when mailing fails", () => {
+        beforeEach(() => {
+          sendMail.mockResolvedValueOnce({
+            error: new Error("mailing failed"),
+          });
+        });
 
-      await prisma.logs.create({
-        data: {
-          id: uuid(),
-          userId: userId,
-          amount: 100,
-          currency: "NGN",
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          note: "log1",
-          logType: "expense",
-          paymentMethodId: payId2.id,
-          categoryId: categoryId2.id,
-          transactionDate: startDate,
-        },
-        select: { id: true },
-      });
+        test("it should not send the mail", async () => {
+          const data = {
+            categories: [categoryId],
+            currencies: ["NGN"],
+            paymentMethods: [payId],
+            statementType: "budgets",
+            endDate: { year: 2025, month: "January" },
+            startDate: { year: 2002, month: "January" },
+          };
 
-      payId = payId2.id;
-      categoryId = categoryId2.id;
-    });
+          const res = await request(createApp(mockRedis))
+            .post(`${API_V1}/statement`)
+            .set("Authorization", `Bearer ${sessionId}`)
+            .set("Content-Type", "application/json")
+            .send(data);
 
-    test("it should generate the statement and send the email", async () => {
-      const data = {
-        categories: [categoryId],
-        currencies: ["NGN"],
-        paymentMethods: [payId],
-        statementType: "logs",
-        endDate: new Date(),
-        startDate: startDate,
-      };
+          expect(pdf).toHaveBeenCalledTimes(1);
+          expect(setContent).toHaveBeenCalledTimes(1);
+          expect(setContent).toHaveBeenCalledWith(expect.any(String));
+          expect(newPage).toHaveBeenCalledTimes(1);
+          expect(close).toHaveBeenCalledTimes(1);
 
-      const res = await request(createApp(mockRedis))
-        .post(`${API_V1}/statement`)
-        .set("Authorization", `Bearer ${sessionId}`)
-        .set("Content-Type", "application/json")
-        .send(data);
+          expect(sendMail).toHaveBeenCalledTimes(1);
+          expect(sendMail).toHaveBeenCalledWith({
+            from: expect.stringContaining("Paytrail"),
+            to: userEmail,
+            subject: "Your PayTrail Statement",
+            html: expect.stringContaining(userName),
 
-      expect(pdf).toHaveBeenCalledTimes(1);
-      expect(setContent).toHaveBeenCalledTimes(1);
-      expect(setContent).toHaveBeenCalledWith(expect.any(String));
-      expect(newPage).toHaveBeenCalledTimes(1);
-      expect(close).toHaveBeenCalledTimes(1);
+            attachments: expect.arrayContaining([
+              expect.objectContaining({
+                filename: expect.stringContaining("my-paytrail-report-"),
+                content: expect.any(String),
+              }),
+            ]),
+          });
 
-      expect(sendMail).toHaveBeenCalledTimes(1);
-      expect(sendMail).toHaveBeenCalledWith({
-        from: expect.stringContaining("Paytrail"),
-        to: userEmail,
-        subject: "Your PayTrail Statement",
-        html: expect.stringContaining(userName),
-
-        attachments: expect.arrayContaining([
-          expect.objectContaining({
-            filename: expect.stringContaining("my-paytrail-report-"),
-            content: expect.any(String),
-          }),
-        ]),
-      });
-
-      expect(res.body).toEqual({ message: "success" });
-    });
-
-    describe("when mailing fails", () => {
-      beforeEach(() => {
-        sendMail.mockResolvedValueOnce({
-          error: new Error("mailing failed"),
+          expect(res.statusCode).toEqual(500);
         });
       });
+    });
 
-      test("it should not send the mail", async () => {
+    describe("when there are no budgets", () => {
+      beforeAll(async () => {
+        await prisma.budgets.deleteMany();
+        await prisma.categories.deleteMany();
+        await prisma.paymentMethods.deleteMany();
+      });
+
+      test("it should not generate the budget statement", async () => {
+        const data = {
+          categories: ["cat1"],
+          currencies: ["NGN"],
+          paymentMethods: ["pm1"],
+          statementType: "budgets",
+          endDate: { year: 2025, month: "January" },
+          startDate: { year: 2002, month: "January" },
+        };
+
+        const res = await request(createApp(mockRedis))
+          .post(`${API_V1}/statement`)
+          .set("Authorization", `Bearer ${sessionId}`)
+          .set("Content-Type", "application/json")
+          .send(data);
+
+        expect(sendMail).not.toHaveBeenCalled();
+
+        expect(res.status).toBe(404);
+      });
+    });
+
+    describe("when there are logs", () => {
+      let payId: string;
+      let categoryId: string;
+      const startDate = new Date();
+
+      beforeAll(async () => {
+        await prisma.logs.deleteMany();
+
+        const payId2 = await prisma.paymentMethods.create({
+          data: {
+            id: uuid(),
+            name: "pm1",
+            color: "#000000",
+            emoji: "",
+            description: "",
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            userId: userId,
+          },
+          select: { id: true },
+        });
+
+        const categoryId2 = await prisma.categories.create({
+          data: {
+            id: uuid(),
+            name: "cat1",
+            color: "#000000",
+            emoji: "",
+            description: "",
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            userId: userId,
+          },
+          select: { id: true },
+        });
+
+        await prisma.logs.create({
+          data: {
+            id: uuid(),
+            userId: userId,
+            amount: 100,
+            currency: "NGN",
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            note: "log1",
+            logType: "expense",
+            paymentMethodId: payId2.id,
+            categoryId: categoryId2.id,
+            transactionDate: startDate,
+          },
+          select: { id: true },
+        });
+
+        payId = payId2.id;
+        categoryId = categoryId2.id;
+      });
+
+      test("it should generate the statement and send the email", async () => {
         const data = {
           categories: [categoryId],
           currencies: ["NGN"],
@@ -483,71 +437,119 @@ describe("requestStatement", () => {
           ]),
         });
 
-        expect(res.statusCode).toEqual(500);
+        expect(res.body).toEqual({ message: "success" });
+      });
+
+      describe("when mailing fails", () => {
+        beforeEach(() => {
+          sendMail.mockResolvedValueOnce({
+            error: new Error("mailing failed"),
+          });
+        });
+
+        test("it should not send the mail", async () => {
+          const data = {
+            categories: [categoryId],
+            currencies: ["NGN"],
+            paymentMethods: [payId],
+            statementType: "logs",
+            endDate: new Date(),
+            startDate: startDate,
+          };
+
+          const res = await request(createApp(mockRedis))
+            .post(`${API_V1}/statement`)
+            .set("Authorization", `Bearer ${sessionId}`)
+            .set("Content-Type", "application/json")
+            .send(data);
+
+          expect(pdf).toHaveBeenCalledTimes(1);
+          expect(setContent).toHaveBeenCalledTimes(1);
+          expect(setContent).toHaveBeenCalledWith(expect.any(String));
+          expect(newPage).toHaveBeenCalledTimes(1);
+          expect(close).toHaveBeenCalledTimes(1);
+
+          expect(sendMail).toHaveBeenCalledTimes(1);
+          expect(sendMail).toHaveBeenCalledWith({
+            from: expect.stringContaining("Paytrail"),
+            to: userEmail,
+            subject: "Your PayTrail Statement",
+            html: expect.stringContaining(userName),
+
+            attachments: expect.arrayContaining([
+              expect.objectContaining({
+                filename: expect.stringContaining("my-paytrail-report-"),
+                content: expect.any(String),
+              }),
+            ]),
+          });
+
+          expect(res.statusCode).toEqual(500);
+        });
       });
     });
-  });
 
-  describe("when there are no logs", () => {
-    beforeAll(async () => {
-      await prisma.logs.deleteMany();
+    describe("when there are no logs", () => {
+      beforeAll(async () => {
+        await prisma.logs.deleteMany();
+      });
+
+      test("it should not generate the statement ", async () => {
+        const data = {
+          categories: [""],
+          currencies: ["NGN"],
+          paymentMethods: [""],
+          statementType: "logs",
+          endDate: new Date(),
+          startDate: new Date(),
+        };
+
+        const res = await request(createApp(mockRedis))
+          .post(`${API_V1}/statement`)
+          .set("Authorization", `Bearer ${sessionId}`)
+          .set("Content-Type", "application/json")
+          .send(data);
+
+        expect(sendMail).not.toHaveBeenCalled();
+
+        expect(res.status).toBe(404);
+      });
     });
 
-    test("it should not generate the statement ", async () => {
-      const data = {
-        categories: [""],
-        currencies: ["NGN"],
-        paymentMethods: [""],
-        statementType: "logs",
-        endDate: new Date(),
-        startDate: new Date(),
-      };
+    describe("authorization", () => {
+      test("it should fail due to invalid post body", async () => {
+        const res = await request(createApp(mockRedis))
+          .post(`${API_V1}/statement`)
+          .set("Authorization", `Bearer ${sessionId}`)
+          .set("Content-Type", "application/json")
+          .send({
+            categories: [],
+            currencies: ["FAKE-CURRENCY"],
+            paymentMethods: [],
+            endDate: { endYear: 2025, endMonth: "January" },
+            startDate: { startYear: 2002, startMonth: "January" },
+          });
 
-      const res = await request(createApp(mockRedis))
-        .post(`${API_V1}/statement`)
-        .set("Authorization", `Bearer ${sessionId}`)
-        .set("Content-Type", "application/json")
-        .send(data);
+        expect(res.status).toBe(400);
+        expect(res.body).toEqual({ message: MESSAGES.BAD_REQUEST });
+      });
 
-      expect(sendMail).not.toHaveBeenCalled();
+      test("it should fail because the user is unauthorized", async () => {
+        const res = await request(createApp(mockRedis))
+          .post(`${API_V1}/statement`)
+          .set("Authorization", "Bearer")
+          .set("Content-Type", "application/json")
+          .send({
+            categories: [],
+            currencies: ["FAKE-CURRENCY"],
+            paymentMethods: [],
+            endDate: { year: 2025, month: "January" },
+            startDate: { year: 2002, month: "January" },
+          });
 
-      expect(res.status).toBe(404);
-    });
-  });
-
-  describe("authorization", () => {
-    test("it should fail due to invalid post body", async () => {
-      const res = await request(createApp(mockRedis))
-        .post(`${API_V1}/statement`)
-        .set("Authorization", `Bearer ${sessionId}`)
-        .set("Content-Type", "application/json")
-        .send({
-          categories: [],
-          currencies: ["FAKE-CURRENCY"],
-          paymentMethods: [],
-          endDate: { endYear: 2025, endMonth: "January" },
-          startDate: { startYear: 2002, startMonth: "January" },
-        });
-
-      expect(res.status).toBe(400);
-      expect(res.body).toEqual({ message: MESSAGES.BAD_REQUEST });
-    });
-
-    test("it should fail because the user is unauthorized", async () => {
-      const res = await request(createApp(mockRedis))
-        .post(`${API_V1}/statement`)
-        .set("Authorization", "Bearer")
-        .set("Content-Type", "application/json")
-        .send({
-          categories: [],
-          currencies: ["FAKE-CURRENCY"],
-          paymentMethods: [],
-          endDate: { year: 2025, month: "January" },
-          startDate: { year: 2002, month: "January" },
-        });
-
-      expect(res.status).toBe(401);
-      expect(res.body).toEqual({ message: MESSAGES.UNAUTHORIZED });
+        expect(res.status).toBe(401);
+        expect(res.body).toEqual({ message: MESSAGES.UNAUTHORIZED });
+      });
     });
   });
 });

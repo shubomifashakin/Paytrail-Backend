@@ -72,7 +72,7 @@ export default function createApp(redisClient: RedisClientType) {
 
   app.use(`${API_V1}/receipts`, createReceiptRouter({ redisClient }));
 
-  app.use(`${API_V1}/accounts`, createAccountRouter());
+  app.use(`${API_V1}/accounts`, isAuthorized, createAccountRouter({ redisClient }));
 
   app.use(errorMiddleware);
 
