@@ -23,7 +23,15 @@ export default async function (req: Request, res: Response) {
   await prisma.$transaction(async (tx) => {
     for (const c of data.data) {
       if (c.tableName === "budgets" && c.operation === "delete") {
-        await tx.budgets.deleteMany({
+        const exists = await tx.budgets.findUnique({
+          where: {
+            id: c.id,
+          },
+        });
+
+        if (!exists) continue;
+
+        await tx.budgets.delete({
           where: {
             id: c.id,
           },
@@ -85,7 +93,15 @@ export default async function (req: Request, res: Response) {
       }
 
       if (c.tableName === "categories" && c.operation === "delete") {
-        await tx.categories.deleteMany({
+        const exists = await tx.categories.findUnique({
+          where: {
+            id: c.id,
+          },
+        });
+
+        if (!exists) continue;
+
+        await tx.categories.delete({
           where: {
             id: c.id,
           },
@@ -134,7 +150,11 @@ export default async function (req: Request, res: Response) {
       }
 
       if (c.tableName === "payment_methods" && c.operation === "delete") {
-        await tx.paymentMethods.deleteMany({
+        const exists = await tx.paymentMethods.findUnique({ where: { id: c.id } });
+
+        if (!exists) continue;
+
+        await tx.paymentMethods.delete({
           where: {
             id: c.id,
           },
@@ -185,7 +205,11 @@ export default async function (req: Request, res: Response) {
       }
 
       if (c.tableName === "logs" && c.operation === "delete") {
-        await tx.logs.deleteMany({
+        const exists = await tx.logs.findUnique({ where: { id: c.id } });
+
+        if (!exists) continue;
+
+        await tx.logs.delete({
           where: {
             id: c.id,
           },
