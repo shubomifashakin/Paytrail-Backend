@@ -1,4 +1,4 @@
-import { Months } from "@prisma/client";
+import { Currencies, Months } from "@prisma/client";
 import { Request, Response } from "express";
 
 import logger from "../../lib/logger";
@@ -54,7 +54,7 @@ export default async function requestStatement(req: Request, res: Response) {
         id: true,
       },
       orderBy: {
-        period: "asc",
+        period: "desc",
       },
     });
 
@@ -134,7 +134,7 @@ export default async function requestStatement(req: Request, res: Response) {
           return acc;
         },
         {} as Record<
-          string,
+          Currencies,
           {
             logs: typeof logsForBudgetId;
             totals: { expense: number; income: number };
@@ -151,7 +151,10 @@ export default async function requestStatement(req: Request, res: Response) {
     const pt = await generateBudgetStatement({
       userName: req.user.name,
       endDate,
-      startDate: startDate || { month: budgets[0].budgetMonth, year: budgets[0].year },
+      startDate: startDate || {
+        month: budgets[budgets.length - 1].budgetMonth,
+        year: budgets[budgets.length - 1].year,
+      },
       budgetsAndLogs: budgetWithAssociatedLogs,
     });
 
@@ -244,7 +247,7 @@ export default async function requestStatement(req: Request, res: Response) {
         currency: true,
       },
       orderBy: {
-        transactionDate: "asc",
+        transactionDate: "desc",
       },
     });
 
