@@ -198,6 +198,7 @@ describe("Sync Router", () => {
                 operation: "insert",
                 tableName: "budgets",
                 data: JSON.stringify({
+                  id: uuid(),
                   userId: userId,
                   amount: "100",
                   currency: "NGN",
@@ -214,6 +215,7 @@ describe("Sync Router", () => {
                 operation: "update",
                 tableName: "budgets",
                 data: JSON.stringify({
+                  id: budgetId,
                   userId: userId,
                   amount: "1000", //changed from 100
                   currency: "NGN",
@@ -255,6 +257,7 @@ describe("Sync Router", () => {
                 operation: "update",
                 tableName: "categories",
                 data: JSON.stringify({
+                  id: categoryId,
                   name: "Test Category",
                   color: "#FF2000",
                   emoji: "💰",
@@ -279,6 +282,7 @@ describe("Sync Router", () => {
                 operation: "insert",
                 tableName: "payment_methods",
                 data: JSON.stringify({
+                  id: uuid(),
                   name: "New Payment Method",
                   color: "#FF1000",
                   emoji: "�",
@@ -294,6 +298,7 @@ describe("Sync Router", () => {
                 operation: "update",
                 tableName: "payment_methods",
                 data: JSON.stringify({
+                  id: paymentId,
                   name: "Test Payment Method",
                   color: "#FF0000",
                   emoji: "💰",
@@ -317,6 +322,7 @@ describe("Sync Router", () => {
                 operation: "update",
                 tableName: "logs",
                 data: JSON.stringify({
+                  id: logId,
                   amount: "100",
                   transactionDate: new Date(),
                   note: "Test Note",
@@ -335,6 +341,7 @@ describe("Sync Router", () => {
                 operation: "insert",
                 tableName: "logs",
                 data: JSON.stringify({
+                  id: uuid(),
                   amount: "100",
                   transactionDate: new Date(),
                   note: "Test Note",
@@ -378,6 +385,7 @@ describe("Sync Router", () => {
                 operation: "update",
                 tableName: "budgets",
                 data: JSON.stringify({
+                  id: budgetId,
                   userId: userId,
                   amount: 5000,
                   currency: "NGN",
@@ -393,6 +401,7 @@ describe("Sync Router", () => {
                 operation: "update",
                 tableName: "logs",
                 data: JSON.stringify({
+                  id: logId,
                   amount: "2000",
                   transactionDate: new Date(),
                   note: "Test Note",
@@ -411,6 +420,7 @@ describe("Sync Router", () => {
                 operation: "update",
                 tableName: "categories",
                 data: JSON.stringify({
+                  id: categoryId,
                   name: "Updated",
                   color: "#000",
                   emoji: "💰",
@@ -425,6 +435,7 @@ describe("Sync Router", () => {
                 operation: "update",
                 tableName: "payment_methods",
                 data: JSON.stringify({
+                  id: paymentId,
                   name: "Updated",
                   color: "#FF2000",
                   emoji: "💰",
@@ -461,7 +472,7 @@ describe("Sync Router", () => {
           },
         });
 
-        expect(data?.amount.toNumber()).toEqual(1000);
+        expect(data?.amount.toString()).toEqual("1000");
         expect(data?.period).toBe(202500);
         expect(logData?.amount.toNumber()).toEqual(100);
         expect(categoryData?.name).toEqual("Test Category");

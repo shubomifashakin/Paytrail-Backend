@@ -25,7 +25,7 @@ export default async function (req: Request, res: Response) {
       if (c.tableName === "budgets" && c.operation === "delete") {
         const exists = await tx.budgets.findUnique({
           where: {
-            id: c.id,
+            id: c.data.id,
           },
         });
 
@@ -33,7 +33,7 @@ export default async function (req: Request, res: Response) {
 
         await tx.budgets.delete({
           where: {
-            id: c.id,
+            id: c.data.id,
           },
         });
       }
@@ -41,7 +41,7 @@ export default async function (req: Request, res: Response) {
       if (c.tableName === "user" && c.operation === "update") {
         await tx.user.update({
           where: {
-            id: c.id,
+            id: c.data.id,
           },
           data: {
             currency: c.data.currency,
@@ -52,7 +52,7 @@ export default async function (req: Request, res: Response) {
       if (c.tableName === "budgets" && (c.operation === "update" || c.operation === "insert")) {
         const latest = await tx.budgets.findUnique({
           where: {
-            id: c.id,
+            id: c.data.id,
           },
           select: {
             updatedAt: true,
@@ -65,7 +65,7 @@ export default async function (req: Request, res: Response) {
 
         await tx.budgets.upsert({
           create: {
-            id: c.id,
+            id: c.data.id,
             amount: c.data.amount,
             year: c.data.year,
             budgetMonth: c.data.budgetMonth,
@@ -76,10 +76,10 @@ export default async function (req: Request, res: Response) {
             period: c.data.period,
           },
           where: {
-            id: c.id,
+            id: c.data.id,
           },
           update: {
-            id: c.id,
+            id: c.data.id,
             amount: c.data.amount,
             year: c.data.year,
             budgetMonth: c.data.budgetMonth,
@@ -95,7 +95,7 @@ export default async function (req: Request, res: Response) {
       if (c.tableName === "categories" && c.operation === "delete") {
         const exists = await tx.categories.findUnique({
           where: {
-            id: c.id,
+            id: c.data.id,
           },
         });
 
@@ -103,7 +103,7 @@ export default async function (req: Request, res: Response) {
 
         await tx.categories.delete({
           where: {
-            id: c.id,
+            id: c.data.id,
           },
         });
       }
@@ -111,7 +111,7 @@ export default async function (req: Request, res: Response) {
       if (c.tableName === "categories" && (c.operation === "update" || c.operation === "insert")) {
         const latest = await tx.categories.findUnique({
           where: {
-            id: c.id,
+            id: c.data.id,
           },
           select: {
             updatedAt: true,
@@ -124,10 +124,10 @@ export default async function (req: Request, res: Response) {
 
         await tx.categories.upsert({
           where: {
-            id: c.id,
+            id: c.data.id,
           },
           create: {
-            id: c.id,
+            id: c.data.id,
             name: c.data.name,
             color: c.data.color,
             emoji: c.data.emoji,
@@ -137,7 +137,7 @@ export default async function (req: Request, res: Response) {
             updatedAt: new Date(c.data.updatedAt),
           },
           update: {
-            id: c.id,
+            id: c.data.id,
             name: c.data.name,
             color: c.data.color,
             emoji: c.data.emoji,
@@ -150,13 +150,13 @@ export default async function (req: Request, res: Response) {
       }
 
       if (c.tableName === "payment_methods" && c.operation === "delete") {
-        const exists = await tx.paymentMethods.findUnique({ where: { id: c.id } });
+        const exists = await tx.paymentMethods.findUnique({ where: { id: c.data.id } });
 
         if (!exists) continue;
 
         await tx.paymentMethods.delete({
           where: {
-            id: c.id,
+            id: c.data.id,
           },
         });
       }
@@ -167,7 +167,7 @@ export default async function (req: Request, res: Response) {
       ) {
         const latest = await tx.paymentMethods.findUnique({
           where: {
-            id: c.id,
+            id: c.data.id,
           },
           select: {
             updatedAt: true,
@@ -180,10 +180,10 @@ export default async function (req: Request, res: Response) {
 
         await tx.paymentMethods.upsert({
           where: {
-            id: c.id,
+            id: c.data.id,
           },
           create: {
-            id: c.id,
+            id: c.data.id,
             name: c.data.name,
             color: c.data.color,
             description: c.data.description,
@@ -193,7 +193,7 @@ export default async function (req: Request, res: Response) {
             updatedAt: new Date(c.data.updatedAt),
           },
           update: {
-            id: c.id,
+            id: c.data.id,
             name: c.data.name,
             color: c.data.color,
             description: c.data.description,
@@ -205,13 +205,13 @@ export default async function (req: Request, res: Response) {
       }
 
       if (c.tableName === "logs" && c.operation === "delete") {
-        const exists = await tx.logs.findUnique({ where: { id: c.id } });
+        const exists = await tx.logs.findUnique({ where: { id: c.data.id } });
 
         if (!exists) continue;
 
         await tx.logs.delete({
           where: {
-            id: c.id,
+            id: c.data.id,
           },
         });
       }
@@ -219,7 +219,7 @@ export default async function (req: Request, res: Response) {
       if (c.tableName === "logs" && (c.operation === "update" || c.operation === "insert")) {
         const latest = await tx.logs.findUnique({
           where: {
-            id: c.id,
+            id: c.data.id,
           },
           select: {
             updatedAt: true,
@@ -232,10 +232,10 @@ export default async function (req: Request, res: Response) {
 
         await tx.logs.upsert({
           where: {
-            id: c.id,
+            id: c.data.id,
           },
           create: {
-            id: c.id,
+            id: c.data.id,
             amount: c.data.amount,
             transactionDate: new Date(c.data.transactionDate),
             note: c.data?.note || "",
@@ -249,7 +249,7 @@ export default async function (req: Request, res: Response) {
             updatedAt: new Date(c.data.updatedAt),
           },
           update: {
-            id: c.id,
+            id: c.data.id,
             amount: c.data.amount,
             transactionDate: new Date(c.data.transactionDate),
             note: c.data?.note || "",
