@@ -141,7 +141,7 @@ describe("Statement Router", () => {
     jest.clearAllMocks();
   });
 
-  describe("POST /statement", () => {
+  describe("POST /statements", () => {
     describe("when there are budgets", () => {
       let payId: string;
       let categoryId: string;
@@ -238,7 +238,7 @@ describe("Statement Router", () => {
         };
 
         const res = await request(createApp(mockRedis))
-          .post(`${API_V1}/statement`)
+          .post(`${API_V1}/statements`)
           .set("Authorization", `Bearer ${sessionId}`)
           .set("Content-Type", "application/json")
           .send(data);
@@ -286,7 +286,7 @@ describe("Statement Router", () => {
           };
 
           const res = await request(createApp(mockRedis))
-            .post(`${API_V1}/statement`)
+            .post(`${API_V1}/statements`)
             .set("Authorization", `Bearer ${sessionId}`)
             .set("Content-Type", "application/json")
             .send(data);
@@ -335,7 +335,7 @@ describe("Statement Router", () => {
         };
 
         const res = await request(createApp(mockRedis))
-          .post(`${API_V1}/statement`)
+          .post(`${API_V1}/statements`)
           .set("Authorization", `Bearer ${sessionId}`)
           .set("Content-Type", "application/json")
           .send(data);
@@ -414,7 +414,7 @@ describe("Statement Router", () => {
         };
 
         const res = await request(createApp(mockRedis))
-          .post(`${API_V1}/statement`)
+          .post(`${API_V1}/statements`)
           .set("Authorization", `Bearer ${sessionId}`)
           .set("Content-Type", "application/json")
           .send(data);
@@ -461,7 +461,7 @@ describe("Statement Router", () => {
           };
 
           const res = await request(createApp(mockRedis))
-            .post(`${API_V1}/statement`)
+            .post(`${API_V1}/statements`)
             .set("Authorization", `Bearer ${sessionId}`)
             .set("Content-Type", "application/json")
             .send(data);
@@ -508,7 +508,7 @@ describe("Statement Router", () => {
         };
 
         const res = await request(createApp(mockRedis))
-          .post(`${API_V1}/statement`)
+          .post(`${API_V1}/statements`)
           .set("Authorization", `Bearer ${sessionId}`)
           .set("Content-Type", "application/json")
           .send(data);
@@ -522,7 +522,7 @@ describe("Statement Router", () => {
     describe("authorization", () => {
       test("it should fail due to invalid post body", async () => {
         const res = await request(createApp(mockRedis))
-          .post(`${API_V1}/statement`)
+          .post(`${API_V1}/statements`)
           .set("Authorization", `Bearer ${sessionId}`)
           .set("Content-Type", "application/json")
           .send({
@@ -539,7 +539,7 @@ describe("Statement Router", () => {
 
       test("it should fail because the user is unauthorized", async () => {
         const res = await request(createApp(mockRedis))
-          .post(`${API_V1}/statement`)
+          .post(`${API_V1}/statements`)
           .set("Authorization", "Bearer")
           .set("Content-Type", "application/json")
           .send({

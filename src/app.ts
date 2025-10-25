@@ -66,7 +66,7 @@ export default function createApp(redisClient: RedisClientType) {
 
   app.use(`${API_V1}/sync`, syncRouter);
 
-  app.use(`${API_V1}/statement`, isAuthorized, createStatementRouter({ redisClient }));
+  app.use(`${API_V1}/statements`, isAuthorized, createStatementRouter({ redisClient }));
 
   app.use(`${API_V1}/notifications`, isAuthorized, notificationRouter({ redisClient }));
 
