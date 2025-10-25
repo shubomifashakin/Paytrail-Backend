@@ -40,6 +40,8 @@ export default function createApp(redisClient: RedisClientType) {
 
   app.use(tagRequest);
 
+  app.use(express.static("public"));
+
   morgan.token("requestId", (req) => {
     return (req.headers["x-request-id"] as string) || "-";
   });

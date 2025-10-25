@@ -1,6 +1,7 @@
 import { ErrorResponse } from "resend";
 import { Request } from "express";
-
+import fs from "fs";
+import path from "path";
 import puppeteer, { PDFOptions } from "puppeteer";
 
 import { Currencies, LogType, Logs, Months } from "@prisma/client";
@@ -31,127 +32,6 @@ export type FetchResult<T> =
       error: Error;
       status: number;
     };
-
-/**
- * Fetches data from a URL with retry logic.
- *
- * @param url - The URL to fetch data from.
- * @param init - Optional parameters for the fetch request.(ie: headers, body, method, etc.)
- * @param retries - The number of retry attempts (default is 2).
- * @param sleepTimeInSecs - The time to wait between retries (default is 1 second).
- * @param timeoutInSecs - The time to wait before aborting the request (default is 10 seconds).
- * @returns The response status, data if success, error if failed, and success status of the fetch request.
- *
- * @remarks
- * - If the request returns with a status of 429, it would not retry the request at all.
- * - If you pass a signal with your fetch config then the fetch would abort whenever ANY(the first one) of the signal provided and the timeout signal abort.
- *  - If your signal is aborted, then the fetch would not be retried.
- *  - If the timeout signal aborts, then the fetch would be retried.
- */
-export async function fetchAndRetry<T>({
-  url,
-  init,
-  retries = 2,
-  sleepTimeInSecs = 1,
-  timeoutInSecs = 10,
-}: {
-  url: string;
-  init?: RequestInit;
-  retries?: number;
-  sleepTimeInSecs?: number;
-  timeoutInSecs?: number;
-}): Promise<FetchResult<T>> {
-  let isRateLimited = false;
-
-  let lastError: Error | undefined;
-  let lastErrorStatus: number | undefined;
-
-  for (let i = 0; i <= retries; i++) {
-    const controller = new AbortController();
-
-    const signal = init?.signal
-      ? AbortSignal.any([init.signal, controller.signal])
-      : controller.signal;
-
-    const timeoutId = setTimeout(() => controller.abort(), timeoutInSecs * 1000);
-
-    try {
-      const response = await fetch(url, {
-        ...init,
-        signal,
-      });
-
-      clearTimeout(timeoutId);
-
-      if (response.status === 429) {
-        isRateLimited = true;
-        break;
-      }
-
-      if (!response.ok) {
-        lastErrorStatus = response.status;
-
-        const error = (await response.json()) as any;
-        const errorMessage =
-          error?.Message || error?.message || error?.Error || error?.error || "Unknown error";
-
-        throw new Error(errorMessage);
-      }
-
-      const data = (await response.json()) as T;
-
-      return {
-        data,
-        success: true,
-        error: undefined,
-        status: response.status,
-      };
-    } catch (error) {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-
-      //if the signal passed was aborted, then the request would not be retried
-      if (error instanceof DOMException && init?.signal?.aborted) {
-        lastError = new Error(`Request was aborted`);
-
-        lastErrorStatus = 408;
-
-        break;
-      }
-
-      if (error instanceof DOMException && controller.signal.aborted) {
-        lastError = new Error(`Request took too long`);
-
-        lastErrorStatus = 408;
-      } else {
-        lastError = error as Error;
-      }
-
-      logger.warn(`Attempt ${i + 1} to fetch ${url} failed:`, error);
-
-      if (i < retries) {
-        await sleep(sleepTimeInSecs);
-      }
-    }
-  }
-
-  if (isRateLimited) {
-    return {
-      data: undefined,
-      success: false,
-      error: new Error("Too many requests"),
-      status: 429,
-    };
-  }
-
-  return {
-    data: undefined,
-    success: false,
-    error: lastError || new Error("Failed to fetch data"),
-    status: lastErrorStatus || 500,
-  };
-}
 
 export function logEmailError(
   type: string,
@@ -711,7 +591,6 @@ export async function generateBudgetStatement({
   return pdf;
 }
 
-//FIXME: FIX THIS PDF
 export async function generateLogsStatement({
   userName,
   startDate,
@@ -741,10 +620,11 @@ export async function generateLogsStatement({
   const currencies = Object.keys(logsByCurrency).join(", ");
 
   const formatDate = (date: string) =>
-    new Date(date).toLocaleDateString("en-US", {
+    new Date(date).toLocaleDateString("en-GB", {
       year: "numeric",
       month: "short",
       day: "2-digit",
+      hour12: true,
     });
 
   const generatedAt = new Date().toLocaleString("en-GB", {
@@ -755,6 +635,11 @@ export async function generateLogsStatement({
     minute: "2-digit",
     hour12: true,
   });
+
+  const logoImage = path.join(__dirname, "../../public/assets/images/logos/logo.png");
+  const imageBuffer = await fs.promises.readFile(logoImage);
+
+  const base64Logo = `data:image/png;base64,${imageBuffer.toString("base64")}`;
 
   const currencySections = Object.entries(logsByCurrency)
     .map(([currency, currencyLogs]) => {
@@ -767,18 +652,31 @@ export async function generateLogsStatement({
         0,
       );
 
+      const grandTotal =
+        total < 0
+          ? "-" +
+            (currencyData[currency as Currencies]?.symbol || currency) +
+            Math.abs(total).toFixed(2)
+          : (currencyData[currency as Currencies]?.symbol || currency) + total.toFixed(2);
+
       const rows = currencyLogs
-        .map(
-          (log, idx) => `
-      <tr>
-        <td class="col-num">${idx + 1}</td>
-        <td class="col-vendor">${log.category.name}</td>
-        <td class="col-date">${new Date(log.transactionDate).toISOString().split("T")[0]}</td>
-        <td class="col-payment">${log.paymentMethod.name}</td>
-        <td class="col-amount">${log.logType === "expense" ? "-" : ""}${currencyData[currency as Currencies].symbol}${parseFloat(log.amount.toString()).toFixed(2)}</td>
-      </tr>
-    `,
-        )
+        .map((log) => {
+          const transactionDate = new Date(log.transactionDate).toISOString().split("T")[0];
+          const transactionNote = log.note || "N/A";
+          const transactionCategory = log.category.name;
+          const transactionPaymentMethod = log.paymentMethod.name;
+          const transactionAmount = `${log.logType === "expense" ? "-" : ""}${currencyData[currency as Currencies]?.symbol || currency}${parseFloat(log.amount.toString()).toFixed(2)}`;
+
+          return `
+              <tr>
+              <td class="col-date">${transactionDate}</td>
+              <td class="col-note">${transactionNote}</td>
+              <td class="col-vendor">${transactionCategory}</td>
+              <td class="col-payment">${transactionPaymentMethod}</td>
+              <td class="col-amount">${transactionAmount}</td>
+              </tr>
+            `;
+        })
         .join("");
 
       return `
@@ -786,21 +684,22 @@ export async function generateLogsStatement({
         <div class="currency-header">
           <div>
             <div>${currency} Report</div>
-            <div class="transaction-count">${currencyLogs.length} Transaction${currencyLogs.length !== 1 ? "s" : ""}</div>
+            <div class="transaction-count">${currencyLogs.length} Transaction${currencyLogs.length > 1 ? "s" : ""}</div>
           </div>
-          <div class="grand-total">${currencyData[currency as Currencies].symbol}${total.toFixed(2)}</div>
+          <div class="grand-total">${grandTotal}</div>
         </div>
 
         <table>
           <thead>
             <tr>
-              <th class="col-num">#</th>
+            <th class="col-date">Date</th>
+              <th class="col-note">Note</th>
               <th class="col-vendor">Category</th>
-              <th class="col-date">Date</th>
               <th class="col-payment">Payment Method</th>
               <th class="col-amount">Total</th>
             </tr>
           </thead>
+
           <tbody>${rows}</tbody>
         </table>
       </div>
@@ -847,7 +746,7 @@ export async function generateLogsStatement({
             margin-bottom: 8px;
         }
         
-        .logo-placeholder {
+        .logo-container {
             width: 40px;
             height: 40px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -858,6 +757,11 @@ export async function generateLogsStatement({
             color: white;
             font-weight: bold;
             font-size: 18px;
+        }
+
+        .logo {
+            width: 100%;
+            height: 100%;
         }
         
         .title {
@@ -1009,7 +913,9 @@ export async function generateLogsStatement({
 <body>
     <div class="header">
         <div class="logo-section">
-            <div class="logo-placeholder">P</div>
+            <div class="logo-container">
+              <img src="${base64Logo}" alt="Logo" class="logo" />
+            </div>
             <div>
                 <div class="title">Paytrail Statement</div>
                 <div class="subtitle">Generated on ${generatedAt}</div>
