@@ -110,6 +110,23 @@ export async function generatePdf(html: string, pdfOptions?: PDFOptions) {
   return pdf;
 }
 
+const generatedAt = new Date().toLocaleString("en-GB", {
+  year: "numeric",
+  month: "short",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: true,
+});
+
+const formatDate = (date: string | Date) =>
+  new Date(date).toLocaleDateString("en-GB", {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+    hour12: true,
+  });
+
 export async function generateBudgetStatement({
   userName,
   endDate,
@@ -125,22 +142,6 @@ export async function generateBudgetStatement({
   const imageBuffer = await fs.promises.readFile(logoImage);
 
   const base64Logo = `data:image/png;base64,${imageBuffer.toString("base64")}`;
-
-  const generatedAt = new Date().toLocaleString("en-GB", {
-    year: "numeric",
-    month: "short",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  });
-
-  const formatDate = (date: Date) =>
-    new Date(date).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "2-digit",
-    });
 
   const budgetSections = budgetsAndLogs
     .map((budgetData) => {
@@ -542,23 +543,6 @@ export async function generateLogsStatement({
   );
 
   const currencies = Object.keys(logsByCurrency).join(", ");
-
-  const formatDate = (date: string) =>
-    new Date(date).toLocaleDateString("en-GB", {
-      year: "numeric",
-      month: "short",
-      day: "2-digit",
-      hour12: true,
-    });
-
-  const generatedAt = new Date().toLocaleString("en-GB", {
-    year: "numeric",
-    month: "short",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  });
 
   const logoImage = path.join(__dirname, "../../public/assets/images/logos/logo.png");
   const imageBuffer = await fs.promises.readFile(logoImage);

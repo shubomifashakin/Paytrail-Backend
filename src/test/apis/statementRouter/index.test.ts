@@ -33,10 +33,12 @@ jest.mock("resend", () => ({
 }));
 
 const setContent = jest.fn().mockResolvedValue(undefined);
+const bringToFront = jest.fn().mockResolvedValue(undefined);
 const pdf = jest.fn().mockResolvedValue(Buffer.from("PDF_CONTENT"));
 const newPage = jest.fn().mockResolvedValue({
   pdf,
   setContent,
+  bringToFront,
 });
 const close = jest.fn().mockResolvedValue(undefined);
 const launch = jest.fn().mockResolvedValue({
@@ -241,10 +243,11 @@ describe("Statement Router", () => {
           .set("Content-Type", "application/json")
           .send(data);
 
-        expect(pdf).toHaveBeenCalledTimes(1);
+        expect(newPage).toHaveBeenCalledTimes(1);
+        expect(bringToFront).toHaveBeenCalledTimes(1);
         expect(setContent).toHaveBeenCalledTimes(1);
         expect(setContent).toHaveBeenCalledWith(expect.any(String));
-        expect(newPage).toHaveBeenCalledTimes(1);
+        expect(pdf).toHaveBeenCalledTimes(1);
         expect(close).toHaveBeenCalledTimes(1);
 
         expect(sendMail).toHaveBeenCalledTimes(1);
