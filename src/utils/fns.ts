@@ -117,6 +117,7 @@ const generatedAt = new Date().toLocaleString("en-GB", {
   hour: "2-digit",
   minute: "2-digit",
   hour12: true,
+  timeZoneName: "short",
 });
 
 const formatDate = (date: string | Date) =>
@@ -163,14 +164,20 @@ export async function generateBudgetStatement({
               const amount = parseFloat(log.amount.toString()).toFixed(2);
               const isLogIncome = log.logType === "income";
 
+              const transactionDate = log.transactionDate.toISOString().split("T")[0];
+              const transactionNote = log.note || "N/A";
+              const transactionCategory = log.category;
+              const transactionPaymentMethod = log.paymentMethod;
+              const transactionAmount = `${isLogIncome ? "+" : "-"}${currencySymbol}${amount}`;
+
               return `
                 <tr>
-                  <td class="col-date">${formatDate(log.transactionDate)}</td>
-                  <td class="col-payment">${log.paymentMethod.name}</td>
-                  <td class="col-category">${log.category.name}</td>
-                  <td class="col-note">${log.note || "N/A"}</td>
+                  <td class="col-date">${transactionDate}</td>
+                  <td class="col-payment">${transactionPaymentMethod.name}</td>
+                  <td class="col-category">${transactionCategory.name}</td>
+                  <td class="col-note">${transactionNote}</td>
                   <td class="col-amount">
-                    ${isLogIncome ? "+" : "-"}${currencySymbol}${amount}
+                    ${transactionAmount}
                   </td>
                 </tr>
               `;
@@ -800,7 +807,7 @@ export async function generateLogsStatement({
               <img src="${base64Logo}" alt="Logo" class="logo" />
             </div>
             <div>
-                <div class="title">Paytrail Statement</div>
+                <div class="title">Paytrail Logs Statement</div>
                 <div class="subtitle">Generated on ${generatedAt}</div>
             </div>
         </div>
