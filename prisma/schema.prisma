@@ -321,7 +321,7 @@ model Logs {
   paymentMethod   PaymentMethods @relation(fields: [paymentMethodId], references: [id], onDelete: Cascade)
 
   budgetId String?
-  budget   Budgets? @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+  budget   Budgets? @relation(fields: [budgetId], references: [id], onDelete: SetNull)
 
   createdAt DateTime
   updatedAt DateTime
