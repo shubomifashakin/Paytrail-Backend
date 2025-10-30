@@ -10,6 +10,8 @@ import sqsClient from "../../lib/sqsClient";
 import { MESSAGES } from "../../utils/constants";
 import { pushSchemaValidator } from "../../utils/validators";
 
+import { Logs } from "@prisma/client";
+
 export default async function (req: Request, res: Response) {
   const { success, error, data } = pushSchemaValidator.safeParse(req?.body);
 
@@ -279,15 +281,37 @@ export default async function (req: Request, res: Response) {
 
     const allValidLogs = data.data
       .filter((c) => c.tableName === "logs")
-      .filter((c) => c.operation === "insert" || c.operation === "update");
+      ?.filter((c) => c.operation === "insert" || c.operation === "update");
 
-    const allLogsWithinPeriod = allValidLogs.filter((c) => {
+    if (!allValidLogs.length) return;
+
+    const logsById = allValidLogs.reduce(
+      (acc, log) => {
+        const logData = log.data as Logs;
+
+        if (!acc.has(logData.id)) {
+          acc.set(logData.id, []);
+        }
+        acc.get(logData.id)?.push(logData);
+        return acc;
+      },
+      new Map() as Map<string, Logs[]>,
+    );
+
+    //since a log can be updated multiple times in a batch, we only want the most recent version of each log
+    const uniqueLogs = Array.from(logsById.values()).map((logs) => {
+      return logs.sort(
+        (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+      )[0];
+    });
+
+    const allLogsWithinPeriod = uniqueLogs.filter((log) => {
       const beginningOfCurrentMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
       const endOfCurrentMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0);
 
       return (
-        new Date(c.data.transactionDate).getTime() >= beginningOfCurrentMonth.getTime() &&
-        new Date(c.data.transactionDate).getTime() <= endOfCurrentMonth.getTime()
+        new Date(log.transactionDate).getTime() >= beginningOfCurrentMonth.getTime() &&
+        new Date(log.transactionDate).getTime() <= endOfCurrentMonth.getTime()
       );
     });
 
@@ -343,16 +367,15 @@ export default async function (req: Request, res: Response) {
     const logsToSend = allLogsWithinPeriod.map((c) => {
       return {
         budgetCurrency,
-        operation: c.operation,
-        userId: c.data.userId,
-        logId: c.data.id,
-        amount: c.data.amount,
-        logType: c.data.logType,
-        currency: c.data.currency,
-        createdAt: c.data.createdAt,
-        transactionDate: c.data.transactionDate,
-        paymentMethod: paymentMethodMap.get(c.data.paymentMethodId),
-        category: categoryMap.get(c.data.categoryId),
+        userId: c.userId,
+        logId: c.id,
+        amount: c.amount,
+        logType: c.logType,
+        currency: c.currency,
+        createdAt: c.createdAt,
+        transactionDate: c.transactionDate,
+        paymentMethod: paymentMethodMap.get(c.paymentMethodId),
+        category: categoryMap.get(c.categoryId),
       };
     });
 
