@@ -1,7 +1,11 @@
+import { SendMessageBatchCommand } from "@aws-sdk/client-sqs";
 import { Request, Response } from "express";
+
+import serverEnv from "../../serverEnv";
 
 import logger from "../../lib/logger";
 import prisma from "../../lib/prisma";
+import sqsClient from "../../lib/sqsClient";
 
 import { MESSAGES } from "../../utils/constants";
 import { pushSchemaValidator } from "../../utils/validators";
@@ -268,5 +272,169 @@ export default async function (req: Request, res: Response) {
     return null;
   });
 
-  return res.status(200).json({ serverTime: new Date().toISOString() });
+  res.status(200).json({ serverTime: new Date().toISOString() });
+
+  try {
+    logger.info("Sending logs to log ingestion queue");
+
+    const allValidLogs = data.data
+      .filter((c) => c.tableName === "logs")
+      .filter((c) => c.operation === "insert" || c.operation === "update");
+
+    const allLogsWithinPeriod = allValidLogs.filter((c) => {
+      const beginningOfCurrentMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+      const endOfCurrentMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0);
+
+      return (
+        new Date(c.data.transactionDate).getTime() >= beginningOfCurrentMonth.getTime() &&
+        new Date(c.data.transactionDate).getTime() <= endOfCurrentMonth.getTime()
+      );
+    });
+
+    if (!allLogsWithinPeriod.length) return;
+
+    const currentBudgetPeriod = Number(
+      `${new Date().getFullYear()}${new Date().getMonth().toString().padStart(2, "0")}`,
+    );
+
+    const budget = await prisma.budgets.findUnique({
+      where: {
+        userId_period: {
+          userId: req.user.id,
+          period: currentBudgetPeriod,
+        },
+      },
+      select: {
+        currency: true,
+      },
+    });
+
+    if (!budget) return;
+
+    const budgetCurrency = budget.currency;
+
+    const paymentMethodNames = await prisma.paymentMethods.findMany({
+      where: {
+        id: {
+          in: allValidLogs.map((c) => c.data.paymentMethodId),
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+      },
+    });
+
+    const categoryNames = await prisma.categories.findMany({
+      where: {
+        id: {
+          in: allValidLogs.map((c) => c.data.categoryId),
+        },
+      },
+      select: {
+        name: true,
+        id: true,
+      },
+    });
+
+    const paymentMethodMap = new Map(paymentMethodNames.map((pm) => [pm.id, pm.name]));
+    const categoryMap = new Map(categoryNames.map((cat) => [cat.id, cat.name]));
+
+    const logsToSend = allLogsWithinPeriod.map((c) => {
+      return {
+        budgetCurrency,
+        operation: c.operation,
+        userId: c.data.userId,
+        logId: c.data.id,
+        amount: c.data.amount,
+        logType: c.data.logType,
+        currency: c.data.currency,
+        createdAt: c.data.createdAt,
+        transactionDate: c.data.transactionDate,
+        paymentMethod: paymentMethodMap.get(c.data.paymentMethodId),
+        category: categoryMap.get(c.data.categoryId),
+      };
+    });
+
+    const chunks = chunkArray(logsToSend, 10);
+
+    const results = await Promise.allSettled(
+      chunks.map((chunk) => sendBatchToSQS(chunk, serverEnv.logIngestionQueueUrl)),
+    );
+
+    let totalSuccessful = 0;
+    let totalFailed = 0;
+
+    results.forEach((result, index) => {
+      if (result.status === "fulfilled") {
+        totalSuccessful += result.value.successful;
+        totalFailed += result.value.failed;
+      } else {
+        logger.error(`Batch ${index} completely failed`, {
+          error: result.reason,
+        });
+        totalFailed += chunks[index].length;
+      }
+    });
+
+    logger.info("SQS publishing complete", {
+      userId: req.user.id,
+      totalLogs: logsToSend.length,
+      successful: totalSuccessful,
+      failed: totalFailed,
+      requestId: req.headers["request-id"],
+    });
+
+    return;
+  } catch (error) {
+    logger.error("Failed to publish logs to SQS", { error, requestId: req.headers["request-id"] });
+
+    return;
+  }
+}
+
+function chunkArray<T>(array: T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < array.length; i += size) {
+    chunks.push(array.slice(i, i + size));
+  }
+  return chunks;
+}
+
+async function sendBatchToSQS(logs: any[], queueUrl: string) {
+  try {
+    const response = await sqsClient.send(
+      new SendMessageBatchCommand({
+        QueueUrl: queueUrl,
+        Entries: logs.map((log, index) => ({
+          Id: `${log.id}-${index}`,
+          MessageBody: JSON.stringify(log),
+          MessageAttributes: {
+            userId: {
+              StringValue: log.userId,
+              DataType: "String",
+            },
+            logType: {
+              StringValue: log.logType,
+              DataType: "String",
+            },
+          },
+        })),
+      }),
+    );
+
+    if (response.Failed && response.Failed.length > 0) {
+      logger.error("Some messages failed to send to log ingestion queue", {
+        failed: response.Failed,
+      });
+    }
+
+    return {
+      successful: response.Successful?.length || 0,
+      failed: response.Failed?.length || 0,
+    };
+  } catch (error) {
+    logger.error("Error sending batch to log ingestion queue", { error });
+    throw error;
+  }
 }
