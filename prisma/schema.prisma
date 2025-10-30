@@ -263,6 +263,7 @@ model Budgets {
   Logs        Logs[]
 
   @@unique([userId, budgetMonth, year])
+  @@unique([userId,period])
   @@index([userId, period])
   @@map("budgets")
 }
