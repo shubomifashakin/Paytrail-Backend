@@ -13,6 +13,8 @@ const serverEnv = {
   appScheme: process.env.APP_SCHEME!,
   baseUrl: process.env.BASE_URL!,
 
+  logIngestionQueueUrl: process.env.LOG_INGESTION_QUEUE_URL!,
+
   paytrailAWSRegion: process.env.PAYTRAIL_AWS_REGION!,
   paytrailAWSAccessKey: process.env.PAYTRAIL_AWS_ACCESS_KEY!,
   paytrailAWSSecretKey: process.env.PAYTRAIL_AWS_SECRET_KEY!,
