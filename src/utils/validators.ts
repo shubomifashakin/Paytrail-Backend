@@ -27,7 +27,7 @@ export const pushSchemaValidator = z.object({
             return JSON.parse(arg) as any;
           }),
         operation: z.enum(["insert", "update", "delete"]),
-        tableName: z.enum(["budgets", "logs", "categories", "payment_methods", "user"]),
+        tableName: z.enum(["budgets", "transactions", "categories", "payment_methods", "user"]),
       }),
     )
     .nonempty(),
@@ -56,7 +56,7 @@ export const statementQueryValidator = z
 
     currencies: z.array(validateCurrency),
 
-    statementType: z.enum(["logs", "budgets"]),
+    statementType: z.enum(["transactions", "budgets"]),
   })
   .refine((args) => {
     if (args.statementType === "budgets") {

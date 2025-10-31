@@ -10,7 +10,7 @@ import sqsClient from "../../lib/sqsClient";
 import { MESSAGES } from "../../utils/constants";
 import { pushSchemaValidator } from "../../utils/validators";
 
-import { Logs } from "@prisma/client";
+import { Transactions } from "@prisma/client";
 
 export default async function (req: Request, res: Response) {
   const { success, error, data } = pushSchemaValidator.safeParse(req?.body);
@@ -210,20 +210,23 @@ export default async function (req: Request, res: Response) {
         });
       }
 
-      if (c.tableName === "logs" && c.operation === "delete") {
-        const exists = await tx.logs.findUnique({ where: { id: c.data.id } });
+      if (c.tableName === "transactions" && c.operation === "delete") {
+        const exists = await tx.transactions.findUnique({ where: { id: c.data.id } });
 
         if (!exists) continue;
 
-        await tx.logs.delete({
+        await tx.transactions.delete({
           where: {
             id: c.data.id,
           },
         });
       }
 
-      if (c.tableName === "logs" && (c.operation === "update" || c.operation === "insert")) {
-        const latest = await tx.logs.findUnique({
+      if (
+        c.tableName === "transactions" &&
+        (c.operation === "update" || c.operation === "insert")
+      ) {
+        const latest = await tx.transactions.findUnique({
           where: {
             id: c.data.id,
           },
@@ -236,7 +239,7 @@ export default async function (req: Request, res: Response) {
           continue;
         }
 
-        await tx.logs.upsert({
+        await tx.transactions.upsert({
           where: {
             id: c.data.id,
           },
@@ -245,7 +248,7 @@ export default async function (req: Request, res: Response) {
             amount: c.data.amount,
             transactionDate: new Date(c.data.transactionDate),
             note: c.data?.note || "",
-            logType: c.data.logType,
+            transactionType: c.data.transactionType,
             currency: c.data.currency,
             categoryId: c.data.categoryId,
             userId: c.data.userId,
@@ -259,7 +262,7 @@ export default async function (req: Request, res: Response) {
             amount: c.data.amount,
             transactionDate: new Date(c.data.transactionDate),
             note: c.data?.note || "",
-            logType: c.data.logType,
+            transactionType: c.data.transactionType,
             currency: c.data.currency,
             categoryId: c.data.categoryId,
             userId: c.data.userId,
@@ -277,45 +280,45 @@ export default async function (req: Request, res: Response) {
   res.status(200).json({ serverTime: new Date().toISOString() });
 
   try {
-    logger.info("Sending logs to log ingestion queue");
+    logger.info("Sending transactions to transaction ingestion queue");
 
-    const allValidLogs = data.data
-      .filter((c) => c.tableName === "logs")
+    const allValidTransactions = data.data
+      .filter((c) => c.tableName === "transactions")
       ?.filter((c) => c.operation === "insert" || c.operation === "update");
 
-    if (!allValidLogs.length) return;
+    if (!allValidTransactions.length) return;
 
-    const logsById = allValidLogs.reduce(
-      (acc, log) => {
-        const logData = log.data as Logs;
+    const transactionsById = allValidTransactions.reduce(
+      (acc, transaction) => {
+        const transactionData = transaction.data as Transactions;
 
-        if (!acc.has(logData.id)) {
-          acc.set(logData.id, []);
+        if (!acc.has(transactionData.id)) {
+          acc.set(transactionData.id, []);
         }
-        acc.get(logData.id)?.push(logData);
+        acc.get(transactionData.id)?.push(transactionData);
         return acc;
       },
-      new Map() as Map<string, Logs[]>,
+      new Map() as Map<string, Transactions[]>,
     );
 
     //since a log can be updated multiple times in a batch, we only want the most recent version of each log
-    const uniqueLogs = Array.from(logsById.values()).map((logs) => {
-      return logs.sort(
+    const uniqueTransactions = Array.from(transactionsById.values()).map((transaction) => {
+      return transaction.sort(
         (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
       )[0];
     });
 
-    const allLogsWithinPeriod = uniqueLogs.filter((log) => {
+    const allTransactionsWithinPeriod = uniqueTransactions.filter((transaction) => {
       const beginningOfCurrentMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
       const endOfCurrentMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0);
 
       return (
-        new Date(log.transactionDate).getTime() >= beginningOfCurrentMonth.getTime() &&
-        new Date(log.transactionDate).getTime() <= endOfCurrentMonth.getTime()
+        new Date(transaction.transactionDate).getTime() >= beginningOfCurrentMonth.getTime() &&
+        new Date(transaction.transactionDate).getTime() <= endOfCurrentMonth.getTime()
       );
     });
 
-    if (!allLogsWithinPeriod.length) return;
+    if (!allTransactionsWithinPeriod.length) return;
 
     const currentBudgetPeriod = Number(
       `${new Date().getFullYear()}${new Date().getMonth().toString().padStart(2, "0")}`,
@@ -340,7 +343,7 @@ export default async function (req: Request, res: Response) {
     const paymentMethodNames = await prisma.paymentMethods.findMany({
       where: {
         id: {
-          in: allValidLogs.map((c) => c.data.paymentMethodId),
+          in: allValidTransactions.map((c) => c.data.paymentMethodId),
         },
       },
       select: {
@@ -352,7 +355,7 @@ export default async function (req: Request, res: Response) {
     const categoryNames = await prisma.categories.findMany({
       where: {
         id: {
-          in: allValidLogs.map((c) => c.data.categoryId),
+          in: allValidTransactions.map((c) => c.data.categoryId),
         },
       },
       select: {
@@ -364,13 +367,13 @@ export default async function (req: Request, res: Response) {
     const paymentMethodMap = new Map(paymentMethodNames.map((pm) => [pm.id, pm.name]));
     const categoryMap = new Map(categoryNames.map((cat) => [cat.id, cat.name]));
 
-    const logsToSend = allLogsWithinPeriod.map((c) => {
+    const transactionsToSend = allTransactionsWithinPeriod.map((c) => {
       return {
         budgetCurrency,
         userId: c.userId,
-        logId: c.id,
+        transactionId: c.id,
         amount: c.amount,
-        logType: c.logType,
+        transactionType: c.transactionType,
         currency: c.currency,
         createdAt: c.createdAt,
         transactionDate: c.transactionDate,
@@ -379,10 +382,10 @@ export default async function (req: Request, res: Response) {
       };
     });
 
-    const chunks = chunkArray(logsToSend, 10);
+    const chunks = chunkArray(transactionsToSend, 10);
 
     const results = await Promise.allSettled(
-      chunks.map((chunk) => sendBatchToSQS(chunk, serverEnv.logIngestionQueueUrl)),
+      chunks.map((chunk) => sendBatchToSQS(chunk, serverEnv.transactionIngestionUrl)),
     );
 
     let totalSuccessful = 0;
@@ -402,7 +405,7 @@ export default async function (req: Request, res: Response) {
 
     logger.info("SQS publishing complete", {
       userId: req.user.id,
-      totalLogs: logsToSend.length,
+      totalTransactions: transactionsToSend.length,
       successful: totalSuccessful,
       failed: totalFailed,
       requestId: req.headers["request-id"],
@@ -410,7 +413,10 @@ export default async function (req: Request, res: Response) {
 
     return;
   } catch (error) {
-    logger.error("Failed to publish logs to SQS", { error, requestId: req.headers["request-id"] });
+    logger.error("Failed to publish transactions to SQS", {
+      error,
+      requestId: req.headers["request-id"],
+    });
 
     return;
   }
@@ -424,21 +430,21 @@ function chunkArray<T>(array: T[], size: number): T[][] {
   return chunks;
 }
 
-async function sendBatchToSQS(logs: any[], queueUrl: string) {
+async function sendBatchToSQS(transactions: any[], queueUrl: string) {
   try {
     const response = await sqsClient.send(
       new SendMessageBatchCommand({
         QueueUrl: queueUrl,
-        Entries: logs.map((log, index) => ({
-          Id: `${log.id}-${index}`,
-          MessageBody: JSON.stringify(log),
+        Entries: transactions.map((transaction, index) => ({
+          Id: `${transaction.id}-${index}`,
+          MessageBody: JSON.stringify(transaction),
           MessageAttributes: {
             userId: {
-              StringValue: log.userId,
+              StringValue: transaction.userId,
               DataType: "String",
             },
-            logType: {
-              StringValue: log.logType,
+            transactionType: {
+              StringValue: transaction.transactionType,
               DataType: "String",
             },
           },
@@ -447,7 +453,7 @@ async function sendBatchToSQS(logs: any[], queueUrl: string) {
     );
 
     if (response.Failed && response.Failed.length > 0) {
-      logger.error("Some messages failed to send to log ingestion queue", {
+      logger.error("Some messages failed to send to transaction ingestion queue", {
         failed: response.Failed,
       });
     }
@@ -457,7 +463,7 @@ async function sendBatchToSQS(logs: any[], queueUrl: string) {
       failed: response.Failed?.length || 0,
     };
   } catch (error) {
-    logger.error("Error sending batch to log ingestion queue", { error });
+    logger.error("Error sending batch to transaction ingestion queue", { error });
     throw error;
   }
 }

@@ -1,7 +1,7 @@
 import z from "zod";
 import { FilePart, LanguageModel, TextPart, generateObject } from "ai";
 
-import { Currencies, LogType } from "@prisma/client";
+import { Currencies, TransactionType } from "@prisma/client";
 
 const receiptOverview = z.object({
   merchant: z.string().nonoptional(),
@@ -18,7 +18,7 @@ const receiptItem = z.object({
     .nonoptional()
     .describe("Transaction Date in ISO format"),
   note: z.string().min(1).max(100).nonoptional(),
-  logType: z.enum(LogType).nonoptional(),
+  transactionType: z.enum(TransactionType).nonoptional(),
   currency: z.enum(Currencies).nonoptional(),
   categoryId: z.string().nonempty(),
   paymentMethodId: z.string().nonempty(),
@@ -38,7 +38,7 @@ export const parsedReceiptSchema = z
 export const receiptParsingPrompt = `You are a system that parses receipts.
 You extract all the expenses from receipts/receipt-like files and categorize them based on the payment methods and categories provided.
 Get the name of the merchant/store from the receipt and use it as the merchant field.
-Use the name of each item purchased on the receipt as the respective note of the log.
+Use the name of each item purchased on the receipt as the respective note of the transaction.
 
 Overview totalItemsPurchased: Extract the total number of items purchased from the receipt and use it as the totalItemsPurchased field.
 Overview totalAmountSpent: Extract the total amount spent from the receipt and use it as the totalAmountSpent field. It should match the sum of the amounts of all the items you extracted from the receipt.

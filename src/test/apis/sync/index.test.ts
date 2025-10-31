@@ -31,7 +31,7 @@ describe("Sync Router", () => {
   let budgetId: string;
   let paymentId: string;
   let categoryId: string;
-  let logId: string;
+  let transactionId: string;
 
   const oldDate = new Date();
 
@@ -115,13 +115,13 @@ describe("Sync Router", () => {
       },
     });
 
-    const log = await prisma.logs.create({
+    const transaction = await prisma.transactions.create({
       data: {
         id: uuid(),
         amount: 100,
         transactionDate: new Date(),
         note: "Test Note",
-        logType: "income",
+        transactionType: "income",
         currency: "NGN",
         categoryId: category.id,
         userId: user.id,
@@ -140,7 +140,7 @@ describe("Sync Router", () => {
     budgetId = budget.id;
     paymentId = paymentMethod.id;
     categoryId = category.id;
-    logId = log.id;
+    transactionId = transaction.id;
   });
 
   afterAll(async () => {
@@ -162,7 +162,7 @@ describe("Sync Router", () => {
       },
     });
 
-    await prisma.logs.deleteMany({
+    await prisma.transactions.deleteMany({
       where: {
         userId: userId,
       },
@@ -318,15 +318,15 @@ describe("Sync Router", () => {
               },
 
               {
-                id: logId,
+                id: transactionId,
                 operation: "update",
-                tableName: "logs",
+                tableName: "transactions",
                 data: JSON.stringify({
-                  id: logId,
+                  id: transactionId,
                   amount: "100",
                   transactionDate: new Date(),
                   note: "Test Note",
-                  logType: "income",
+                  transactionType: "income",
                   currency: "NGN",
                   categoryId: categoryId,
                   userId: userId,
@@ -339,13 +339,13 @@ describe("Sync Router", () => {
               {
                 id: uuid(),
                 operation: "insert",
-                tableName: "logs",
+                tableName: "transactions",
                 data: JSON.stringify({
                   id: uuid(),
                   amount: "100",
                   transactionDate: new Date(),
                   note: "Test Note",
-                  logType: "income",
+                  transactionType: "income",
                   currency: "NGN",
                   categoryId: categoryId,
                   userId: userId,
@@ -359,7 +359,7 @@ describe("Sync Router", () => {
               {
                 id: uuid(),
                 operation: "delete",
-                tableName: "logs",
+                tableName: "transactions",
                 data: JSON.stringify({
                   id: uuid(),
                 }),
@@ -397,15 +397,15 @@ describe("Sync Router", () => {
                 }),
               },
               {
-                id: logId,
+                id: transactionId,
                 operation: "update",
-                tableName: "logs",
+                tableName: "transactions",
                 data: JSON.stringify({
-                  id: logId,
+                  id: transactionId,
                   amount: "2000",
                   transactionDate: new Date(),
                   note: "Test Note",
-                  logType: "income",
+                  transactionType: "income",
                   currency: "NGN",
                   categoryId: categoryId,
                   userId: userId,
@@ -454,9 +454,9 @@ describe("Sync Router", () => {
           },
         });
 
-        const logData = await prisma.logs.findUnique({
+        const transactionData = await prisma.transactions.findUnique({
           where: {
-            id: logId,
+            id: transactionId,
           },
         });
 
@@ -474,7 +474,7 @@ describe("Sync Router", () => {
 
         expect(data?.amount.toString()).toEqual("1000");
         expect(data?.period).toBe(202500);
-        expect(logData?.amount.toNumber()).toEqual(100);
+        expect(transactionData?.amount.toNumber()).toEqual(100);
         expect(categoryData?.name).toEqual("Test Category");
         expect(paymentData?.name).toEqual("Test Payment Method");
 
@@ -517,7 +517,7 @@ describe("Sync Router", () => {
       expect(res.status).toBe(200);
       expect(res.body).toEqual({
         data: {
-          logs: expect.any(Array),
+          transactions: expect.any(Array),
           budgets: expect.any(Array),
           categories: expect.any(Array),
           paymentMethods: expect.any(Array),

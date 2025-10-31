@@ -24,7 +24,7 @@ enum Months {
   December
 }
 
-enum LogType {
+enum TransactionType {
   expense
   income
 }
@@ -198,7 +198,7 @@ model User {
   Budgets        Budgets[]
   Categories     Categories[]
   PaymentMethods PaymentMethods[]
-  Logs           Logs[]
+  Transactions   Transactions[]
 
   @@unique([email])
   @@map("user")
@@ -260,7 +260,7 @@ model Budgets {
   user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt   DateTime
   updatedAt   DateTime
-  Logs        Logs[]
+  Transactions        Transactions[]
 
   @@unique([userId, budgetMonth, year])
   @@unique([userId,period])
@@ -278,7 +278,7 @@ model Categories {
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt   DateTime
   updatedAt   DateTime
-  Logs        Logs[]
+  Transactions        Transactions[]
 
   @@unique([userId, color])
   @@unique([userId, name])
@@ -296,7 +296,7 @@ model PaymentMethods {
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt   DateTime
   updatedAt   DateTime
-  Logs        Logs[]
+  Transactions        Transactions[]
 
   @@unique([userId, name])
   @@unique([userId, color])
@@ -304,13 +304,13 @@ model PaymentMethods {
   @@map("payment_methods")
 }
 
-model Logs {
+model Transactions {
   id     String  @id
   amount Decimal @db.Decimal(12, 2)
 
   transactionDate DateTime
   note            String?    @db.VarChar(50)
-  logType         LogType
+  transactionType         TransactionType
   currency        Currencies
   categoryId      String
   category        Categories @relation(fields: [categoryId], references: [id], onDelete: Cascade)
@@ -330,5 +330,5 @@ model Logs {
   @@index([budgetId, categoryId, currency])
   @@index([userId, transactionDate, currency])
   
-  @@map("logs")
+  @@map("transactions")
 }

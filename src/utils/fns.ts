@@ -4,7 +4,7 @@ import fs from "fs";
 import path from "path";
 import puppeteer, { PDFOptions } from "puppeteer";
 
-import { Budgets, Currencies, LogType, Logs, Months } from "@prisma/client";
+import { Budgets, Currencies, Months, TransactionType, Transactions } from "@prisma/client";
 
 import logger from "../lib/logger";
 
@@ -68,16 +68,16 @@ type StatementData = {
     currency: Currencies;
     budgetMonth: Months;
   };
-  logs: Record<
+  transactions: Record<
     Currencies,
     {
-      logs: {
+      transactions: {
         note: string | null;
-        amount: Logs["amount"];
+        amount: Transactions["amount"];
         category: {
           name: string;
         };
-        logType: LogType;
+        transactionType: TransactionType;
         currency: Currencies;
         budgetId: string | null;
         paymentMethod: {
@@ -132,10 +132,10 @@ export async function generateBudgetStatement({
   userName,
   endDate,
   startDate,
-  budgetsAndLogs,
+  budgetsAndTransactions,
 }: {
   userName: string;
-  budgetsAndLogs: StatementData[];
+  budgetsAndTransactions: StatementData[];
   endDate: { month: Months; year: number };
   startDate: { month: Months; year: number };
 }) {
@@ -144,31 +144,32 @@ export async function generateBudgetStatement({
 
   const base64Logo = `data:image/png;base64,${imageBuffer.toString("base64")}`;
 
-  const budgetSections = budgetsAndLogs
+  const budgetSections = budgetsAndTransactions
     .map((budgetData) => {
-      const { budget, logs } = budgetData;
+      const { budget, transactions } = budgetData;
       const budgetSymbol =
         currencyData[budget.currency as keyof typeof currencyData]?.symbol || budget.currency;
       const budgetAmount = parseFloat(budget.amount.toString());
 
-      const currencySection = Object.entries(logs)
-        .map(([currency, currencyLogs]) => {
-          const categoryTotal = currencyLogs.totals.income - currencyLogs.totals.expense;
+      const currencySection = Object.entries(transactions)
+        .map(([currency, currencyTransactions]) => {
+          const categoryTotal =
+            currencyTransactions.totals.income - currencyTransactions.totals.expense;
           const isIncome = categoryTotal > 0;
 
           const currencySymbol =
             currencyData[currency as keyof typeof currencyData]?.symbol || currency;
 
-          const rows = currencyLogs.logs
-            .map((log) => {
-              const amount = parseFloat(log.amount.toString()).toFixed(2);
-              const isLogIncome = log.logType === "income";
+          const rows = currencyTransactions.transactions
+            .map((tx) => {
+              const amount = parseFloat(tx.amount.toString()).toFixed(2);
+              const isIncome = tx.transactionType === "income";
 
-              const transactionDate = log.transactionDate.toISOString().split("T")[0];
-              const transactionNote = log.note || "N/A";
-              const transactionCategory = log.category;
-              const transactionPaymentMethod = log.paymentMethod;
-              const transactionAmount = `${isLogIncome ? "+" : "-"}${currencySymbol}${amount}`;
+              const transactionDate = tx.transactionDate.toISOString().split("T")[0];
+              const transactionNote = tx.note || "N/A";
+              const transactionCategory = tx.category;
+              const transactionPaymentMethod = tx.paymentMethod;
+              const transactionAmount = `${isIncome ? "+" : "-"}${currencySymbol}${amount}`;
 
               return `
                 <tr>
@@ -225,7 +226,7 @@ export async function generateBudgetStatement({
             </div>
           </div>
           
-          ${currencySection || '<div class="no-logs">No transactions for this budget period</div>'}
+          ${currencySection || '<div class="no-transactions">No transactions for this budget period</div>'}
         </div>
       `;
     })
@@ -455,7 +456,7 @@ export async function generateBudgetStatement({
             font-size: 9px;
         }
         
-        .no-logs {
+        .no-transactions {
             padding: 20px;
             text-align: center;
             color: #999;
@@ -499,7 +500,7 @@ export async function generateBudgetStatement({
 
         <div class="meta-row">
             <span class="meta-label">Total Budgets:</span>
-            <span class="meta-value">${budgetsAndLogs.length}</span>
+            <span class="meta-value">${budgetsAndTransactions.length}</span>
         </div>
     </div>
     
@@ -523,47 +524,47 @@ export async function generateBudgetStatement({
   return pdf;
 }
 
-export async function generateLogsStatement({
+export async function generateTransactionsStatement({
   userName,
   startDate,
   endDate,
-  logs,
+  transactions,
 }: {
   userName: string;
   startDate: string;
   endDate: string;
-  logs: (Omit<
-    Logs,
+  transactions: (Omit<
+    Transactions,
     "id" | "budgetId" | "userId" | "paymentMethodId" | "categoryId" | "updatedAt" | "createdAt"
   > & {
     category: { name: string };
     paymentMethod: { name: string };
   })[];
 }) {
-  const logsByCurrency = logs.reduce(
-    (acc, log) => {
-      if (!acc[log.currency]) acc[log.currency] = [];
-      acc[log.currency].push(log);
+  const transactionsByCurrency = transactions.reduce(
+    (acc, transaction) => {
+      if (!acc[transaction.currency]) acc[transaction.currency] = [];
+      acc[transaction.currency].push(transaction);
       return acc;
     },
-    {} as Record<Currencies, typeof logs>,
+    {} as Record<Currencies, typeof transactions>,
   );
 
-  const currencies = Object.keys(logsByCurrency).join(", ");
+  const currencies = Object.keys(transactionsByCurrency).join(", ");
 
   const logoImage = path.join(__dirname, "../../public/assets/images/logos/logo.png");
   const imageBuffer = await fs.promises.readFile(logoImage);
 
   const base64Logo = `data:image/png;base64,${imageBuffer.toString("base64")}`;
 
-  const currencySections = Object.entries(logsByCurrency)
-    .map(([currency, currencyLogs]) => {
-      const total = currencyLogs.reduce(
-        (sum, log) =>
+  const currencySections = Object.entries(transactionsByCurrency)
+    .map(([currency, currencyTransactions]) => {
+      const total = currencyTransactions.reduce(
+        (sum, tx) =>
           sum +
-          (log.logType === "expense"
-            ? -parseFloat(log.amount.toString())
-            : parseFloat(log.amount.toString())),
+          (tx.transactionType === "expense"
+            ? -parseFloat(tx.amount.toString())
+            : parseFloat(tx.amount.toString())),
         0,
       );
 
@@ -574,13 +575,13 @@ export async function generateLogsStatement({
             Math.abs(total).toFixed(2)
           : (currencyData[currency as Currencies]?.symbol || currency) + total.toFixed(2);
 
-      const rows = currencyLogs
-        .map((log) => {
-          const transactionDate = new Date(log.transactionDate).toISOString().split("T")[0];
-          const transactionNote = log.note || "N/A";
-          const transactionCategory = log.category.name;
-          const transactionPaymentMethod = log.paymentMethod.name;
-          const transactionAmount = `${log.logType === "expense" ? "-" : ""}${currencyData[currency as Currencies]?.symbol || currency}${parseFloat(log.amount.toString()).toFixed(2)}`;
+      const rows = currencyTransactions
+        .map((tx) => {
+          const transactionDate = new Date(tx.transactionDate).toISOString().split("T")[0];
+          const transactionNote = tx.note || "N/A";
+          const transactionCategory = tx.category.name;
+          const transactionPaymentMethod = tx.paymentMethod.name;
+          const transactionAmount = `${tx.transactionType === "expense" ? "-" : ""}${currencyData[currency as Currencies]?.symbol || currency}${parseFloat(tx.amount.toString()).toFixed(2)}`;
 
           return `
               <tr>
@@ -599,7 +600,7 @@ export async function generateLogsStatement({
         <div class="currency-header">
           <div>
             <div>${currency} Report</div>
-            <div class="transaction-count">${currencyLogs.length} Transaction${currencyLogs.length > 1 ? "s" : ""}</div>
+            <div class="transaction-count">${currencyTransactions.length} Transaction${currencyTransactions.length > 1 ? "s" : ""}</div>
           </div>
           <div class="grand-total">${grandTotal}</div>
         </div>
@@ -807,7 +808,7 @@ export async function generateLogsStatement({
               <img src="${base64Logo}" alt="Logo" class="logo" />
             </div>
             <div>
-                <div class="title">Paytrail Logs Statement</div>
+                <div class="title">Paytrail Transactions Statement</div>
                 <div class="subtitle">Generated on ${generatedAt}</div>
             </div>
         </div>

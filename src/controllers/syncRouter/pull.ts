@@ -10,8 +10,8 @@ export default async function (req: Request, res: Response) {
     : { userId: req.user.id };
 
   //find everything from the database newer than the last pull date
-  const [logs, categories, paymentMethods, budgets] = await prisma.$transaction([
-    prisma.logs.findMany({
+  const [transactions, categories, paymentMethods, budgets] = await prisma.$transaction([
+    prisma.transactions.findMany({
       where: whereClause,
     }),
     prisma.categories.findMany({
@@ -26,7 +26,7 @@ export default async function (req: Request, res: Response) {
   ]);
 
   return res.status(200).json({
-    data: { logs, budgets, categories, paymentMethods },
+    data: { transactions, budgets, categories, paymentMethods },
     serverTime: new Date().toISOString(),
   });
 }

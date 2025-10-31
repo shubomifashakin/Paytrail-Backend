@@ -117,7 +117,7 @@ describe("Statement Router", () => {
         userId: userId,
       },
     });
-    await prisma.logs.deleteMany({
+    await prisma.transactions.deleteMany({
       where: {
         userId: userId,
       },
@@ -190,7 +190,7 @@ describe("Statement Router", () => {
           select: { id: true },
         });
 
-        await prisma.logs.createMany({
+        await prisma.transactions.createMany({
           data: [
             {
               id: uuid(),
@@ -199,8 +199,8 @@ describe("Statement Router", () => {
               currency: "NGN",
               createdAt: new Date(),
               updatedAt: new Date(),
-              note: "log1",
-              logType: "expense",
+              note: "transaction 1",
+              transactionType: "expense",
               paymentMethodId: payId2.id,
               categoryId: categoryId2.id,
               budgetId: budgetId.id,
@@ -213,8 +213,8 @@ describe("Statement Router", () => {
               currency: "NGN",
               createdAt: new Date(),
               updatedAt: new Date(),
-              note: "log1",
-              logType: "income",
+              note: "transaction 1",
+              transactionType: "income",
               paymentMethodId: payId2.id,
               categoryId: categoryId2.id,
               budgetId: budgetId.id,
@@ -346,13 +346,13 @@ describe("Statement Router", () => {
       });
     });
 
-    describe("when there are logs", () => {
+    describe("when there are transactions", () => {
       let payId: string;
       let categoryId: string;
       const startDate = new Date();
 
       beforeAll(async () => {
-        await prisma.logs.deleteMany();
+        await prisma.transactions.deleteMany();
 
         const payId2 = await prisma.paymentMethods.create({
           data: {
@@ -382,7 +382,7 @@ describe("Statement Router", () => {
           select: { id: true },
         });
 
-        await prisma.logs.create({
+        await prisma.transactions.create({
           data: {
             id: uuid(),
             userId: userId,
@@ -390,8 +390,8 @@ describe("Statement Router", () => {
             currency: "NGN",
             createdAt: new Date(),
             updatedAt: new Date(),
-            note: "log1",
-            logType: "expense",
+            note: "transaction 1",
+            transactionType: "expense",
             paymentMethodId: payId2.id,
             categoryId: categoryId2.id,
             transactionDate: startDate,
@@ -408,7 +408,7 @@ describe("Statement Router", () => {
           categories: [categoryId],
           currencies: ["NGN"],
           paymentMethods: [payId],
-          statementType: "logs",
+          statementType: "transactions",
           endDate: new Date(),
           startDate: startDate,
         };
@@ -455,7 +455,7 @@ describe("Statement Router", () => {
             categories: [categoryId],
             currencies: ["NGN"],
             paymentMethods: [payId],
-            statementType: "logs",
+            statementType: "transactions",
             endDate: new Date(),
             startDate: startDate,
           };
@@ -492,9 +492,9 @@ describe("Statement Router", () => {
       });
     });
 
-    describe("when there are no logs", () => {
+    describe("when there are no transactions", () => {
       beforeAll(async () => {
-        await prisma.logs.deleteMany();
+        await prisma.transactions.deleteMany();
       });
 
       test("it should not generate the statement ", async () => {
@@ -502,7 +502,7 @@ describe("Statement Router", () => {
           categories: [""],
           currencies: ["NGN"],
           paymentMethods: [""],
-          statementType: "logs",
+          statementType: "transactions",
           endDate: new Date(),
           startDate: new Date(),
         };
