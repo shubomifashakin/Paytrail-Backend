@@ -301,7 +301,7 @@ export default async function (req: Request, res: Response) {
       new Map() as Map<string, Transactions[]>,
     );
 
-    //since a log can be updated multiple times in a batch, we only want the most recent version of each log
+    //since a transaction can be updated multiple times in a batch, we only want the most recent version of each transaction
     const uniqueTransactions = Array.from(transactionsById.values()).map((transaction) => {
       return transaction.sort(
         (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
@@ -309,12 +309,21 @@ export default async function (req: Request, res: Response) {
     });
 
     const allTransactionsWithinPeriod = uniqueTransactions.filter((transaction) => {
-      const beginningOfCurrentMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-      const endOfCurrentMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0);
+      const now = new Date();
+
+      const beginningOfCurrentMonth = new Date(
+        Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0, 0),
+      );
+
+      const endOfCurrentMonth = new Date(
+        Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0, 23, 59, 59, 999),
+      );
+
+      const transactionTime = new Date(transaction.transactionDate).getTime();
 
       return (
-        new Date(transaction.transactionDate).getTime() >= beginningOfCurrentMonth.getTime() &&
-        new Date(transaction.transactionDate).getTime() <= endOfCurrentMonth.getTime()
+        transactionTime >= beginningOfCurrentMonth.getTime() &&
+        transactionTime <= endOfCurrentMonth.getTime()
       );
     });
 
