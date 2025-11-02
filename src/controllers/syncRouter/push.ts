@@ -44,17 +44,6 @@ export default async function (req: Request, res: Response) {
         });
       }
 
-      if (c.tableName === "user" && c.operation === "update") {
-        await tx.user.update({
-          where: {
-            id: c.data.id,
-          },
-          data: {
-            currency: c.data.currency,
-          },
-        });
-      }
-
       if (c.tableName === "budgets" && (c.operation === "update" || c.operation === "insert")) {
         const latest = await tx.budgets.findUnique({
           where: {
@@ -341,53 +330,57 @@ export default async function (req: Request, res: Response) {
         },
       },
       select: {
+        amount: true,
         currency: true,
       },
     });
 
     if (!budget) return;
 
+    const budgetAmount = budget.amount.toString();
     const budgetCurrency = budget.currency;
 
-    const paymentMethodNames = await prisma.paymentMethods.findMany({
-      where: {
-        id: {
-          in: allValidTransactions.map((c) => c.data.paymentMethodId),
+    const [paymentMethodNames, categoryNames] = await Promise.all([
+      prisma.paymentMethods.findMany({
+        where: {
+          id: {
+            in: allValidTransactions.map((c) => c.data.paymentMethodId).filter(Boolean),
+          },
         },
-      },
-      select: {
-        id: true,
-        name: true,
-      },
-    });
-
-    const categoryNames = await prisma.categories.findMany({
-      where: {
-        id: {
-          in: allValidTransactions.map((c) => c.data.categoryId),
+        select: {
+          id: true,
+          name: true,
         },
-      },
-      select: {
-        name: true,
-        id: true,
-      },
-    });
+      }),
+      prisma.categories.findMany({
+        where: {
+          id: {
+            in: allValidTransactions.map((c) => c.data.categoryId).filter(Boolean),
+          },
+        },
+        select: {
+          name: true,
+          id: true,
+        },
+      }),
+    ]);
 
     const paymentMethodMap = new Map(paymentMethodNames.map((pm) => [pm.id, pm.name]));
     const categoryMap = new Map(categoryNames.map((cat) => [cat.id, cat.name]));
 
     const transactionsToSend = allTransactionsWithinPeriod.map((c) => {
       return {
+        budgetAmount,
         budgetCurrency,
         userId: c.userId,
         transactionId: c.id,
         amount: c.amount,
-        transactionType: c.transactionType,
         currency: c.currency,
         createdAt: c.createdAt,
         transactionDate: c.transactionDate,
-        paymentMethod: paymentMethodMap.get(c.paymentMethodId),
+        transactionType: c.transactionType,
         category: categoryMap.get(c.categoryId),
+        paymentMethod: paymentMethodMap.get(c.paymentMethodId),
       };
     });
 
