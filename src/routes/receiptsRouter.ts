@@ -1,10 +1,10 @@
 import { RedisClientType } from "redis";
+import { Registry } from "prom-client";
 import { Router } from "express";
 import multer from "multer";
 
 import createRateLimiter from "../middlewares/rateLimiter";
 import isAuthorized from "../middlewares/isAuthorized";
-
 import parseReceipt from "../controllers/receiptRouter/parse";
 
 const multerConfig = multer({
@@ -27,7 +27,13 @@ const multerConfig = multer({
 
 const uploadMiddleware = multerConfig.array("receipt", 4);
 
-export default function createReceiptRouter({ redisClient }: { redisClient: RedisClientType }) {
+export default function createReceiptRouter({
+  register,
+  redisClient,
+}: {
+  register: Registry;
+  redisClient: RedisClientType;
+}) {
   const router = Router();
 
   router.post(
@@ -40,7 +46,7 @@ export default function createReceiptRouter({ redisClient }: { redisClient: Redi
       keyGenerator: (req) => `${req.user.id}:${req.path}`,
     }),
     uploadMiddleware,
-    parseReceipt,
+    parseReceipt(register),
   );
 
   return router;

@@ -4,7 +4,7 @@ import helmet from "helmet";
 import morgan from "morgan";
 import cors, { CorsOptions } from "cors";
 
-import client from "prom-client";
+import { Registry, collectDefaultMetrics } from "prom-client";
 
 import { RedisClientType } from "redis";
 
@@ -28,14 +28,14 @@ import serverEnv from "./serverEnv";
 
 export default function createApp(redisClient: RedisClientType) {
   const app = express();
-  const register = new client.Registry();
+  const register = new Registry();
 
   register.setDefaultLabels({
     serviceName: "paytrail-express-backend",
     environment: serverEnv.environment,
   });
 
-  client.collectDefaultMetrics({ register });
+  collectDefaultMetrics({ register });
 
   const corsOptions: CorsOptions = {
     origin:
@@ -93,7 +93,7 @@ export default function createApp(redisClient: RedisClientType) {
 
   app.use(`${API_V1}/broadcasts`, isAuthorized, createBroadcastsRouter({ redisClient }));
 
-  app.use(`${API_V1}/receipts`, createReceiptRouter({ redisClient }));
+  app.use(`${API_V1}/receipts`, createReceiptRouter({ redisClient, register }));
 
   app.use(`${API_V1}/accounts`, isAuthorized, createAccountRouter({ redisClient }));
 

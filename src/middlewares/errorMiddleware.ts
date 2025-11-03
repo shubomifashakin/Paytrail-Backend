@@ -1,12 +1,13 @@
 import { NextFunction, Request, Response } from "express";
 
-import client from "prom-client";
+import { Counter, Registry } from "prom-client";
+
 import logger from "../lib/logger";
 
 import { MESSAGES } from "../utils/constants";
 
-function errorMiddleware(registry: client.Registry) {
-  const errorCounter = new client.Counter({
+function errorMiddleware(registry: Registry) {
+  const errorCounter = new Counter({
     name: "http_errors_total",
     help: "Total number of HTTP errors",
     labelNames: ["method", "route", "status"],
