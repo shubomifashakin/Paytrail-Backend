@@ -24,13 +24,13 @@ export default function requestMetrics(register: client.Registry) {
       res.on("finish", () => {
         httpRequestCounter.inc({
           method: req.method,
-          route: req.baseUrl,
+          route: req.route?.path || req.baseUrl,
           status: res.statusCode,
         });
 
         end({
           method: req.method,
-          route: req.baseUrl,
+          route: req.route?.path || req.baseUrl,
           status: res.statusCode,
         });
       });

@@ -20,14 +20,14 @@ function errorMiddleware(registry: client.Registry) {
     errorCounter.inc({
       method: req.method,
       status: statusCode,
-      route: req.baseUrl,
+      route: req.route?.path || req.baseUrl,
     });
 
     logger.error({
       message: "Unhandled error",
       name: err?.name,
       statusCode,
-      path: req?.baseUrl,
+      path: req?.route?.path || req.baseUrl,
       method: req?.method,
       stack: err?.stack,
       requestId: req.requestId || req.headers?.["x-request-id"],
