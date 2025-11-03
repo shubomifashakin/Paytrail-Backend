@@ -97,7 +97,7 @@ export default function createApp(redisClient: RedisClientType) {
 
   app.use(`${API_V1}/accounts`, isAuthorized, createAccountRouter({ redisClient }));
 
-  app.use(errorMiddleware);
+  app.use(errorMiddleware(register));
 
   return app;
 }
