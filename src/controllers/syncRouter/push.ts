@@ -38,17 +38,6 @@ export default async function (req: Request, res: Response) {
         });
       }
 
-      if (c.tableName === "user" && c.operation === "update") {
-        await tx.user.update({
-          where: {
-            id: c.data.id,
-          },
-          data: {
-            currency: c.data.currency,
-          },
-        });
-      }
-
       if (c.tableName === "budgets" && (c.operation === "update" || c.operation === "insert")) {
         const latest = await tx.budgets.findUnique({
           where: {
@@ -204,20 +193,23 @@ export default async function (req: Request, res: Response) {
         });
       }
 
-      if (c.tableName === "logs" && c.operation === "delete") {
-        const exists = await tx.logs.findUnique({ where: { id: c.data.id } });
+      if (c.tableName === "transactions" && c.operation === "delete") {
+        const exists = await tx.transactions.findUnique({ where: { id: c.data.id } });
 
         if (!exists) continue;
 
-        await tx.logs.delete({
+        await tx.transactions.delete({
           where: {
             id: c.data.id,
           },
         });
       }
 
-      if (c.tableName === "logs" && (c.operation === "update" || c.operation === "insert")) {
-        const latest = await tx.logs.findUnique({
+      if (
+        c.tableName === "transactions" &&
+        (c.operation === "update" || c.operation === "insert")
+      ) {
+        const latest = await tx.transactions.findUnique({
           where: {
             id: c.data.id,
           },
@@ -230,7 +222,7 @@ export default async function (req: Request, res: Response) {
           continue;
         }
 
-        await tx.logs.upsert({
+        await tx.transactions.upsert({
           where: {
             id: c.data.id,
           },
@@ -239,7 +231,7 @@ export default async function (req: Request, res: Response) {
             amount: c.data.amount,
             transactionDate: new Date(c.data.transactionDate),
             note: c.data?.note || "",
-            logType: c.data.logType,
+            transactionType: c.data.transactionType,
             currency: c.data.currency,
             categoryId: c.data.categoryId,
             userId: c.data.userId,
@@ -253,7 +245,7 @@ export default async function (req: Request, res: Response) {
             amount: c.data.amount,
             transactionDate: new Date(c.data.transactionDate),
             note: c.data?.note || "",
-            logType: c.data.logType,
+            transactionType: c.data.transactionType,
             currency: c.data.currency,
             categoryId: c.data.categoryId,
             userId: c.data.userId,
