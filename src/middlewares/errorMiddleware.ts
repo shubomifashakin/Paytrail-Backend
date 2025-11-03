@@ -17,18 +17,17 @@ function errorMiddleware(registry: client.Registry) {
   return (err: Error, req: Request, res: Response, _next: NextFunction) => {
     const statusCode = (err as any)?.statusCode || 500;
 
-    //FIXME: FIX THE ROUTE LABEL
     errorCounter.inc({
       method: req.method,
       status: statusCode,
-      route: req.originalUrl,
+      route: req.baseUrl,
     });
 
     logger.error({
       message: "Unhandled error",
       name: err?.name,
       statusCode,
-      path: req?.originalUrl,
+      path: req?.baseUrl,
       method: req?.method,
       stack: err?.stack,
       requestId: req.requestId || req.headers?.["x-request-id"],

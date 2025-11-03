@@ -20,18 +20,17 @@ export default function requestMetrics(register: client.Registry) {
   return (req: Request, res: Response, next: NextFunction) => {
     const end = httpRequestDuration.startTimer();
 
-    //FIXME: FIX THE ROUTE LABEL
-    if (!req.originalUrl.endsWith("/metrics")) {
+    if (!req.baseUrl.endsWith("/metrics")) {
       res.on("finish", () => {
         httpRequestCounter.inc({
           method: req.method,
-          route: req.originalUrl,
+          route: req.baseUrl,
           status: res.statusCode,
         });
 
         end({
           method: req.method,
-          route: req.originalUrl,
+          route: req.baseUrl,
           status: res.statusCode,
         });
       });
