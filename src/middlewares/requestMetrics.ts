@@ -20,7 +20,7 @@ export default function requestMetrics(register: client.Registry) {
   return (req: Request, res: Response, next: NextFunction) => {
     const end = httpRequestDuration.startTimer();
 
-    if (!req.baseUrl.endsWith("/metrics")) {
+    if (!req.originalUrl.endsWith("/metrics")) {
       res.on("finish", () => {
         httpRequestCounter.inc({
           method: req.method,
