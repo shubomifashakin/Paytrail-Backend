@@ -12,7 +12,7 @@ import resend from "../../lib/resend";
 
 import {
   generateBudgetStatement,
-  generateLogsStatement,
+  generateTransactionsStatement,
   logEmailError,
   makeBudgetPeriod,
 } from "../../utils/fns";
@@ -64,7 +64,7 @@ export default async function requestStatement(req: Request, res: Response) {
 
     const budgetIds = budgets.map((budget) => budget.id);
 
-    const logsForBudget = await prisma.logs.findMany({
+    const transactionsForBudget = await prisma.transactions.findMany({
       relationLoadStrategy: "join",
       where: {
         budgetId: {
@@ -100,7 +100,7 @@ export default async function requestStatement(req: Request, res: Response) {
             name: true,
           },
         },
-        logType: true,
+        transactionType: true,
         paymentMethod: {
           select: {
             name: true,
@@ -112,23 +112,23 @@ export default async function requestStatement(req: Request, res: Response) {
       },
     });
 
-    const budgetWithAssociatedLogs = budgets.map((budget) => {
-      const logsForBudgetId = logsForBudget.filter((c) => c.budgetId === budget.id);
+    const budgetWithAssociatedTransactions = budgets.map((budget) => {
+      const transactionsForBudgetId = transactionsForBudget.filter((c) => c.budgetId === budget.id);
 
-      const logsPerCurrency = logsForBudgetId.reduce(
-        (acc, log) => {
-          const currency = log.currency;
+      const transactionsPerCurrency = transactionsForBudgetId.reduce(
+        (acc, tx) => {
+          const currency = tx.currency;
 
           if (!acc[currency]) {
-            acc[currency] = { logs: [], totals: { expense: 0, income: 0 } };
+            acc[currency] = { transactions: [], totals: { expense: 0, income: 0 } };
           }
 
-          acc[currency].logs.push(log);
+          acc[currency].transactions.push(tx);
 
-          if (log.logType === "expense") {
-            acc[currency].totals.expense += log.amount.toNumber();
+          if (tx.transactionType === "expense") {
+            acc[currency].totals.expense += tx.amount.toNumber();
           } else {
-            acc[currency].totals.income += log.amount.toNumber();
+            acc[currency].totals.income += tx.amount.toNumber();
           }
 
           return acc;
@@ -136,7 +136,7 @@ export default async function requestStatement(req: Request, res: Response) {
         {} as Record<
           Currencies,
           {
-            logs: typeof logsForBudgetId;
+            transactions: typeof transactionsForBudgetId;
             totals: { expense: number; income: number };
           }
         >,
@@ -144,7 +144,7 @@ export default async function requestStatement(req: Request, res: Response) {
 
       return {
         budget,
-        logs: logsPerCurrency,
+        transactions: transactionsPerCurrency,
       };
     });
 
@@ -155,7 +155,7 @@ export default async function requestStatement(req: Request, res: Response) {
         month: budgets[budgets.length - 1].budgetMonth,
         year: budgets[budgets.length - 1].year,
       },
-      budgetsAndLogs: budgetWithAssociatedLogs,
+      budgetsAndTransactions: budgetWithAssociatedTransactions,
     });
 
     const pdf = Buffer.from(pt).toString("base64");
@@ -195,11 +195,11 @@ export default async function requestStatement(req: Request, res: Response) {
     return res.status(200).json({ message: "success" });
   }
 
-  if (data.statementType === "logs") {
+  if (data.statementType === "transactions") {
     const startDate = data.startDate as string | undefined;
     const endDate = data.endDate as string;
 
-    const logs = await prisma.logs.findMany({
+    const transactions = await prisma.transactions.findMany({
       relationLoadStrategy: "join",
       where: {
         userId: req.user.id,
@@ -237,7 +237,7 @@ export default async function requestStatement(req: Request, res: Response) {
             name: true,
           },
         },
-        logType: true,
+        transactionType: true,
         paymentMethod: {
           select: {
             name: true,
@@ -251,15 +251,15 @@ export default async function requestStatement(req: Request, res: Response) {
       },
     });
 
-    if (!logs.length) {
-      return res.status(404).json({ message: "No logs found" });
+    if (!transactions.length) {
+      return res.status(404).json({ message: "No transactions found" });
     }
 
-    const pt = await generateLogsStatement({
+    const pt = await generateTransactionsStatement({
       userName: req.user.name,
-      startDate: startDate || logs[0].transactionDate.toString(),
+      startDate: startDate || transactions[0].transactionDate.toString(),
       endDate,
-      logs,
+      transactions,
     });
 
     const pdf = Buffer.from(pt).toString("base64");
@@ -272,7 +272,7 @@ export default async function requestStatement(req: Request, res: Response) {
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">  
           <p>Hello ${req.user.name || "there"},</p>
 
-          <p>Your PayTrail statement for the period <strong>${startDate || logs[0].transactionDate.toDateString()}</strong> to <strong>${new Date(endDate).toDateString()}</strong> has been generated and is attached to this email.</p>
+          <p>Your PayTrail statement for the period <strong>${startDate || transactions[0].transactionDate.toDateString()}</strong> to <strong>${new Date(endDate).toDateString()}</strong> has been generated and is attached to this email.</p>
          
           <p>Thank you for using PayTrail to manage your finances!</p>
           <p>Best regards,<br>The PayTrail Team</p>
