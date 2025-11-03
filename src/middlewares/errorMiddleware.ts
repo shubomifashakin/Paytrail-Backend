@@ -1,26 +1,43 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextFunction, Request, Response } from "express";
 
+import client from "prom-client";
 import logger from "../lib/logger";
 
 import { MESSAGES } from "../utils/constants";
 
-function errorMiddleware(err: any, req: Request, res: Response, _next: NextFunction) {
-  const statusCode = 500;
-
-  logger.error({
-    message: "Unhandled error",
-    name: err?.name,
-    statusCode,
-    path: req?.originalUrl,
-    method: req?.method,
-    stack: err?.stack,
-    requestId: (req as any).requestId || req.headers?.["x-request-id"],
+function errorMiddleware(registry: client.Registry) {
+  const errorCounter = new client.Counter({
+    name: "http_errors_total",
+    help: "Total number of HTTP errors",
+    labelNames: ["method", "route", "status"],
   });
 
-  return res.status(statusCode).json({
-    message: MESSAGES.INTERNAL_SERVER_ERROR,
-  });
+  registry.registerMetric(errorCounter);
+
+  return (err: Error, req: Request, res: Response, _next: NextFunction) => {
+    const statusCode = (err as any)?.statusCode || 500;
+
+    //FIXME: FIX THE ROUTE LABEL
+    errorCounter.inc({
+      method: req.method,
+      status: statusCode,
+      route: req.originalUrl,
+    });
+
+    logger.error({
+      message: "Unhandled error",
+      name: err?.name,
+      statusCode,
+      path: req?.originalUrl,
+      method: req?.method,
+      stack: err?.stack,
+      requestId: req.requestId || req.headers?.["x-request-id"],
+    });
+
+    return res.status(statusCode).json({
+      message: MESSAGES.INTERNAL_SERVER_ERROR,
+    });
+  };
 }
 
 export default errorMiddleware;
