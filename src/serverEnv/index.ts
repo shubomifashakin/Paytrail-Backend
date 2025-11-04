@@ -8,8 +8,6 @@ const serverEnv = {
   resend: process.env.RESEND_KEY!,
   logLevel: process.env.LOG_LEVEL || "info",
   serviceName: process.env.SERVICE_NAME,
-  otelExporterEndpoint: process.env.OTEL_EXPORTER_OTLP_ENDPOINT!,
-  signozIngestionKey: process.env.SIGNOZ_INGESTION_KEY!,
   appScheme: process.env.APP_SCHEME!,
   baseUrl: process.env.BASE_URL!,
 
