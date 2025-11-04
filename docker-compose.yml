@@ -12,9 +12,10 @@ services:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
+      interval: 10s
+      timeout: 10s
       retries: 5
+    restart: unless-stopped
 
   redis:
     image: redis:latest
@@ -26,10 +27,51 @@ services:
       - redis_data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 5s
+      interval: 10s
+      timeout: 10s
       retries: 5
+    restart: unless-stopped
+
+  paytrail:
+    build: .
+    container_name: paytrail
+    ports:
+      - "3000:3000"
+    depends_on:
+      - postgres
+      - redis
+    env_file:
+      - .env.docker
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+    volumes:
+      - paytrail_logs:/var/log/paytrail
+
+  grafana-alloy:
+    image: grafana/alloy:latest
+    container_name: paytrail_grafana_alloy
+    ports:
+      - "12345:12345"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:12345/-/healthy"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    command: >
+      run
+      --server.http.listen-addr=0.0.0.0:12345
+      --storage.path=/var/lib/alloy/data
+      /etc/alloy/config.alloy
+    volumes:
+      - paytrail_logs:/var/log/paytrail
+      - "C:/Users/USER/Documents/config.alloy:/etc/alloy/config.alloy" #FIXME: USE CORRECT MOUNT POINT
+    restart: unless-stopped
 
 volumes:
   postgres_data:
   redis_data:
+  paytrail_logs:

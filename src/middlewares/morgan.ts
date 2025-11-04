@@ -2,6 +2,8 @@ import morgan from "morgan";
 
 import logger from "../lib/logger";
 
+import { Request } from "express";
+
 export default function morganToJson() {
   return morgan(
     function (tokens, req, res) {
@@ -22,6 +24,10 @@ export default function morganToJson() {
           const parsed = JSON.parse(message);
           logger.info("HTTP Request", parsed);
         },
+      },
+      skip: (req: Request) => {
+        const path = req.originalUrl || req.url || "";
+        return /^\/(health|metrics)(\/|$)/i.test(path);
       },
     },
   );

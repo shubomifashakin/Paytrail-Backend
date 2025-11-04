@@ -8,12 +8,11 @@ import serverEnv from "./serverEnv";
 
 import createApp from "./app";
 
+import logger from "./lib/logger";
 import prisma from "./lib/prisma";
 import redisClient from "./lib/redis";
-import logger, { loggerProvider } from "./lib/logger";
 
 import { FORCE_EXIT_TIMEOUT } from "./utils/constants";
-import { sleep } from "./utils/fns";
 
 class Server {
   private server: http.Server | null = null;
@@ -70,10 +69,8 @@ class Server {
       await redisClient.quit();
       logger.info("Redis connection closed");
 
-      logger.info("Graceful shutdown complete — exiting process.");
-      await sleep(0.5);
-      await loggerProvider.shutdown();
       clearTimeout(timeOutId);
+      logger.info("Graceful shutdown complete — exiting process.");
       process.exit(0);
     } catch (error) {
       logger.error("Error during shutdown:", error);
