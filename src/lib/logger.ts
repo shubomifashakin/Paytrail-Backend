@@ -1,47 +1,41 @@
+import DailyRotateFile from "winston-daily-rotate-file";
 import { createLogger, format, transports } from "winston";
-
-import { OTLPLogExporter } from "@opentelemetry/exporter-logs-otlp-http";
-import { OpenTelemetryTransportV3 } from "@opentelemetry/winston-transport";
-import { logs } from "@opentelemetry/api-logs";
-import { resourceFromAttributes } from "@opentelemetry/resources";
-import { BatchLogRecordProcessor, LoggerProvider } from "@opentelemetry/sdk-logs";
 
 import serverEnv from "../serverEnv";
 
-//this template uses signoz but you can always configure
-const sigNozExporter = new OTLPLogExporter({
-  url: serverEnv.otelExporterEndpoint,
-  headers: {
-    "signoz-access-token": serverEnv.signozIngestionKey,
-  },
+const fileTransport = new DailyRotateFile({
+  maxSize: "5m",
+  maxFiles: "14d",
+  zippedArchive: true,
+  datePattern: "YYYY-MM-DD",
+  level: serverEnv.logLevel,
+  dirname: "/var/log/paytrail",
+  filename: "%DATE%.log",
 });
 
-export const loggerProvider = new LoggerProvider({
-  processors: [
-    new BatchLogRecordProcessor(sigNozExporter, {
-      maxExportBatchSize: 600,
-      scheduledDelayMillis: 3000,
-      exportTimeoutMillis: 15000,
-    }),
-  ],
-  resource: resourceFromAttributes({
-    "deployment.environment": serverEnv.environment,
-    "service.name": serverEnv.serviceName,
-  }),
+const errorTransport = new DailyRotateFile({
+  maxSize: "5m",
+  maxFiles: "14d",
+  zippedArchive: true,
+  datePattern: "YYYY-MM-DD",
+  level: "error",
+  dirname: "/var/log/paytrail",
+  filename: "error-%DATE%.log",
 });
-
-logs.setGlobalLoggerProvider(loggerProvider);
 
 const logger = createLogger({
   level: serverEnv.logLevel,
   format: format.combine(
     format.timestamp({
-      format: "YYYY-MM-DD HH:mm:ss",
+      format: () => {
+        return new Date().toISOString();
+      },
     }),
     format.errors({ stack: true }),
     format.json(),
   ),
-  transports: [new OpenTelemetryTransportV3()],
+  transports: [fileTransport, errorTransport],
+  defaultMeta: { serviceName: serverEnv.serviceName, environment: serverEnv.environment },
 });
 
 export default logger;
