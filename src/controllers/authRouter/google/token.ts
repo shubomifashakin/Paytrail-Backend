@@ -9,6 +9,7 @@ import serverEnv from "../../../serverEnv";
 
 import logger from "../../../lib/logger";
 import prisma from "../../../lib/prisma";
+import resend from "../../../lib/resend";
 
 import {
   GOOGLE_OATH_TOKEN_URL,
@@ -123,6 +124,24 @@ export default async function googleToken(req: Request, res: Response) {
         updatedAt: new Date(),
       },
     });
+
+    const { error } = await resend.contacts.create({
+      email: user.email,
+      unsubscribed: false,
+      lastName: claims?.family_name,
+      firstName: claims?.given_name || claims.name,
+    });
+
+    if (error) {
+      logger.warn(MESSAGES.FAILED_TO_CREATE_CONTACT, {
+        errorName: error.name,
+        errorMessage: error.message,
+        ipAddress: req.ip,
+        requestId: req.headers["request-id"],
+        path: normalizeRequestPath(req),
+        userAgent: req.get("user-agent"),
+      });
+    }
   } else {
     await prisma.session.deleteMany({
       where: {

@@ -20,6 +20,7 @@ export enum MESSAGES {
   AI_GENERATION_ERROR = "AI Generation Error",
   EMAIL_ERROR = "Email Error",
   FAILED_TO_DELETE_ENDPOINT_ARN = "Failed to delete endpoint",
+  FAILED_TO_CREATE_CONTACT = "Failed to create contact",
 }
 
 export const API_V1 = "/api/v1";

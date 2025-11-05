@@ -1,6 +1,8 @@
 import { NextFunction } from "express";
 import request from "supertest";
 
+import { RedisClientType } from "redis";
+
 import {
   API_V1,
   GOOGLE_OATH_TOKEN_URL,
@@ -45,7 +47,19 @@ const mockRedis = {
   get: jest.fn(),
   set: jest.fn(),
   del: jest.fn(),
-} as any;
+} as unknown as RedisClientType;
+
+const createContact = jest.fn().mockResolvedValue({
+  error: null,
+});
+const resend = jest.fn().mockImplementation(() => ({
+  contacts: {
+    create: createContact,
+  },
+}));
+jest.mock("resend", () => ({
+  Resend: resend,
+}));
 
 import createApp from "../../../app";
 import serverEnv from "../../../serverEnv";
