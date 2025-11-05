@@ -8,13 +8,14 @@ import { ReceiptParser } from "../../lib/receiptParser";
 import logger from "../../lib/logger";
 
 import { MESSAGES } from "../../utils/constants";
+import { normalizeRequestPath } from "../../utils/fns";
 import { receiptParseRequestValidator } from "../../utils/validators";
 
 export default function parseReceipt(register: Registry) {
   const receiptsProcessedCounter = new Counter({
     name: "receipts_processed_total",
     help: "Total number of receipts processed",
-    labelNames: ["method", "route", "status"],
+    labelNames: ["method", "path", "status"],
   });
 
   const receiptProcessingTime = new Histogram({
@@ -37,8 +38,7 @@ export default function parseReceipt(register: Registry) {
   return async (req: Request, res: Response) => {
     if (!req.files?.length) {
       logger.warn(MESSAGES.BAD_REQUEST, {
-        url: req.url,
-        userId: req.user.id,
+        path: normalizeRequestPath(req),
         error: "No files uploaded",
         requestId: req.headers["request-id"],
       });
@@ -52,8 +52,7 @@ export default function parseReceipt(register: Registry) {
 
     if (!success) {
       logger.warn(MESSAGES.BAD_REQUEST, {
-        url: req.url,
-        userId: req.user.id,
+        path: normalizeRequestPath(req),
         error: error.issues,
         requestId: req.headers["request-id"],
       });
@@ -100,30 +99,27 @@ export default function parseReceipt(register: Registry) {
       receiptsProcessedCounter.inc({
         method: req.method,
         status: res.statusCode,
-        route: req.route?.path || req.baseUrl,
+        path: normalizeRequestPath(req),
       });
 
       logger.info(MESSAGES.AI_GENERATION_USAGE, {
         usage,
         timeTaken,
-        url: req.url,
-        userId: req.user.id,
+        path: normalizeRequestPath(req),
         requestId: req.headers["request-id"],
       });
 
       if (warnings?.length) {
         logger.warn(MESSAGES.AI_GENERATION_WARNINGS, {
           warnings,
-          url: req.url,
-          userId: req.user.id,
+          path: normalizeRequestPath(req),
           requestId: req.headers["request-id"],
         });
       }
 
       if (finishReason !== "stop") {
         logger.warn(MESSAGES.AI_GENERATION_ENDED, {
-          url: req.url,
-          userId: req.user.id,
+          path: normalizeRequestPath(req),
           reason: finishReason,
           requestId: req.headers["request-id"],
         });
@@ -142,8 +138,7 @@ export default function parseReceipt(register: Registry) {
 
       if (NoObjectGeneratedError.isInstance(error)) {
         logger.error(MESSAGES.AI_GENERATION_ERROR, {
-          url: req.url,
-          userId: req.user.id,
+          path: normalizeRequestPath(req),
           error: error.message,
           cause: error.cause,
           variant: "NO_OBJECT_GENERATED",

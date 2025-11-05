@@ -8,7 +8,7 @@ import { Budgets, Currencies, Months, TransactionType, Transactions } from "@pri
 
 import logger from "../lib/logger";
 
-import { MESSAGES, currencyData } from "./constants";
+import { API_V1, MESSAGES, currencyData } from "./constants";
 
 /**
  * Sleeps for a specified number of seconds.
@@ -32,6 +32,12 @@ export type FetchResult<T> =
       error: Error;
       status: number;
     };
+
+export function normalizeRequestPath(req: Request) {
+  const finalString = req.baseUrl + req.path;
+
+  return finalString.replace(API_V1, "");
+}
 
 export function logEmailError(
   type: string,

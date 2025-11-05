@@ -5,12 +5,13 @@ import { Counter, Registry } from "prom-client";
 import logger from "../lib/logger";
 
 import { MESSAGES } from "../utils/constants";
+import { normalizeRequestPath } from "../utils/fns";
 
 function errorMiddleware(registry: Registry) {
   const errorCounter = new Counter({
     name: "http_errors_total",
     help: "Total number of HTTP errors",
-    labelNames: ["method", "route", "status"],
+    labelNames: ["method", "path", "status"],
   });
 
   registry.registerMetric(errorCounter);
@@ -21,14 +22,14 @@ function errorMiddleware(registry: Registry) {
     errorCounter.inc({
       method: req.method,
       status: statusCode,
-      route: req.route?.path || req.baseUrl,
+      path: normalizeRequestPath(req),
     });
 
     logger.error({
       message: "Unhandled error",
       name: err?.name,
       statusCode,
-      path: req?.route?.path || req.baseUrl,
+      path: normalizeRequestPath(req),
       method: req?.method,
       stack: err?.stack,
       requestId: req.requestId || req.headers?.["x-request-id"],

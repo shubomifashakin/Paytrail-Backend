@@ -18,14 +18,17 @@ import {
   SESSION_EXPIRY,
 } from "../../../utils/constants";
 
+import { normalizeRequestPath } from "../../../utils/fns";
+
 export default async function googleToken(req: Request, res: Response) {
   const body = req.body;
 
   if (!body?.code || typeof body.code !== "string") {
     logger.warn(`${GOOGLE_TOKEN_ERROR}: Invalid code`, {
-      requestId: req.headers["request-id"],
-      ipAddress: req.ip,
       body,
+      ipAddress: req.ip,
+      requestId: req.headers["request-id"],
+      path: normalizeRequestPath(req),
     });
 
     return res.status(400).json({ message: MESSAGES.BAD_REQUEST });
@@ -44,6 +47,7 @@ export default async function googleToken(req: Request, res: Response) {
       redirect_uri: GOOGLE_REDIRECT_URL,
       client_id: serverEnv.googleClientId!,
       client_secret: serverEnv.googleClientSecret!,
+      path: normalizeRequestPath(req),
     }),
   });
 
@@ -51,9 +55,10 @@ export default async function googleToken(req: Request, res: Response) {
 
   if (!data?.id_token) {
     logger.error(`${GOOGLE_TOKEN_ERROR}: No id token provided`, {
-      requestId: req.headers["request-id"],
-      ipAddress: req.ip,
       body,
+      ipAddress: req.ip,
+      requestId: req.headers["request-id"],
+      path: normalizeRequestPath(req),
     });
 
     return res.status(500).json({ message: MESSAGES.INTERNAL_SERVER_ERROR });

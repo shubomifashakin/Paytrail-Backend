@@ -6,6 +6,7 @@ import prisma from "../../lib/prisma";
 import snsClient from "../../lib/snsClient";
 
 import { MESSAGES } from "../../utils/constants";
+import { normalizeRequestPath } from "../../utils/fns";
 
 export default async function deleteUserAccount(req: Request, res: Response) {
   const user = await prisma.user.delete({
@@ -36,6 +37,7 @@ export default async function deleteUserAccount(req: Request, res: Response) {
         logger.error(MESSAGES.FAILED_TO_DELETE_ENDPOINT_ARN, {
           userId: req.user.id,
           requestId: req.headers["request-id"],
+          route: normalizeRequestPath(req),
         });
       });
   }

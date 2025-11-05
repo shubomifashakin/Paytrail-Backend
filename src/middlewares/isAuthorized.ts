@@ -4,6 +4,7 @@ import logger from "../lib/logger";
 import prisma from "../lib/prisma";
 
 import { MESSAGES } from "../utils/constants";
+import { normalizeRequestPath } from "../utils/fns";
 
 async function isAuthorized(req: Request, res: Response, next: NextFunction) {
   try {
@@ -31,7 +32,7 @@ async function isAuthorized(req: Request, res: Response, next: NextFunction) {
   } catch (error) {
     logger.error("Failed to authenticate user", error, {
       requestId: req.headers["request-id"],
-      ipAddress: req.ip,
+      path: normalizeRequestPath(req),
       sessionId: req.headers["authorization"]?.split(" ")[1],
     });
 

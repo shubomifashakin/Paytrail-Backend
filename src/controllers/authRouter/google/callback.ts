@@ -3,6 +3,7 @@ import { Request, Response } from "express";
 import logger from "../../../lib/logger";
 import serverEnv from "../../../serverEnv";
 
+import { normalizeRequestPath } from "../../../utils/fns";
 import { GOOGLE_SIGN_IN_ERROR, OAUTH_ERRORS } from "../../../utils/constants";
 
 export default async function signInWithGoogleCallback(req: Request, res: Response) {
@@ -10,8 +11,9 @@ export default async function signInWithGoogleCallback(req: Request, res: Respon
 
   if (!code) {
     logger.warn(`${GOOGLE_SIGN_IN_ERROR} Missing code`, {
-      requestId: req.headers["request-id"],
       ipAddress: req.ip,
+      requestId: req.headers["request-id"],
+      path: normalizeRequestPath(req),
     });
     return res.status(400).json({ message: OAUTH_ERRORS.GOOGLE.INVALID_CODE });
   }
@@ -20,8 +22,9 @@ export default async function signInWithGoogleCallback(req: Request, res: Respon
 
   if (!receivedState) {
     logger.warn(`${GOOGLE_SIGN_IN_ERROR} Missing state`, {
-      requestId: req.headers["request-id"],
       ipAddress: req.ip,
+      requestId: req.headers["request-id"],
+      path: normalizeRequestPath(req),
     });
     return res.status(400).json({ message: OAUTH_ERRORS.GOOGLE.INVALID_STATE });
   }

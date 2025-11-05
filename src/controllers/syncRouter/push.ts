@@ -4,6 +4,7 @@ import logger from "../../lib/logger";
 import prisma from "../../lib/prisma";
 
 import { MESSAGES } from "../../utils/constants";
+import { normalizeRequestPath } from "../../utils/fns";
 import { pushSchemaValidator } from "../../utils/validators";
 
 export default async function (req: Request, res: Response) {
@@ -11,8 +12,7 @@ export default async function (req: Request, res: Response) {
 
   if (!success) {
     logger.warn(MESSAGES.BAD_REQUEST, {
-      url: req.url,
-      userId: req.user.id,
+      path: normalizeRequestPath(req),
       error: error.issues,
       requestId: req.headers["request-id"],
     });
