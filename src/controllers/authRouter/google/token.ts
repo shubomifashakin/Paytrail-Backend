@@ -47,7 +47,6 @@ export default async function googleToken(req: Request, res: Response) {
       redirect_uri: GOOGLE_REDIRECT_URL,
       client_id: serverEnv.googleClientId!,
       client_secret: serverEnv.googleClientSecret!,
-      path: normalizeRequestPath(req),
     }),
   });
 
@@ -66,19 +65,7 @@ export default async function googleToken(req: Request, res: Response) {
 
   const claims = jose.decodeJwt(data.id_token) as any;
 
-  const currencyRequest = await fetch(`https://ipapi.co/${req.ip}/json/`).catch(() => {
-    return {
-      json: () => {
-        return {
-          currency: Currencies.USD,
-        };
-      },
-    };
-  });
-
-  const currencyData = (await currencyRequest.json()) as { currency: Currencies };
-
-  const currency = Currencies?.[currencyData?.currency] || Currencies.USD;
+  const currency = Currencies.USD;
 
   let user = await prisma.user.findUnique({
     where: {

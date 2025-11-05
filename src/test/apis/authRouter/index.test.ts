@@ -166,7 +166,7 @@ describe("Auth Router", () => {
           .set("user-agent", "test-agent")
           .send({ code: "test-code" });
 
-        expect(mockedFetch).toHaveBeenCalledTimes(2);
+        expect(mockedFetch).toHaveBeenCalledTimes(1);
         expect(mockedFetch).toHaveBeenCalledWith(GOOGLE_OATH_TOKEN_URL, {
           method: "POST",
           headers: {
@@ -198,7 +198,7 @@ describe("Auth Router", () => {
           .set("user-agent", "test-agent")
           .send({ code: "test-code" });
 
-        expect(mockedFetch).toHaveBeenCalledTimes(2);
+        expect(mockedFetch).toHaveBeenCalledTimes(1);
         expect(mockedFetch).toHaveBeenCalledWith(GOOGLE_OATH_TOKEN_URL, {
           method: "POST",
           headers: {
