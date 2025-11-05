@@ -14,6 +14,7 @@ import snsClient from "../../lib/snsClient";
 import serverEnv from "../../serverEnv";
 
 import { MESSAGES } from "../../utils/constants";
+import { normalizeRequestPath } from "../../utils/fns";
 import { registerForPushNotificationsValidator } from "../../utils/validators";
 
 export default async function registerForPushNotifications(req: Request, res: Response) {
@@ -25,10 +26,11 @@ export default async function registerForPushNotifications(req: Request, res: Re
 
   if (!success) {
     logger.warn(MESSAGES.BAD_REQUEST, {
-      url: req.url,
-      userId: req.user.id,
+      path: normalizeRequestPath(req),
       error: error.issues,
+      userId: req.user.id,
       requestId: req.headers["request-id"],
+      userAgent: req.get("user-agent"),
     });
 
     return res.status(400).json({ message: MESSAGES.BAD_REQUEST });

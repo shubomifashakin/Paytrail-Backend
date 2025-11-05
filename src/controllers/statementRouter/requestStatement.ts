@@ -15,6 +15,7 @@ import {
   generateTransactionsStatement,
   logEmailError,
   makeBudgetPeriod,
+  normalizeRequestPath,
 } from "../../utils/fns";
 
 export default async function requestStatement(req: Request, res: Response) {
@@ -22,10 +23,11 @@ export default async function requestStatement(req: Request, res: Response) {
 
   if (!success) {
     logger.warn(MESSAGES.BAD_REQUEST, {
-      url: req.url,
+      path: normalizeRequestPath(req),
       userId: req.user.id,
       error: error.issues,
       requestId: req.headers["request-id"],
+      userAgent: req.get("user-agent"),
     });
 
     return res.status(400).json({ message: MESSAGES.BAD_REQUEST });

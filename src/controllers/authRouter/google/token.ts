@@ -18,14 +18,17 @@ import {
   SESSION_EXPIRY,
 } from "../../../utils/constants";
 
+import { normalizeRequestPath } from "../../../utils/fns";
+
 export default async function googleToken(req: Request, res: Response) {
   const body = req.body;
 
   if (!body?.code || typeof body.code !== "string") {
     logger.warn(`${GOOGLE_TOKEN_ERROR}: Invalid code`, {
-      requestId: req.headers["request-id"],
       ipAddress: req.ip,
-      body,
+      requestId: req.headers["request-id"],
+      userAgent: req.get("user-agent"),
+      path: normalizeRequestPath(req),
     });
 
     return res.status(400).json({ message: MESSAGES.BAD_REQUEST });
@@ -51,9 +54,10 @@ export default async function googleToken(req: Request, res: Response) {
 
   if (!data?.id_token) {
     logger.error(`${GOOGLE_TOKEN_ERROR}: No id token provided`, {
-      requestId: req.headers["request-id"],
       ipAddress: req.ip,
-      body,
+      requestId: req.headers["request-id"],
+      path: normalizeRequestPath(req),
+      userAgent: req.get("user-agent"),
     });
 
     return res.status(500).json({ message: MESSAGES.INTERNAL_SERVER_ERROR });
@@ -61,19 +65,7 @@ export default async function googleToken(req: Request, res: Response) {
 
   const claims = jose.decodeJwt(data.id_token) as any;
 
-  const currencyRequest = await fetch(`https://ipapi.co/${req.ip}/json/`).catch(() => {
-    return {
-      json: () => {
-        return {
-          currency: Currencies.USD,
-        };
-      },
-    };
-  });
-
-  const currencyData = (await currencyRequest.json()) as { currency: Currencies };
-
-  const currency = Currencies?.[currencyData?.currency] || Currencies.USD;
+  const currency = Currencies.USD;
 
   let user = await prisma.user.findUnique({
     where: {

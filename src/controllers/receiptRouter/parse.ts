@@ -8,13 +8,14 @@ import { ReceiptParser } from "../../lib/receiptParser";
 import logger from "../../lib/logger";
 
 import { MESSAGES } from "../../utils/constants";
+import { normalizeRequestPath } from "../../utils/fns";
 import { receiptParseRequestValidator } from "../../utils/validators";
 
 export default function parseReceipt(register: Registry) {
   const receiptsProcessedCounter = new Counter({
     name: "receipts_processed_total",
     help: "Total number of receipts processed",
-    labelNames: ["method", "route", "status"],
+    labelNames: ["method", "path", "status"],
   });
 
   const receiptProcessingTime = new Histogram({
@@ -37,10 +38,11 @@ export default function parseReceipt(register: Registry) {
   return async (req: Request, res: Response) => {
     if (!req.files?.length) {
       logger.warn(MESSAGES.BAD_REQUEST, {
-        url: req.url,
-        userId: req.user.id,
+        path: normalizeRequestPath(req),
         error: "No files uploaded",
+        userId: req.user.id,
         requestId: req.headers["request-id"],
+        userAgent: req.get("user-agent"),
       });
 
       return res.status(400).json({
@@ -52,10 +54,11 @@ export default function parseReceipt(register: Registry) {
 
     if (!success) {
       logger.warn(MESSAGES.BAD_REQUEST, {
-        url: req.url,
-        userId: req.user.id,
+        path: normalizeRequestPath(req),
         error: error.issues,
+        userId: req.user.id,
         requestId: req.headers["request-id"],
+        userAgent: req.get("user-agent"),
       });
 
       return res.status(400).json({
@@ -100,32 +103,35 @@ export default function parseReceipt(register: Registry) {
       receiptsProcessedCounter.inc({
         method: req.method,
         status: res.statusCode,
-        route: req.route?.path || req.baseUrl,
+        path: normalizeRequestPath(req),
       });
 
       logger.info(MESSAGES.AI_GENERATION_USAGE, {
         usage,
         timeTaken,
-        url: req.url,
+        path: normalizeRequestPath(req),
         userId: req.user.id,
         requestId: req.headers["request-id"],
+        userAgent: req.get("user-agent"),
       });
 
       if (warnings?.length) {
         logger.warn(MESSAGES.AI_GENERATION_WARNINGS, {
           warnings,
-          url: req.url,
+          path: normalizeRequestPath(req),
           userId: req.user.id,
           requestId: req.headers["request-id"],
+          userAgent: req.get("user-agent"),
         });
       }
 
       if (finishReason !== "stop") {
         logger.warn(MESSAGES.AI_GENERATION_ENDED, {
-          url: req.url,
+          path: normalizeRequestPath(req),
           userId: req.user.id,
           reason: finishReason,
           requestId: req.headers["request-id"],
+          userAgent: req.get("user-agent"),
         });
 
         return res.status(500).json({
@@ -142,14 +148,15 @@ export default function parseReceipt(register: Registry) {
 
       if (NoObjectGeneratedError.isInstance(error)) {
         logger.error(MESSAGES.AI_GENERATION_ERROR, {
-          url: req.url,
-          userId: req.user.id,
+          path: normalizeRequestPath(req),
           error: error.message,
           cause: error.cause,
           variant: "NO_OBJECT_GENERATED",
           text: error.text,
+          userId: req.user.id,
           response: error.response,
           requestId: req.headers["request-id"],
+          userAgent: req.get("user-agent"),
         });
       }
 

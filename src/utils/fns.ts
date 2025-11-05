@@ -33,6 +33,12 @@ export type FetchResult<T> =
       status: number;
     };
 
+export function normalizeRequestPath(req: Request) {
+  const finalString = req.baseUrl + req.path;
+
+  return finalString.replace(/\/api\/v\d+\//i, "");
+}
+
 export function logEmailError(
   type: string,
   user: { id: string; email: string },
