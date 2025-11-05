@@ -38,6 +38,7 @@ export default async function deleteUserAccount(req: Request, res: Response) {
           userId: req.user.id,
           requestId: req.headers["request-id"],
           route: normalizeRequestPath(req),
+          userAgent: req.get("user-agent"),
         });
       });
   }

@@ -25,9 +25,9 @@ export default async function googleToken(req: Request, res: Response) {
 
   if (!body?.code || typeof body.code !== "string") {
     logger.warn(`${GOOGLE_TOKEN_ERROR}: Invalid code`, {
-      body,
       ipAddress: req.ip,
       requestId: req.headers["request-id"],
+      userAgent: req.get("user-agent"),
       path: normalizeRequestPath(req),
     });
 
@@ -58,6 +58,7 @@ export default async function googleToken(req: Request, res: Response) {
       ipAddress: req.ip,
       requestId: req.headers["request-id"],
       path: normalizeRequestPath(req),
+      userAgent: req.get("user-agent"),
     });
 
     return res.status(500).json({ message: MESSAGES.INTERNAL_SERVER_ERROR });

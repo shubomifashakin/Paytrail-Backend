@@ -14,6 +14,7 @@ export default async function signInWithGoogleCallback(req: Request, res: Respon
       ipAddress: req.ip,
       requestId: req.headers["request-id"],
       path: normalizeRequestPath(req),
+      userAgent: req.get("user-agent"),
     });
     return res.status(400).json({ message: OAUTH_ERRORS.GOOGLE.INVALID_CODE });
   }
@@ -25,6 +26,7 @@ export default async function signInWithGoogleCallback(req: Request, res: Respon
       ipAddress: req.ip,
       requestId: req.headers["request-id"],
       path: normalizeRequestPath(req),
+      userAgent: req.get("user-agent"),
     });
     return res.status(400).json({ message: OAUTH_ERRORS.GOOGLE.INVALID_STATE });
   }

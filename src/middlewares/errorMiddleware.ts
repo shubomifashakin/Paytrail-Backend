@@ -33,6 +33,7 @@ function errorMiddleware(registry: Registry) {
       path: normalizeRequestPath(req),
       method: req?.method,
       ipAddress: req.ip,
+      userAgent: req.get("user-agent"),
       stack: err?.stack,
       requestId: req?.requestId || req.headers?.["x-request-id"],
     });

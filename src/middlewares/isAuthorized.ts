@@ -34,6 +34,7 @@ async function isAuthorized(req: Request, res: Response, next: NextFunction) {
       ipAddress: req.ip,
       requestId: req?.requestId || req.headers["request-id"],
       path: normalizeRequestPath(req),
+      userAgent: req.get("user-agent"),
     });
 
     return res.status(401).json({ message: MESSAGES.UNAUTHORIZED });

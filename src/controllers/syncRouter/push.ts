@@ -16,6 +16,7 @@ export default async function (req: Request, res: Response) {
       error: error.issues,
       userId: req.user.id,
       requestId: req.headers["request-id"],
+      userAgent: req.get("user-agent"),
     });
 
     return res.status(400).json({ message: error.issues });

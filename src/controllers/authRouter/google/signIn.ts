@@ -21,6 +21,7 @@ export default async function signInWithGoogle(req: Request, res: Response) {
       ipAddress: req.ip,
       requestId: req.headers["request-id"],
       path: normalizeRequestPath(req),
+      userAgent: req.get("user-agent"),
     });
 
     return res.status(400).json({ message: OAUTH_ERRORS.GOOGLE.INVALID_REDIRECT_URI });
@@ -34,8 +35,10 @@ export default async function signInWithGoogle(req: Request, res: Response) {
     platform = "web";
   } else {
     logger.warn(`${GOOGLE_SIGN_IN_ERROR} Invalid redirect_uri`, {
+      redirectUri,
       ipAddress: req.ip,
       requestId: req.headers["request-id"],
+      userAgent: req.get("user-agent"),
       path: normalizeRequestPath(req),
     });
 

@@ -30,6 +30,7 @@ export default async function registerForPushNotifications(req: Request, res: Re
       error: error.issues,
       userId: req.user.id,
       requestId: req.headers["request-id"],
+      userAgent: req.get("user-agent"),
     });
 
     return res.status(400).json({ message: MESSAGES.BAD_REQUEST });

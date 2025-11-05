@@ -42,6 +42,7 @@ export default function parseReceipt(register: Registry) {
         error: "No files uploaded",
         userId: req.user.id,
         requestId: req.headers["request-id"],
+        userAgent: req.get("user-agent"),
       });
 
       return res.status(400).json({
@@ -57,6 +58,7 @@ export default function parseReceipt(register: Registry) {
         error: error.issues,
         userId: req.user.id,
         requestId: req.headers["request-id"],
+        userAgent: req.get("user-agent"),
       });
 
       return res.status(400).json({
@@ -110,6 +112,7 @@ export default function parseReceipt(register: Registry) {
         path: normalizeRequestPath(req),
         userId: req.user.id,
         requestId: req.headers["request-id"],
+        userAgent: req.get("user-agent"),
       });
 
       if (warnings?.length) {
@@ -118,6 +121,7 @@ export default function parseReceipt(register: Registry) {
           path: normalizeRequestPath(req),
           userId: req.user.id,
           requestId: req.headers["request-id"],
+          userAgent: req.get("user-agent"),
         });
       }
 
@@ -127,6 +131,7 @@ export default function parseReceipt(register: Registry) {
           userId: req.user.id,
           reason: finishReason,
           requestId: req.headers["request-id"],
+          userAgent: req.get("user-agent"),
         });
 
         return res.status(500).json({
@@ -151,6 +156,7 @@ export default function parseReceipt(register: Registry) {
           userId: req.user.id,
           response: error.response,
           requestId: req.headers["request-id"],
+          userAgent: req.get("user-agent"),
         });
       }
 
