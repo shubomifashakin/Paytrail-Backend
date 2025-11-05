@@ -8,7 +8,7 @@ import { Budgets, Currencies, Months, TransactionType, Transactions } from "@pri
 
 import logger from "../lib/logger";
 
-import { API_V1, MESSAGES, currencyData } from "./constants";
+import { MESSAGES, currencyData } from "./constants";
 
 /**
  * Sleeps for a specified number of seconds.
@@ -36,7 +36,7 @@ export type FetchResult<T> =
 export function normalizeRequestPath(req: Request) {
   const finalString = req.baseUrl + req.path;
 
-  return finalString.replace(API_V1, "");
+  return finalString.replace(/\/api\/v\d+\//i, "");
 }
 
 export function logEmailError(

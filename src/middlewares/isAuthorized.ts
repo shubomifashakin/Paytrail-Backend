@@ -31,9 +31,9 @@ async function isAuthorized(req: Request, res: Response, next: NextFunction) {
     return next();
   } catch (error) {
     logger.error("Failed to authenticate user", error, {
-      requestId: req.headers["request-id"],
+      ipAddress: req.ip,
+      requestId: req?.requestId || req.headers["request-id"],
       path: normalizeRequestPath(req),
-      sessionId: req.headers["authorization"]?.split(" ")[1],
     });
 
     return res.status(401).json({ message: MESSAGES.UNAUTHORIZED });

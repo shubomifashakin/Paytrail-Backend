@@ -40,6 +40,7 @@ export default function parseReceipt(register: Registry) {
       logger.warn(MESSAGES.BAD_REQUEST, {
         path: normalizeRequestPath(req),
         error: "No files uploaded",
+        userId: req.user.id,
         requestId: req.headers["request-id"],
       });
 
@@ -54,6 +55,7 @@ export default function parseReceipt(register: Registry) {
       logger.warn(MESSAGES.BAD_REQUEST, {
         path: normalizeRequestPath(req),
         error: error.issues,
+        userId: req.user.id,
         requestId: req.headers["request-id"],
       });
 
@@ -106,6 +108,7 @@ export default function parseReceipt(register: Registry) {
         usage,
         timeTaken,
         path: normalizeRequestPath(req),
+        userId: req.user.id,
         requestId: req.headers["request-id"],
       });
 
@@ -113,6 +116,7 @@ export default function parseReceipt(register: Registry) {
         logger.warn(MESSAGES.AI_GENERATION_WARNINGS, {
           warnings,
           path: normalizeRequestPath(req),
+          userId: req.user.id,
           requestId: req.headers["request-id"],
         });
       }
@@ -120,6 +124,7 @@ export default function parseReceipt(register: Registry) {
       if (finishReason !== "stop") {
         logger.warn(MESSAGES.AI_GENERATION_ENDED, {
           path: normalizeRequestPath(req),
+          userId: req.user.id,
           reason: finishReason,
           requestId: req.headers["request-id"],
         });
@@ -143,6 +148,7 @@ export default function parseReceipt(register: Registry) {
           cause: error.cause,
           variant: "NO_OBJECT_GENERATED",
           text: error.text,
+          userId: req.user.id,
           response: error.response,
           requestId: req.headers["request-id"],
         });

@@ -28,6 +28,7 @@ export default async function registerForPushNotifications(req: Request, res: Re
     logger.warn(MESSAGES.BAD_REQUEST, {
       path: normalizeRequestPath(req),
       error: error.issues,
+      userId: req.user.id,
       requestId: req.headers["request-id"],
     });
 

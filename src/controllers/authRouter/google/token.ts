@@ -55,7 +55,6 @@ export default async function googleToken(req: Request, res: Response) {
 
   if (!data?.id_token) {
     logger.error(`${GOOGLE_TOKEN_ERROR}: No id token provided`, {
-      body,
       ipAddress: req.ip,
       requestId: req.headers["request-id"],
       path: normalizeRequestPath(req),

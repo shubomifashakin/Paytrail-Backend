@@ -29,10 +29,12 @@ function errorMiddleware(registry: Registry) {
       message: "Unhandled error",
       name: err?.name,
       statusCode,
+      userId: req.user?.id,
       path: normalizeRequestPath(req),
       method: req?.method,
+      ipAddress: req.ip,
       stack: err?.stack,
-      requestId: req.requestId || req.headers?.["x-request-id"],
+      requestId: req?.requestId || req.headers?.["x-request-id"],
     });
 
     return res.status(statusCode).json({

@@ -14,6 +14,7 @@ export default async function (req: Request, res: Response) {
     logger.warn(MESSAGES.BAD_REQUEST, {
       path: normalizeRequestPath(req),
       error: error.issues,
+      userId: req.user.id,
       requestId: req.headers["request-id"],
     });
 
