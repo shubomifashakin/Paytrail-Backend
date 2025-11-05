@@ -1,47 +1,29 @@
 services:
-  postgres:
-    image: postgres:latest
-    container_name: paytrail_postgres
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres_123
-      POSTGRES_DB: paytrail_postgres
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 10s
-      retries: 5
-    restart: unless-stopped
-
   redis:
     image: redis:latest
     container_name: paytrail_redis
-
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
+      - "C:/Users/USER/Documents/redis.conf:/etc/redis/redis.conf" #FIXME: USE CORRECT MOUNT POINT
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 10s
       retries: 5
     restart: unless-stopped
+    mem_limit: 512m
 
   paytrail:
-    build: .
+    image: 545plea/paytrail-backend:latest
     container_name: paytrail
     ports:
       - "3000:3000"
     depends_on:
-      - postgres
       - redis
     env_file:
-      - .env.docker
+      - .env
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
       interval: 10s
@@ -72,6 +54,5 @@ services:
     restart: unless-stopped
 
 volumes:
-  postgres_data:
   redis_data:
   paytrail_logs:
