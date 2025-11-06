@@ -19,20 +19,6 @@ export async function sleep(seconds: number = 1) {
   return new Promise((resolve) => setTimeout(resolve, seconds * 1000));
 }
 
-export type FetchResult<T> =
-  | {
-      data: T;
-      success: true;
-      error: undefined;
-      status: number;
-    }
-  | {
-      data: undefined;
-      success: false;
-      error: Error;
-      status: number;
-    };
-
 export function normalizeRequestPath(req: Request) {
   const finalString = req.baseUrl + req.path;
 
@@ -102,7 +88,8 @@ type StatementData = {
 export async function generatePdf(html: string, pdfOptions?: PDFOptions) {
   const browser = await puppeteer.launch({
     headless: true,
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
+    args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
   });
 
   const page = await browser.newPage();
