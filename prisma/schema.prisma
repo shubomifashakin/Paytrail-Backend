@@ -262,8 +262,8 @@ model Budgets {
   updatedAt   DateTime
   Transactions        Transactions[]
 
+  @@unique([userId,period])
   @@unique([userId, budgetMonth, year])
-  @@index([userId, period])
   @@map("budgets")
 }
 
