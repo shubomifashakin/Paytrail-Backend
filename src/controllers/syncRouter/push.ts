@@ -70,15 +70,12 @@ export default async function (req: Request, res: Response) {
             id: c.data.id,
           },
           update: {
-            id: c.data.id,
-            amount: c.data.amount,
-            year: c.data.year,
-            budgetMonth: c.data.budgetMonth,
-            currency: c.data.currency,
-            userId: c.data.userId,
-            createdAt: new Date(c.data.createdAt),
-            updatedAt: new Date(c.data.updatedAt),
             period: c.data.period,
+            year: c.data.year,
+            updatedAt: new Date(c.data.updatedAt),
+            amount: c.data.amount,
+            currency: c.data.currency,
+            budgetMonth: c.data.budgetMonth,
           },
         });
       }
@@ -128,13 +125,10 @@ export default async function (req: Request, res: Response) {
             updatedAt: new Date(c.data.updatedAt),
           },
           update: {
-            id: c.data.id,
             name: c.data.name,
             color: c.data.color,
             emoji: c.data.emoji,
             description: c.data.description,
-            userId: c.data.userId,
-            createdAt: new Date(c.data.createdAt),
             updatedAt: new Date(c.data.updatedAt),
           },
         });
@@ -184,12 +178,9 @@ export default async function (req: Request, res: Response) {
             updatedAt: new Date(c.data.updatedAt),
           },
           update: {
-            id: c.data.id,
             name: c.data.name,
             color: c.data.color,
             description: c.data.description,
-            userId: c.data.userId,
-            createdAt: new Date(c.data.createdAt),
             updatedAt: new Date(c.data.updatedAt),
           },
         });
@@ -243,17 +234,14 @@ export default async function (req: Request, res: Response) {
             updatedAt: new Date(c.data.updatedAt),
           },
           update: {
-            id: c.data.id,
             amount: c.data.amount,
             transactionDate: new Date(c.data.transactionDate),
             note: c.data?.note || "",
             transactionType: c.data.transactionType,
             currency: c.data.currency,
             categoryId: c.data.categoryId,
-            userId: c.data.userId,
             paymentMethodId: c.data.paymentMethodId,
             budgetId: c.data.budgetId,
-            createdAt: new Date(c.data.createdAt),
             updatedAt: new Date(c.data.updatedAt),
           },
         });
