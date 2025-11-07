@@ -1,44 +1,31 @@
 import { NextFunction, Request, Response } from "express";
 
-import logger from "../lib/logger";
 import prisma from "../lib/prisma";
 
 import { MESSAGES } from "../utils/constants";
-import { normalizeRequestPath } from "../utils/fns";
 
 async function isAuthorized(req: Request, res: Response, next: NextFunction) {
-  try {
-    const sessionId = req.headers["authorization"]?.split(" ")[1];
+  const sessionId = req.headers["authorization"]?.split(" ")[1];
 
-    if (!sessionId) {
-      return res.status(401).json({ message: MESSAGES.UNAUTHORIZED });
-    }
-
-    const session = await prisma.session.findUnique({
-      where: {
-        id: sessionId,
-      },
-      include: {
-        user: true,
-      },
-    });
-
-    if (!session) {
-      return res.status(401).json({ message: MESSAGES.UNAUTHORIZED });
-    }
-
-    req.user = session.user;
-    return next();
-  } catch (error) {
-    logger.error("Failed to authenticate user", error, {
-      ipAddress: req.ip,
-      requestId: req?.requestId || req.headers["request-id"],
-      path: normalizeRequestPath(req),
-      userAgent: req.get("user-agent"),
-    });
-
+  if (!sessionId) {
     return res.status(401).json({ message: MESSAGES.UNAUTHORIZED });
   }
+
+  const session = await prisma.session.findUnique({
+    where: {
+      id: sessionId,
+    },
+    include: {
+      user: true,
+    },
+  });
+
+  if (!session) {
+    return res.status(401).json({ message: MESSAGES.UNAUTHORIZED });
+  }
+
+  req.user = session.user;
+  return next();
 }
 
 export default isAuthorized;
