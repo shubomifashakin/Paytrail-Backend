@@ -1,6 +1,6 @@
 import cookieParser from "cookie-parser";
 import express from "express";
-import helmet from "helmet";
+// import helmet from "helmet";
 import morgan from "morgan";
 import cors, { CorsOptions } from "cors";
 
@@ -47,7 +47,13 @@ export default function createApp(redisClient: RedisClientType) {
 
   app.set("trust proxy", true);
 
-  app.use(helmet());
+  // app.use(
+  //   helmet({
+  //     frameguard: true,
+  //     hidePoweredBy: true,
+  //     referrerPolicy: { policy: '' },
+  //   }),
+  // );
 
   app.use(cors(corsOptions));
 
