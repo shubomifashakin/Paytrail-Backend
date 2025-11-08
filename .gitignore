@@ -12,3 +12,14 @@ logs
 *.log
 
 *.local
+
+certs
+certs/*.key
+certs/*.crt
+
+secrets/
+secrets/*.txt
+
+ops/.env*
+ops/certs/*
+ops/secrets/*

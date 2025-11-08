@@ -6,12 +6,13 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
-      - "C:/Users/USER/Documents/redis.conf:/etc/redis/redis.conf" #FIXME: USE CORRECT MOUNT POINT
+      - "./redis.conf:/etc/redis/redis.conf"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 10s
       retries: 5
+    command: ["redis-server", "/etc/redis/redis.conf"]
     restart: unless-stopped
     mem_limit: 512m
 
@@ -50,8 +51,28 @@ services:
       /etc/alloy/config.alloy
     volumes:
       - paytrail_logs:/var/log/paytrail
-      - "C:/Users/USER/Documents/config.alloy:/etc/alloy/config.alloy" #FIXME: USE CORRECT MOUNT POINT
+      - "./config.alloy:/etc/alloy/config.alloy"
+      - "./secrets/loki.txt:/var/secrets/loki-password.txt"
+      - "./secrets/prometheus.txt:/var/secrets/prometheus-password.txt"
+      - "./secrets/loki-username.txt:/var/secrets/loki-username.txt"
+      - "./secrets/prometheus-username.txt:/var/secrets/prometheus-username.txt"
     restart: unless-stopped
+    mem_limit: 1g
+
+  nginx:
+    image: nginx:latest
+    container_name: paytrail_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "./nginx.conf:/etc/nginx/nginx.conf"
+      - "./certs/paytrail.crt:/etc/nginx/paytrail.crt"
+      - "./certs/paytrail.key:/etc/nginx/paytrail.key"
+    depends_on:
+      - paytrail
+    restart: unless-stopped
+    mem_limit: 512m
 
 volumes:
   redis_data:
