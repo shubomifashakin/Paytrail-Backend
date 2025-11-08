@@ -1,8 +1,5 @@
 import { NextFunction } from "express";
 import { RedisClientType } from "redis";
-import path from "path";
-
-import fs from "fs";
 import request from "supertest";
 
 import { v4 as uuid } from "uuid";
@@ -104,8 +101,9 @@ describe("Receipts Router", () => {
   describe("POST /receipts/parse", () => {
     describe("when everything is ok", () => {
       it("parses the receipt", async () => {
-        const receiptBuffer = fs.readFileSync(
-          path.join(__dirname, "../../fixtures/test-receipt.png"),
+        const receiptBuffer = Buffer.from(
+          "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
+          "base64",
         );
 
         const res = await request(createApp(mockRedis))
@@ -121,8 +119,9 @@ describe("Receipts Router", () => {
 
     describe("when there are request errors", () => {
       it("it should fail due to incorrect metadata schema", async () => {
-        const receiptBuffer = fs.readFileSync(
-          path.join(__dirname, "../../fixtures/test-receipt.png"),
+        const receiptBuffer = Buffer.from(
+          "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
+          "base64",
         );
 
         const res = await request(createApp(mockRedis))
@@ -146,7 +145,10 @@ describe("Receipts Router", () => {
       });
 
       it("it should fail because unsupported filetype was sent", async () => {
-        const receiptBuffer = fs.readFileSync(path.join(__dirname, "../../fixtures/text.txt"));
+        const receiptBuffer = Buffer.from(
+          "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
+          "base64",
+        );
 
         const res = await request(createApp(mockRedis))
           .post(`${API_V1}/receipts/parse`)
@@ -171,8 +173,9 @@ describe("Receipts Router", () => {
       });
 
       it("it should return a 500 error", async () => {
-        const receiptBuffer = fs.readFileSync(
-          path.join(__dirname, "../../fixtures/test-receipt.png"),
+        const receiptBuffer = Buffer.from(
+          "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
+          "base64",
         );
 
         const res = await request(createApp(mockRedis))
