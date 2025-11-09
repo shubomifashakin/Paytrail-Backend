@@ -35,6 +35,8 @@ describe("Sync Router", () => {
 
   const oldDate = new Date();
 
+  const color = "#FF2000";
+
   beforeAll(async () => {
     const user = await prisma.user.create({
       data: {
@@ -87,7 +89,7 @@ describe("Sync Router", () => {
       data: {
         id: uuid(),
         name: "Test Payment Method",
-        color: "#FF0000",
+        color,
         emoji: "💰",
         description: "Test Payment Method Description",
         userId: user.id,
@@ -103,7 +105,7 @@ describe("Sync Router", () => {
       data: {
         id: uuid(),
         name: "Test Category",
-        color: "#FF0000",
+        color,
         emoji: "💰",
         description: "Test Category Description",
         userId: user.id,
@@ -259,7 +261,7 @@ describe("Sync Router", () => {
                 data: JSON.stringify({
                   id: categoryId,
                   name: "Updated Category",
-                  color: "#FF2000",
+                  color,
                   emoji: "💰",
                   description: "Test Category Description",
                   userId: userId,
@@ -300,7 +302,7 @@ describe("Sync Router", () => {
                 data: JSON.stringify({
                   id: paymentId,
                   name: "Updated Payment Method",
-                  color: "#FF0000",
+                  color,
                   emoji: "💰",
                   description: "Updated Payment Method Description",
                   userId: userId,
@@ -421,8 +423,8 @@ describe("Sync Router", () => {
                 tableName: "categories",
                 data: JSON.stringify({
                   id: categoryId,
-                  name: "Updated Category",
-                  color: "#FF2000",
+                  name: "Updated Category 2",
+                  color,
                   emoji: "💰",
                   description: "Updated Category Description",
                   userId: userId,
@@ -436,8 +438,8 @@ describe("Sync Router", () => {
                 tableName: "payment_methods",
                 data: JSON.stringify({
                   id: paymentId,
-                  name: "Updated Payment Method",
-                  color: "#FF0000",
+                  name: "Updated Payment Method 2",
+                  color,
                   emoji: "💰",
                   description: "Updated Payment Method Description",
                   userId: userId,
@@ -477,6 +479,133 @@ describe("Sync Router", () => {
         expect(transactionData?.amount.toNumber()).toEqual(100);
         expect(categoryData?.name).toEqual("Updated Category");
         expect(paymentData?.name).toEqual("Updated Payment Method");
+
+        expect(res.status).toBe(200);
+        expect(res.body).toHaveProperty("serverTime");
+      });
+    });
+
+    describe("User Pushed Data that clashes with existing data", () => {
+      test("it should overwrite the existing data since incoming data is newer", async function () {
+        const newCategoryId = uuid();
+        const newPaymentMethodId = uuid();
+
+        const newDate = new Date().getTime() * 2;
+        const newBudgetDate = new Date(newDate);
+        const newCategoryDate = newBudgetDate;
+        const newPaymentDate = newCategoryDate;
+
+        const res = await request(createApp(mockRedis))
+          .post(`${API_V1}/sync/push`)
+          .set("Authorization", `Bearer ${sessionId}`)
+          .set("Content-Type", "application/json")
+          .send({
+            data: [
+              {
+                id: uuid(),
+                operation: "insert",
+                tableName: "budgets",
+                data: JSON.stringify({
+                  id: "new-budget-id",
+                  userId: userId,
+                  amount: 24000,
+                  currency: "NGN",
+                  createdAt: newBudgetDate,
+                  updatedAt: newBudgetDate,
+                  year: 2025,
+                  budgetMonth: "January",
+                  period: 202500,
+                }),
+              },
+              {
+                id: uuid(),
+                operation: "insert",
+                tableName: "categories",
+                data: JSON.stringify({
+                  id: "new-category-id",
+                  name: "Newly Created Category",
+                  color,
+                  emoji: "💰",
+                  description: "This is a new category",
+                  userId: userId,
+                  createdAt: newCategoryDate,
+                  updatedAt: newCategoryDate,
+                }),
+              },
+              {
+                id: uuid(),
+                operation: "insert",
+                tableName: "payment_methods",
+                data: JSON.stringify({
+                  id: "new-payment-id",
+                  name: "Newly Created Payment Method",
+                  color,
+                  emoji: "💰",
+                  description: "This is a new payment method",
+                  userId: userId,
+                  createdAt: newPaymentDate,
+                  updatedAt: newPaymentDate,
+                }),
+              },
+              {
+                id: uuid(),
+                operation: "insert",
+                tableName: "transactions",
+                data: JSON.stringify({
+                  id: uuid(),
+                  amount: "2000",
+                  transactionDate: new Date(),
+                  note: "Test Note",
+                  transactionType: "income",
+                  currency: "NGN",
+                  categoryId: newCategoryId,
+                  userId: userId,
+                  paymentMethodId: newPaymentMethodId,
+                  budgetId: budgetId,
+                  createdAt: new Date(),
+                  updatedAt: new Date(),
+                }),
+              },
+            ],
+          });
+
+        const budgetData = await prisma.budgets.findUnique({
+          where: {
+            id: budgetId,
+          },
+        });
+
+        const transactionData = await prisma.transactions.findUnique({
+          where: {
+            id: transactionId,
+          },
+        });
+
+        const categoryData = await prisma.categories.findUnique({
+          where: {
+            userId_color: {
+              userId: userId,
+              color,
+            },
+          },
+        });
+
+        const paymentData = await prisma.paymentMethods.findUnique({
+          where: {
+            userId_color: {
+              userId: userId,
+              color,
+            },
+          },
+          select: {
+            description: true,
+          },
+        });
+
+        expect(budgetData?.amount.toString()).toEqual("24000");
+        expect(transactionData?.amount.toNumber()).toEqual(100);
+        expect(categoryData?.description).toEqual("This is a new category");
+        expect(paymentData?.description).toEqual("This is a new payment method");
 
         expect(res.status).toBe(200);
         expect(res.body).toHaveProperty("serverTime");
