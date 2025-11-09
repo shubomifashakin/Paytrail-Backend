@@ -258,7 +258,7 @@ describe("Sync Router", () => {
                 tableName: "categories",
                 data: JSON.stringify({
                   id: categoryId,
-                  name: "Test Category",
+                  name: "Updated Category",
                   color: "#FF2000",
                   emoji: "💰",
                   description: "Test Category Description",
@@ -299,10 +299,10 @@ describe("Sync Router", () => {
                 tableName: "payment_methods",
                 data: JSON.stringify({
                   id: paymentId,
-                  name: "Test Payment Method",
+                  name: "Updated Payment Method",
                   color: "#FF0000",
                   emoji: "💰",
-                  description: "Test Payment Method Description",
+                  description: "Updated Payment Method Description",
                   userId: userId,
                   createdAt: new Date(),
                   updatedAt: new Date(),
@@ -421,10 +421,10 @@ describe("Sync Router", () => {
                 tableName: "categories",
                 data: JSON.stringify({
                   id: categoryId,
-                  name: "Updated",
-                  color: "#000",
+                  name: "Updated Category",
+                  color: "#FF2000",
                   emoji: "💰",
-                  description: "Test Category Description",
+                  description: "Updated Category Description",
                   userId: userId,
                   createdAt: new Date(),
                   updatedAt: oldDate,
@@ -436,10 +436,10 @@ describe("Sync Router", () => {
                 tableName: "payment_methods",
                 data: JSON.stringify({
                   id: paymentId,
-                  name: "Updated",
-                  color: "#FF2000",
+                  name: "Updated Payment Method",
+                  color: "#FF0000",
                   emoji: "💰",
-                  description: "Test Category Description",
+                  description: "Updated Payment Method Description",
                   userId: userId,
                   createdAt: new Date(),
                   updatedAt: oldDate,
@@ -475,8 +475,8 @@ describe("Sync Router", () => {
         expect(data?.amount.toString()).toEqual("1000");
         expect(data?.period).toBe(202500);
         expect(transactionData?.amount.toNumber()).toEqual(100);
-        expect(categoryData?.name).toEqual("Test Category");
-        expect(paymentData?.name).toEqual("Test Payment Method");
+        expect(categoryData?.name).toEqual("Updated Category");
+        expect(paymentData?.name).toEqual("Updated Payment Method");
 
         expect(res.status).toBe(200);
         expect(res.body).toHaveProperty("serverTime");

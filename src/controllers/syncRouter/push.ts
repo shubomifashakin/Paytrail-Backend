@@ -41,6 +41,17 @@ export default async function (req: Request, res: Response) {
       }
 
       if (c.tableName === "budgets" && (c.operation === "update" || c.operation === "insert")) {
+        const latest = await tx.budgets.findUnique({
+          where: {
+            id: c.data.id,
+          },
+          select: {
+            updatedAt: true,
+          },
+        });
+
+        if (latest && new Date(latest.updatedAt) > new Date(c.data.updatedAt)) continue;
+
         const existingBudgetForPeriod = await tx.budgets.findUnique({
           where: {
             userId_period: {
@@ -115,6 +126,17 @@ export default async function (req: Request, res: Response) {
       }
 
       if (c.tableName === "categories" && (c.operation === "update" || c.operation === "insert")) {
+        const latest = await tx.categories.findUnique({
+          where: {
+            id: c.data.id,
+          },
+          select: {
+            updatedAt: true,
+          },
+        });
+
+        if (latest && new Date(latest.updatedAt) > new Date(c.data.updatedAt)) continue;
+
         const existingCategory = await tx.categories.findFirst({
           where: {
             OR: [
@@ -184,6 +206,17 @@ export default async function (req: Request, res: Response) {
         c.tableName === "payment_methods" &&
         (c.operation === "update" || c.operation === "insert")
       ) {
+        const latest = await tx.paymentMethods.findUnique({
+          where: {
+            id: c.data.id,
+          },
+          select: {
+            updatedAt: true,
+          },
+        });
+
+        if (latest && new Date(latest.updatedAt) > new Date(c.data.updatedAt)) continue;
+
         const existingPaymentMethod = await tx.paymentMethods.findFirst({
           where: {
             OR: [
