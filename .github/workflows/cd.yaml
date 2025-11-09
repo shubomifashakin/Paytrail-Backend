@@ -1,5 +1,4 @@
 name: Continuous Deployment Workflow
-
 on:
   push:
     branches:
@@ -8,6 +7,8 @@ on:
       - prisma/**
       - src/**
       - ops/**
+      - package*.json
+      - Dockerfile
 
 jobs:
   test:
@@ -41,7 +42,7 @@ jobs:
       - name: Setup Node.js environment
         uses: actions/setup-node@v5.0.0
         with:
-          node-version: "22.12.0"
+          node-version: "24.11.0"
           cache: "npm"
 
       - name: "Write .env.test file"
