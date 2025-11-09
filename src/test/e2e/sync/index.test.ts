@@ -197,7 +197,7 @@ describe("Sync Router", () => {
             data: [
               {
                 id: uuid(),
-                operation: "insert",
+                operation: "create",
                 tableName: "budgets",
                 data: JSON.stringify({
                   id: uuid(),
@@ -240,7 +240,7 @@ describe("Sync Router", () => {
 
               {
                 id: uuid(),
-                operation: "insert",
+                operation: "create",
                 tableName: "categories",
                 data: JSON.stringify({
                   id: uuid(),
@@ -281,7 +281,7 @@ describe("Sync Router", () => {
 
               {
                 id: uuid(),
-                operation: "insert",
+                operation: "create",
                 tableName: "payment_methods",
                 data: JSON.stringify({
                   id: uuid(),
@@ -340,7 +340,7 @@ describe("Sync Router", () => {
               },
               {
                 id: uuid(),
-                operation: "insert",
+                operation: "create",
                 tableName: "transactions",
                 data: JSON.stringify({
                   id: uuid(),
@@ -500,7 +500,7 @@ describe("Sync Router", () => {
             data: [
               {
                 id: uuid(),
-                operation: "insert",
+                operation: "create",
                 tableName: "budgets",
                 data: JSON.stringify({
                   id: "new-budget-id",
@@ -516,7 +516,7 @@ describe("Sync Router", () => {
               },
               {
                 id: uuid(),
-                operation: "insert",
+                operation: "create",
                 tableName: "categories",
                 data: JSON.stringify({
                   id: "new-category-id",
@@ -531,7 +531,7 @@ describe("Sync Router", () => {
               },
               {
                 id: uuid(),
-                operation: "insert",
+                operation: "create",
                 tableName: "payment_methods",
                 data: JSON.stringify({
                   id: "new-payment-id",
@@ -546,7 +546,7 @@ describe("Sync Router", () => {
               },
               {
                 id: uuid(),
-                operation: "insert",
+                operation: "create",
                 tableName: "transactions",
                 data: JSON.stringify({
                   id: "new-transaction-id",
@@ -620,7 +620,7 @@ describe("Sync Router", () => {
           .set("Content-Type", "application/json")
           .send({
             data: [
-              { id: "1234", operation: "insert", tableName: "budgets", data: JSON.stringify({}) },
+              { id: "1234", operation: "create", tableName: "budgets", data: JSON.stringify({}) },
               { id: "1234", operation: "update", tableName: "budgets", data: JSON.stringify({}) },
               { id: "1234", operation: "delete", tableName: "budgets", data: JSON.stringify({}) },
               {

@@ -26,7 +26,7 @@ export const pushSchemaValidator = z.object({
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             return JSON.parse(arg) as any;
           }),
-        operation: z.enum(["insert", "update", "delete"]),
+        operation: z.enum(["create", "update", "delete"]),
         tableName: z.enum(["budgets", "transactions", "categories", "payment_methods"]),
       }),
     )

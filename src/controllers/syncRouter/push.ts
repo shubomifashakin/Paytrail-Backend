@@ -40,7 +40,7 @@ export default async function (req: Request, res: Response) {
         });
       }
 
-      if (c.tableName === "budgets" && (c.operation === "update" || c.operation === "insert")) {
+      if (c.tableName === "budgets" && (c.operation === "update" || c.operation === "create")) {
         const latest = await tx.budgets.findUnique({
           where: {
             id: c.data.id,
@@ -125,7 +125,7 @@ export default async function (req: Request, res: Response) {
         });
       }
 
-      if (c.tableName === "categories" && (c.operation === "update" || c.operation === "insert")) {
+      if (c.tableName === "categories" && (c.operation === "update" || c.operation === "create")) {
         const latest = await tx.categories.findUnique({
           where: {
             id: c.data.id,
@@ -204,7 +204,7 @@ export default async function (req: Request, res: Response) {
 
       if (
         c.tableName === "payment_methods" &&
-        (c.operation === "update" || c.operation === "insert")
+        (c.operation === "update" || c.operation === "create")
       ) {
         const latest = await tx.paymentMethods.findUnique({
           where: {
@@ -286,7 +286,7 @@ export default async function (req: Request, res: Response) {
 
       if (
         c.tableName === "transactions" &&
-        (c.operation === "update" || c.operation === "insert")
+        (c.operation === "update" || c.operation === "create")
       ) {
         const latest = await tx.transactions.findUnique({
           where: {
