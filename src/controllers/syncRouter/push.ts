@@ -41,17 +41,35 @@ export default async function (req: Request, res: Response) {
       }
 
       if (c.tableName === "budgets" && (c.operation === "update" || c.operation === "insert")) {
-        const latest = await tx.budgets.findUnique({
+        const existingBudgetForPeriod = await tx.budgets.findUnique({
           where: {
-            id: c.data.id,
+            userId_period: {
+              userId: c.data.userId,
+              period: c.data.period,
+            },
           },
           select: {
+            id: true,
             updatedAt: true,
           },
         });
 
-        if (latest && latest?.updatedAt > new Date(c.data.updatedAt)) {
+        if (
+          existingBudgetForPeriod &&
+          new Date(existingBudgetForPeriod.updatedAt) > new Date(c.data.updatedAt)
+        )
           continue;
+
+        if (
+          existingBudgetForPeriod &&
+          c.data.id !== existingBudgetForPeriod.id &&
+          new Date(c.data.updatedAt) > new Date(existingBudgetForPeriod.updatedAt)
+        ) {
+          await tx.budgets.delete({
+            where: {
+              id: existingBudgetForPeriod.id,
+            },
+          });
         }
 
         await tx.budgets.upsert({
@@ -97,17 +115,33 @@ export default async function (req: Request, res: Response) {
       }
 
       if (c.tableName === "categories" && (c.operation === "update" || c.operation === "insert")) {
-        const latest = await tx.categories.findUnique({
+        const existingCategory = await tx.categories.findFirst({
           where: {
-            id: c.data.id,
+            OR: [
+              { userId: c.data.userId, color: c.data.color },
+              { userId: c.data.userId, emoji: c.data.emoji },
+              { userId: c.data.userId, name: c.data.name },
+            ],
           },
           select: {
+            id: true,
             updatedAt: true,
           },
         });
 
-        if (latest && latest?.updatedAt > new Date(c.data.updatedAt)) {
+        if (existingCategory && new Date(existingCategory.updatedAt) > new Date(c.data.updatedAt))
           continue;
+
+        if (
+          existingCategory &&
+          c.data.id !== existingCategory.id &&
+          new Date(c.data.updatedAt) > new Date(existingCategory.updatedAt)
+        ) {
+          await tx.categories.delete({
+            where: {
+              id: existingCategory.id,
+            },
+          });
         }
 
         await tx.categories.upsert({
@@ -150,17 +184,36 @@ export default async function (req: Request, res: Response) {
         c.tableName === "payment_methods" &&
         (c.operation === "update" || c.operation === "insert")
       ) {
-        const latest = await tx.paymentMethods.findUnique({
+        const existingPaymentMethod = await tx.paymentMethods.findFirst({
           where: {
-            id: c.data.id,
+            OR: [
+              { userId: c.data.userId, color: c.data.color },
+              { userId: c.data.userId, emoji: c.data.emoji },
+              { userId: c.data.userId, name: c.data.name },
+            ],
           },
           select: {
+            id: true,
             updatedAt: true,
           },
         });
 
-        if (latest && latest?.updatedAt > new Date(c.data.updatedAt)) {
+        if (
+          existingPaymentMethod &&
+          new Date(existingPaymentMethod.updatedAt) > new Date(c.data.updatedAt)
+        )
           continue;
+
+        if (
+          existingPaymentMethod &&
+          c.data.id !== existingPaymentMethod.id &&
+          new Date(c.data.updatedAt) > new Date(existingPaymentMethod.updatedAt)
+        ) {
+          await tx.paymentMethods.delete({
+            where: {
+              id: existingPaymentMethod.id,
+            },
+          });
         }
 
         await tx.paymentMethods.upsert({
