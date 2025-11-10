@@ -47,6 +47,7 @@ Let all dates be in ISO format.
 
 IMPORTANT: Do not try to parse images/files that are not receipts or receipt-like. If an image uploaded is not a receipt throw an error/FAIL.
 IMPORTANT: Include the tax amount in the total amount spent. Let the total amount of all the items returned match the total amount spent.
+IMPORTANT: Since we already extract the transaction type, let all amounts be absolute numbers, do not include the sign of the amount.
 
 IMPORTANT: For any item you extracted that does not have an appropriate category or paymentMethod description and id supplied, default to the category or paymentMethod with description "All other categories/paymentMethods" for it.
 If there is no category for "Tax" use the category with description "All other categories" for it.
