@@ -56,7 +56,7 @@ const config: Config = {
 
   testPathIgnorePatterns: ["\\\\node_modules\\\\"],
 
-  testTimeout: 40000,
+  testTimeout: 20000,
 
   transform: {
     "^.+\\.jsx?$": "babel-jest",
