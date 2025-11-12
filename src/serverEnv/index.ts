@@ -10,6 +10,7 @@ const serverEnv = {
   serviceName: process.env.SERVICE_NAME,
   appScheme: process.env.APP_SCHEME!,
   baseUrl: process.env.BASE_URL!,
+  exchangeRateApiKey: process.env.EXCHANGE_RATE_API_KEY!,
 
   paytrailAWSRegion: process.env.PAYTRAIL_AWS_REGION!,
   paytrailAWSAccessKey: process.env.PAYTRAIL_AWS_ACCESS_KEY!,

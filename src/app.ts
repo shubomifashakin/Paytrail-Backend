@@ -11,6 +11,7 @@ import { RedisClientType } from "redis";
 import createAccountRouter from "./routes/accounts";
 import createAuthRouter from "./routes/authRouter";
 import createBroadcastsRouter from "./routes/broadcasts";
+import createRateRouter from "./routes/ratesRouter";
 import createReceiptRouter from "./routes/receiptsRouter";
 import createStatementRouter from "./routes/statementRouter";
 import healthRouter from "./routes/healthRouter";
@@ -102,6 +103,8 @@ export default function createApp(redisClient: RedisClientType) {
   app.use(`${API_V1}/receipts`, createReceiptRouter({ redisClient, register }));
 
   app.use(`${API_V1}/accounts`, isAuthorized, createAccountRouter({ redisClient }));
+
+  app.use(`${API_V1}/rates`, createRateRouter({ redisClient }));
 
   app.use(errorMiddleware(register));
 
