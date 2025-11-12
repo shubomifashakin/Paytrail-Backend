@@ -6,13 +6,16 @@ import logger from "../../lib/logger";
 import serverEnv from "../../serverEnv";
 
 import { MESSAGES } from "../../utils/constants";
+import { validateCurrency } from "src/utils/validators";
 
 export default function getRates({ redisClient }: { redisClient: RedisClientType }) {
   return async (req: Request, res: Response) => {
-    const currency = req.query.currency as string;
+    const currency = req.query?.currency as string;
 
-    if (!currency) {
-      logger.warn("Currency is required");
+    const { success, error, data } = validateCurrency.safeParse(currency);
+
+    if (!success) {
+      logger.warn(error.message);
 
       return res.status(400).json({ message: MESSAGES.BAD_REQUEST });
     }
@@ -31,7 +34,7 @@ export default function getRates({ redisClient }: { redisClient: RedisClientType
     logger.debug("Cache miss");
 
     const rateReq = await fetch(
-      `https://v6.exchangerate-api.com/v6/${serverEnv.exchangeRateApiKey}/latest/${currency}`,
+      `https://v6.exchangerate-api.com/v6/${serverEnv.exchangeRateApiKey}/latest/${data}`,
       {
         signal: AbortSignal.timeout(8000),
       },
