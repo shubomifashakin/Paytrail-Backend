@@ -49,6 +49,12 @@ export default function getRates({ redisClient }: { redisClient: RedisClientType
 
     const rateData = (await rateReq.json()) as CurrencyConverterResponse;
 
+    if (rateData.result !== "success") {
+      logger.error("Failed to fetch rates from api", rateData.error_type);
+
+      return res.status(500).json({ message: MESSAGES.INTERNAL_SERVER_ERROR });
+    }
+
     await redisClient
       .set(`rate:${currency}`, JSON.stringify(rateData.conversion_rates), {
         EX: 60 * 60 * 24 * 7,

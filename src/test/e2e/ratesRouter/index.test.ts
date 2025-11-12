@@ -14,6 +14,7 @@ jest.mock("../../../middlewares/rateLimiter", () => ({
 const mockRedisGet = jest
   .fn()
   .mockResolvedValue(JSON.stringify({ USD: 1, EUR: 0.85 }))
+  .mockResolvedValueOnce(undefined)
   .mockResolvedValueOnce(undefined);
 
 const mockRedisSet = jest.fn().mockResolvedValueOnce(true);
@@ -82,8 +83,18 @@ describe("ratesRouter", () => {
   });
 
   describe("GET /rates", () => {
-    test("should make the call to the api to get the rates", async () => {
-      const mockFetch = jest.fn().mockResolvedValueOnce({
+    const mockFetch = jest
+      .fn()
+      .mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: () =>
+          Promise.resolve({
+            result: "error",
+            error_type: "invalid_currency",
+          }),
+      })
+      .mockResolvedValueOnce({
         ok: true,
         status: 200,
         json: () =>
@@ -93,22 +104,37 @@ describe("ratesRouter", () => {
           }),
       });
 
-      global.fetch = mockFetch;
+    global.fetch = mockFetch;
 
-      const response = await request(createApp(mockRedis))
-        .get(`${API_V1}/rates?currency=EUR`)
-        .set("Authorization", `Bearer ${sessionId}`);
+    describe("should make the call to the api to get the rates", () => {
+      test("status code should be 200", async () => {
+        const response = await request(createApp(mockRedis))
+          .get(`${API_V1}/rates?currency=EUR`)
+          .set("Authorization", `Bearer ${sessionId}`);
 
-      expect(mockRedis.get).toHaveBeenCalledWith("rate:EUR");
-      expect(mockRedis.set).toHaveBeenCalledWith(
-        "rate:EUR",
-        JSON.stringify({ USD: 1, EUR: 0.85 }),
-        {
-          EX: 60 * 60 * 24 * 7,
-        },
-      );
+        expect(mockRedis.get).toHaveBeenCalledWith("rate:EUR");
+        expect(mockRedis.set).toHaveBeenCalledWith(
+          "rate:EUR",
+          JSON.stringify({ USD: 1, EUR: 0.85 }),
+          {
+            EX: 60 * 60 * 24 * 7,
+          },
+        );
 
-      expect(response.status).toBe(200);
+        expect(response.status).toBe(200);
+      });
+    });
+
+    describe("should fail to make the call to the api to get the rates", () => {
+      test("status code should be 500", async () => {
+        const response = await request(createApp(mockRedis))
+          .get(`${API_V1}/rates?currency=EUR`)
+          .set("Authorization", `Bearer ${sessionId}`);
+
+        expect(mockRedis.get).toHaveBeenCalledWith("rate:EUR");
+
+        expect(response.status).toBe(500);
+      });
     });
   });
 
