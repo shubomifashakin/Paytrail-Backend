@@ -160,8 +160,6 @@ export const currencyData: Record<keyof typeof Currencies, { name: string; symbo
   RWF: { name: "Rwandan Franc", symbol: "FRw" },
   GMD: { name: "Gambian Dalasi", symbol: "GMD" },
   GNF: { name: "Guinean Franc", symbol: "FG" },
-  SLL: { name: "Sierra Leonean Leone", symbol: "SLL" },
-  STD: { name: "São Tomé and Príncipe Dobra", symbol: "STD" },
   ERN: { name: "Eritrean Nakfa", symbol: "ERN" },
   ETB: { name: "Ethiopian Birr", symbol: "ETB" },
   SOS: { name: "Somali Shilling", symbol: "SOS" },
