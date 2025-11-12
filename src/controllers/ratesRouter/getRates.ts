@@ -6,7 +6,7 @@ import logger from "../../lib/logger";
 import serverEnv from "../../serverEnv";
 
 import { MESSAGES } from "../../utils/constants";
-import { validateCurrency } from "src/utils/validators";
+import { validateCurrency } from "../../utils/validators";
 
 export default function getRates({ redisClient }: { redisClient: RedisClientType }) {
   return async (req: Request, res: Response) => {
