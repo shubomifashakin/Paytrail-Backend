@@ -145,8 +145,6 @@ enum Currencies {
   RWF
   GMD
   GNF
-  SLL
-  STD
   ERN
   ETB
   SOS

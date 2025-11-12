@@ -33,7 +33,7 @@ export const pushSchemaValidator = z.object({
     .nonempty(),
 });
 
-const validateCurrency = z.enum(Currencies, { error: "Invalid Currency" });
+export const validateCurrency = z.enum(Currencies, { error: "Invalid Currency" });
 
 const periodValidator = z.object(
   {
