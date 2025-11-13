@@ -590,7 +590,7 @@ paths:
       tags:
         - statements
       summary: Request Statement
-      description: Allows the user request a statement
+      description: Allows the user request a statement which would be sent to their mail
       requestBody:
         required: true
         description: Request for a statement that satisfies the users selected filters if any
@@ -654,3 +654,13 @@ paths:
                   message:
                     type: string
                     example: Bad Request
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: No Transactions Found
