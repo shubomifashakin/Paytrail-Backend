@@ -76,7 +76,9 @@ export default function createApp(redisClient: RedisClientType) {
 
   app.use(express.json());
 
-  setupSwagger(app);
+  if (serverEnv.environment !== "production") {
+    setupSwagger(app);
+  }
 
   app.use(`/health`, healthRouter);
 
