@@ -10,5 +10,4 @@ const swaggerSpec = yaml.load(openApiYaml, { json: true }) as swaggerUi.JsonObje
 
 export default function setupSwagger(app: Express) {
   app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec, { explorer: true }));
-  console.log(`Swagger docs available at /api-docs`);
 }
