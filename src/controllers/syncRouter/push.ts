@@ -23,7 +23,7 @@ export default async function (req: Request, res: Response) {
   }
 
   await prisma.$transaction(async (tx) => {
-    for (const c of data.data) {
+    for (const c of data.items) {
       if (c.tableName === "budgets" && c.operation === "delete") {
         const exists = await tx.budgets.findUnique({
           where: {

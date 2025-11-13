@@ -90,7 +90,7 @@ const transactionValidator = z.object({
 
 export const pushSchemaValidator = z
   .object({
-    data: z
+    items: z
       .array(
         z.object({
           data: z
@@ -119,15 +119,17 @@ export const pushSchemaValidator = z
   })
   .refine(
     (arg) => {
-      const budgets = arg.data.filter((c) => c.tableName === "budgets" && c.operation !== "delete");
-      const transactions = arg.data.filter(
+      const budgets = arg.items.filter(
+        (c) => c.tableName === "budgets" && c.operation !== "delete",
+      );
+      const transactions = arg.items.filter(
         (c) => c.tableName === "transactions" && c.operation !== "delete",
       );
 
-      const categories = arg.data.filter(
+      const categories = arg.items.filter(
         (c) => c.tableName === "categories" && c.operation !== "delete",
       );
-      const paymentMethods = arg.data.filter(
+      const paymentMethods = arg.items.filter(
         (c) => c.tableName === "payment_methods" && c.operation !== "delete",
       );
 

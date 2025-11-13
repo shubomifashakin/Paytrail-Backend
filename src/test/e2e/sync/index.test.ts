@@ -194,7 +194,7 @@ describe("Sync Router", () => {
           .set("Authorization", `Bearer ${sessionId}`)
           .set("Content-Type", "application/json")
           .send({
-            data: [
+            items: [
               {
                 id: uuid(),
                 operation: "create",
@@ -381,7 +381,7 @@ describe("Sync Router", () => {
           .set("Authorization", `Bearer ${sessionId}`)
           .set("Content-Type", "application/json")
           .send({
-            data: [
+            items: [
               {
                 id: budgetId,
                 operation: "update",
@@ -497,7 +497,7 @@ describe("Sync Router", () => {
           .set("Authorization", `Bearer ${sessionId}`)
           .set("Content-Type", "application/json")
           .send({
-            data: [
+            items: [
               {
                 id: uuid(),
                 operation: "create",
@@ -619,7 +619,7 @@ describe("Sync Router", () => {
           .set("Authorization", `Bearer ${sessionId}`)
           .set("Content-Type", "application/json")
           .send({
-            data: [
+            items: [
               { id: "1234", operation: "create", tableName: "budgets", data: JSON.stringify({}) },
               { id: "1234", operation: "update", tableName: "budgets", data: JSON.stringify({}) },
               { id: "1234", operation: "delete", tableName: "budgets", data: JSON.stringify({}) },

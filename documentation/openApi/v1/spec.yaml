@@ -258,7 +258,7 @@ paths:
             schema:
               type: object
               properties:
-                data:
+                items:
                   type: array
                   items:
                     type: object
