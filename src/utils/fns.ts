@@ -43,7 +43,10 @@ export function logEmailError(
 }
 
 export function getMonthIndex(month: Months) {
-  return Object.values(Months).findIndex((c) => c === month);
+  return Object.values(Months)
+    .findIndex((c) => c === month)
+    ?.toString()
+    .padStart(2, "0");
 }
 
 export function getMonthAtIndex(monthIdx: number): Months {
