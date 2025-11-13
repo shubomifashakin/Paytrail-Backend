@@ -8,8 +8,8 @@ info:
 servers:
   - url: http://localhost:3000/api/v1
     description: Local development server
-  - url: https://paytrail.app/api/v1
-    description: Production server
+  - url: https://staging.paytrail.app/api/v1
+    description: Staging server
 
 components:
   schemas:
@@ -206,17 +206,24 @@ components:
           format: date-time
 
   securitySchemes:
-    sessionId:
+    localDevelopment:
       type: oauth2
       flows:
-        implicit:
+        authorizationCode:
           authorizationUrl: http://localhost:3000/api/v1/auth/google
-          redirectUri: https://943a6d968c5a.ngrok-free.app
+          tokenUrl: http://localhost:3000/api/v1/auth/google/token
+    staging:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://staging.paytrail.app/api/v1/auth/google
+          tokenUrl: https://staging.paytrail.app/api/v1/auth/google/token
 
 paths:
   /accounts/me:
     security:
-      - sessionId: []
+      - staging: []
+      - localDevelopment: []
     delete:
       tags:
         - accounts
@@ -236,7 +243,8 @@ paths:
 
   /sync/push:
     security:
-      - sessionId: []
+      - staging: []
+      - localDevelopment: []
     post:
       tags:
         - sync
@@ -297,7 +305,8 @@ paths:
 
   /sync/pull:
     security:
-      - sessionId: []
+      - staging: []
+      - localDevelopment: []
     get:
       tags:
         - sync
@@ -351,7 +360,8 @@ paths:
 
   /rates:
     security:
-      - sessionId: []
+      - staging: []
+      - localDevelopment: []
     get:
       tags:
         - rates
@@ -387,7 +397,8 @@ paths:
 
   /receipts/parse:
     security:
-      - sessionId: []
+      - staging: []
+      - localDevelopment: []
     post:
       tags:
         - receipts
@@ -465,7 +476,8 @@ paths:
 
   /broadcasts:
     security:
-      - sessionId: []
+      - staging: []
+      - localDevelopment: []
     get:
       tags:
         - broadcasts
@@ -501,7 +513,8 @@ paths:
 
   /notifications:
     security:
-      - sessionId: []
+      - staging: []
+      - localDevelopment: []
     get:
       tags:
         - notifications
@@ -537,7 +550,8 @@ paths:
 
   /notifications/register:
     security:
-      - sessionId: []
+      - staging: []
+      - localDevelopment: []
     post:
       tags:
         - notifications
@@ -585,7 +599,8 @@ paths:
 
   /statements:
     security:
-      - sessionId: []
+      - staging: []
+      - localDevelopment: []
     post:
       tags:
         - statements

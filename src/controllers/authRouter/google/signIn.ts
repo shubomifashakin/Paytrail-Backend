@@ -31,7 +31,10 @@ export default async function signInWithGoogle(req: Request, res: Response) {
 
   if (redirectUri === serverEnv.appScheme) {
     platform = "mobile";
-  } else if (redirectUri === serverEnv.baseUrl) {
+  } else if (
+    redirectUri === serverEnv.baseUrl ||
+    redirectUri === `http://localhost:${serverEnv.port}/api-docs/oauth2-redirect.html`
+  ) {
     platform = "web";
   } else {
     logger.warn(`${GOOGLE_SIGN_IN_ERROR} Invalid redirect_uri`, {
