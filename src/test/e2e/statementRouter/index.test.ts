@@ -233,8 +233,8 @@ describe("Statement Router", () => {
           currencies: [],
           paymentMethods: [],
           statementType: "budgets",
-          endDate: { year: 2025, month: "January" },
-          startDate: { year: 2002, month: "January" },
+          startDate: new Date(2002, 0, 1),
+          endDate: new Date(2025, 0, 1),
         };
 
         const res = await request(createApp(mockRedis))
@@ -281,8 +281,8 @@ describe("Statement Router", () => {
             currencies: ["NGN"],
             paymentMethods: [payId],
             statementType: "budgets",
-            endDate: { year: 2025, month: "January" },
-            startDate: { year: 2002, month: "January" },
+            startDate: new Date(2002, 0, 1),
+            endDate: new Date(2025, 0, 1),
           };
 
           const res = await request(createApp(mockRedis))
@@ -330,8 +330,8 @@ describe("Statement Router", () => {
           currencies: ["NGN"],
           paymentMethods: ["pm1"],
           statementType: "budgets",
-          endDate: { year: 2025, month: "January" },
-          startDate: { year: 2002, month: "January" },
+          startDate: new Date(2002, 0, 1),
+          endDate: new Date(2025, 0, 1),
         };
 
         const res = await request(createApp(mockRedis))
