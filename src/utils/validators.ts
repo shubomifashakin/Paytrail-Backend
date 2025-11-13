@@ -6,7 +6,6 @@ export const pushSchemaValidator = z.object({
   data: z
     .array(
       z.object({
-        id: z.string(),
         data: z
           .string()
           .refine(
