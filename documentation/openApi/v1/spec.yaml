@@ -284,7 +284,7 @@ paths:
 
       responses:
         "200":
-          description: The time the server completed the request
+          description: Successful Response
           content:
             application/json:
               schema:
@@ -294,7 +294,7 @@ paths:
                     type: string
                     format: date-time
         "400":
-          description: Invalid push schema
+          description: Bad Request
           content:
             application/json:
               schema:
@@ -378,7 +378,7 @@ paths:
 
       responses:
         "200":
-          description: Success
+          description: Successful Response
           content:
             application/json:
               schema:
@@ -429,7 +429,7 @@ paths:
                   example: '[{"id":"12345","description":"This payment method is for feeding"}]'
       responses:
         "200":
-          description: Success
+          description: Successful Response
           content:
             application/json:
               schema:
@@ -494,7 +494,7 @@ paths:
 
       responses:
         "200":
-          description: Success
+          description: Successful Response
           content:
             application/json:
               schema:
@@ -531,7 +531,7 @@ paths:
 
       responses:
         "200":
-          description: Success
+          description: Successful Response
           content:
             application/json:
               schema:
@@ -577,7 +577,7 @@ paths:
 
       responses:
         "200":
-          description: Success
+          description: Successful Response
           content:
             application/json:
               schema:
@@ -650,7 +650,7 @@ paths:
 
       responses:
         "200":
-          description: Success
+          description: Successful Response
           content:
             application/json:
               schema:

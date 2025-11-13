@@ -5,7 +5,7 @@ import yaml from "js-yaml";
 
 import swaggerUi from "swagger-ui-express";
 
-const openApiYaml = fs.readFileSync("./documentation/openApi/openApi.yaml", "utf8");
+const openApiYaml = fs.readFileSync("./documentation/openApi/v1/spec.yaml", "utf8");
 const swaggerSpec = yaml.load(openApiYaml, { json: true }) as swaggerUi.JsonObject;
 
 export default function setupSwagger(app: Express) {
