@@ -46,8 +46,12 @@ export function getMonthIndex(month: Months) {
   return Object.values(Months).findIndex((c) => c === month);
 }
 
-export function makeBudgetPeriod(month: Months, year: number) {
-  const monthIndex = getMonthIndex(month).toString().padStart(2, "0");
+export function getMonthAtIndex(monthIdx: number): Months {
+  return Object.values(Months)[monthIdx];
+}
+
+export function makeBudgetPeriod(monthIdx: number, year: number) {
+  const monthIndex = monthIdx.toString().padStart(2, "0");
   const period = Number(`${year}${monthIndex}`);
   return period;
 }
@@ -103,7 +107,8 @@ export async function generatePdf(html: string, pdfOptions?: PDFOptions) {
   return pdf;
 }
 
-const generatedAt = new Date().toLocaleString("en-GB", {
+export const dateTimeLocale = "en-GB";
+const generatedAt = new Date().toLocaleString(dateTimeLocale, {
   year: "numeric",
   month: "short",
   day: "2-digit",
@@ -114,7 +119,7 @@ const generatedAt = new Date().toLocaleString("en-GB", {
 });
 
 const formatDate = (date: string | Date) =>
-  new Date(date).toLocaleDateString("en-GB", {
+  new Date(date).toLocaleDateString(dateTimeLocale, {
     year: "numeric",
     month: "short",
     day: "2-digit",
@@ -158,7 +163,7 @@ export async function generateBudgetStatement({
               const amount = parseFloat(tx.amount.toString()).toFixed(2);
               const isIncome = tx.transactionType === "income";
 
-              const transactionDate = tx.transactionDate.toISOString().split("T")[0];
+              const transactionDate = tx.transactionDate.toLocaleDateString(dateTimeLocale);
               const transactionNote = tx.note || "N/A";
               const transactionCategory = tx.category;
               const transactionPaymentMethod = tx.paymentMethod;
@@ -570,7 +575,7 @@ export async function generateTransactionsStatement({
 
       const rows = currencyTransactions
         .map((tx) => {
-          const transactionDate = new Date(tx.transactionDate).toISOString().split("T")[0];
+          const transactionDate = new Date(tx.transactionDate).toLocaleDateString(dateTimeLocale);
           const transactionNote = tx.note || "N/A";
           const transactionCategory = tx.category.name;
           const transactionPaymentMethod = tx.paymentMethod.name;

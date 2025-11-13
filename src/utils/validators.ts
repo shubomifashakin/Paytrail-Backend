@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { Currencies, Months, Platforms } from "@prisma/client";
+import { Currencies, Platforms } from "@prisma/client";
 
 export const pushSchemaValidator = z.object({
   data: z
@@ -35,42 +35,21 @@ export const pushSchemaValidator = z.object({
 
 export const validateCurrency = z.enum(Currencies, { error: "Invalid Currency" });
 
-const periodValidator = z.object(
-  {
-    year: z.number({ error: "invalid startYear" }),
-    month: z.enum(Months, { error: "Invalid startMonth" }),
-  },
-  { error: "Invalid period" },
-);
 const dateValidator = z.iso.datetime({ error: "Invalid date" });
 
-export const statementQueryValidator = z
-  .object({
-    startDate: z.union([periodValidator, dateValidator]).optional(),
+export const statementQueryValidator = z.object({
+  startDate: dateValidator.optional(),
 
-    endDate: z.union([periodValidator, dateValidator]),
+  endDate: dateValidator,
 
-    categories: z.array(z.string()).optional(),
+  categories: z.array(z.string()).optional(),
 
-    paymentMethods: z.array(z.string()).optional(),
+  paymentMethods: z.array(z.string()).optional(),
 
-    currencies: z.array(validateCurrency).optional(),
+  currencies: z.array(validateCurrency).optional(),
 
-    statementType: z.enum(["transactions", "budgets"]),
-  })
-  .refine((args) => {
-    if (args.statementType === "budgets") {
-      return (
-        periodValidator.optional().safeParse(args.startDate).success &&
-        periodValidator.safeParse(args.endDate).success
-      );
-    }
-
-    return (
-      dateValidator.optional().safeParse(args.startDate).success &&
-      dateValidator.safeParse(args.endDate).success
-    );
-  });
+  statementType: z.enum(["transactions", "budgets"]),
+});
 
 export const registerForPushNotificationsValidator = z.object({
   pushToken: z.string({ error: "Invalid Push Token" }),
