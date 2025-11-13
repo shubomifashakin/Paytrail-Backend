@@ -26,6 +26,7 @@ import tagRequest from "./middlewares/tagRequest";
 
 import { API_V1 } from "./utils/constants";
 import serverEnv from "./serverEnv";
+import setupSwagger from "./utils/swagger";
 
 export default function createApp(redisClient: RedisClientType) {
   const app = express();
@@ -74,6 +75,10 @@ export default function createApp(redisClient: RedisClientType) {
   app.use(express.urlencoded({ extended: true }));
 
   app.use(express.json());
+
+  if (serverEnv.environment !== "production") {
+    setupSwagger(app);
+  }
 
   app.use(`/health`, healthRouter);
 

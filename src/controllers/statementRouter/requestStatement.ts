@@ -1,4 +1,4 @@
-import { Currencies, Months } from "@prisma/client";
+import { Currencies } from "@prisma/client";
 import { Request, Response } from "express";
 
 import logger from "../../lib/logger";
@@ -11,6 +11,7 @@ import prisma from "../../lib/prisma";
 import resend from "../../lib/resend";
 
 import {
+  dateTimeLocale,
   generateBudgetStatement,
   generateTransactionsStatement,
   logEmailError,
@@ -34,11 +35,13 @@ export default async function requestStatement(req: Request, res: Response) {
   }
 
   if (data.statementType === "budgets") {
-    const startDate = data.startDate as { year: number; month: Months } | undefined;
-    const endDate = data.endDate as { year: number; month: Months };
+    const startDate = data.startDate ? new Date(data.startDate) : undefined;
+    const endDate = new Date(data.endDate);
 
-    const startPeriod = startDate ? makeBudgetPeriod(startDate.month, startDate.year) : undefined;
-    const endPeriod = makeBudgetPeriod(endDate.month, endDate.year);
+    const startPeriod = startDate
+      ? makeBudgetPeriod(startDate.getMonth(), startDate.getFullYear())
+      : undefined;
+    const endPeriod = makeBudgetPeriod(endDate.getMonth(), endDate.getFullYear());
 
     const budgets = await prisma.budgets.findMany({
       where: {
@@ -72,21 +75,21 @@ export default async function requestStatement(req: Request, res: Response) {
         budgetId: {
           in: budgetIds,
         },
-        ...(data.paymentMethods.length
+        ...(data.paymentMethods?.length
           ? {
               paymentMethodId: {
                 in: data.paymentMethods,
               },
             }
           : null),
-        ...(data.categories.length
+        ...(data.categories?.length
           ? {
               categoryId: {
                 in: data.categories,
               },
             }
           : null),
-        ...(data.currencies.length
+        ...(data.currencies?.length
           ? {
               currency: {
                 in: data.currencies,
@@ -152,10 +155,10 @@ export default async function requestStatement(req: Request, res: Response) {
 
     const pt = await generateBudgetStatement({
       userName: req.user.name,
-      endDate,
-      startDate: startDate || {
-        month: budgets[budgets.length - 1].budgetMonth,
+      endDate: { year: budgets[0].year, month: budgets[0].budgetMonth },
+      startDate: {
         year: budgets[budgets.length - 1].year,
+        month: budgets[budgets.length - 1].budgetMonth,
       },
       budgetsAndTransactions: budgetWithAssociatedTransactions,
     });
@@ -171,10 +174,8 @@ export default async function requestStatement(req: Request, res: Response) {
           <p>Hello ${req.user.name || "there"},</p>
 
           <p>Your PayTrail statement for the period <strong>${
-            startDate?.month || budgets[0].budgetMonth
-          } ${startDate?.year || budgets[0].year}</strong> to <strong>${endDate.month} ${
-            endDate.year
-          }</strong> has been generated and is attached to this email.</p>
+            budgets[budgets.length - 1].budgetMonth
+          } ${budgets[budgets.length - 1].year}</strong> to <strong>${budgets[0].budgetMonth} ${budgets[0].year}</strong> has been generated and is attached to this email.</p>
          
           <p>Thank you for using PayTrail to manage your finances!</p>
           <p>Best regards,<br>The PayTrail Team</p>
@@ -209,21 +210,21 @@ export default async function requestStatement(req: Request, res: Response) {
           gte: startDate,
           lte: endDate,
         },
-        ...(data.paymentMethods.length
+        ...(data.paymentMethods?.length
           ? {
               paymentMethodId: {
                 in: data.paymentMethods,
               },
             }
           : {}),
-        ...(data.categories.length
+        ...(data.categories?.length
           ? {
               categoryId: {
                 in: data.categories,
               },
             }
           : {}),
-        ...(data.currencies.length
+        ...(data.currencies?.length
           ? {
               currency: {
                 in: data.currencies,
@@ -259,8 +260,8 @@ export default async function requestStatement(req: Request, res: Response) {
 
     const pt = await generateTransactionsStatement({
       userName: req.user.name,
-      startDate: startDate || transactions[0].transactionDate.toString(),
-      endDate,
+      startDate: transactions[transactions.length - 1].transactionDate.toISOString(),
+      endDate: transactions[0].transactionDate.toISOString(),
       transactions,
     });
 
@@ -274,7 +275,7 @@ export default async function requestStatement(req: Request, res: Response) {
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">  
           <p>Hello ${req.user.name || "there"},</p>
 
-          <p>Your PayTrail statement for the period <strong>${startDate || transactions[0].transactionDate.toDateString()}</strong> to <strong>${new Date(endDate).toDateString()}</strong> has been generated and is attached to this email.</p>
+          <p>Your PayTrail statement for the period <strong>${transactions[transactions.length - 1].transactionDate.toLocaleDateString(dateTimeLocale)}</strong> to <strong>${transactions[0].transactionDate.toLocaleDateString(dateTimeLocale)}</strong> has been generated and is attached to this email.</p>
          
           <p>Thank you for using PayTrail to manage your finances!</p>
           <p>Best regards,<br>The PayTrail Team</p>

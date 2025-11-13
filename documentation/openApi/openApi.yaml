@@ -1,0 +1,681 @@
+openapi: 3.0.3
+failOnErrors: true
+info:
+  title: Paytrail Express Backend API
+  version: 1.0.0
+  description: API documentation for Paytrail.
+
+servers:
+  - url: http://localhost:3000/api/v1
+    description: Local development server
+  - url: https://staging.paytrail.app/api/v1
+    description: Staging server
+
+components:
+  schemas:
+    Notifications:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        subtitle:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        notificationType:
+          type: string
+        image:
+          type: string
+          nullable: true
+
+    Rates:
+      type: object
+      properties:
+        currency:
+          type: string
+        rates:
+          type: object
+          additionalProperties:
+            type: number
+
+    Transactions:
+      type: object
+      properties:
+        id:
+          type: string
+          required: true
+        createdAt:
+          type: string
+          format: date-time
+          required: true
+        updatedAt:
+          type: string
+          format: date-time
+          required: true
+        currency:
+          type: string
+          required: true
+        categoryId:
+          type: string
+          required: true
+        paymentMethodId:
+          type: string
+          required: true
+        budgetId:
+          type: string
+          required: true
+        transactionType:
+          type: string
+          required: true
+          enum: [income, expense]
+        amount:
+          type: string
+          required: true
+          example: "123456.78"
+          pattern: '^\d{1,8}(\.\d{1,2})?$'
+          description: Numeric value with up to 10 digits (including 2 decimal places)
+        transactionDate:
+          type: string
+          required: true
+          format: date-time
+        note:
+          type: string
+          nullable: true
+        userId:
+          type: string
+          required: true
+
+    Categories:
+      type: object
+      properties:
+        id:
+          type: string
+          required: true
+        name:
+          type: string
+          maxLength: 30
+          required: true
+        color:
+          type: string
+          required: true
+        emoji:
+          type: string
+          required: true
+        description:
+          type: string
+          maxLength: 50
+          required: true
+          description: Description of the category
+        userId:
+          type: string
+          required: true
+        createdAt:
+          type: string
+          required: true
+          format: date-time
+        updatedAt:
+          type: string
+          required: true
+          format: date-time
+
+    PaymentMethods:
+      type: object
+      properties:
+        id:
+          type: string
+          required: true
+        name:
+          type: string
+          maxLength: 30
+          required: true
+        color:
+          type: string
+          required: true
+        emoji:
+          type: string
+          required: true
+        description:
+          type: string
+          maxLength: 50
+          required: true
+          description: Description of the payment method
+        userId:
+          type: string
+          required: true
+        createdAt:
+          type: string
+          required: true
+          format: date-time
+        updatedAt:
+          type: string
+          required: true
+          format: date-time
+
+    Budgets:
+      type: object
+      properties:
+        id:
+          type: string
+          required: true
+        amount:
+          type: string
+          required: true
+          example: "123456.78"
+          pattern: '^\d{1,8}(\.\d{1,2})?$'
+          description: Numeric value with up to 10 digits (including 2 decimal places)
+        year:
+          type: integer
+          required: true
+        budgetMonth:
+          type: string
+          required: true
+          enum:
+            [
+              JANUARY,
+              FEBRUARY,
+              MARCH,
+              APRIL,
+              MAY,
+              JUNE,
+              JULY,
+              AUGUST,
+              SEPTEMBER,
+              OCTOBER,
+              NOVEMBER,
+              DECEMBER,
+            ]
+        currency:
+          type: string
+          required: true
+        userId:
+          type: string
+          required: true
+        period:
+          type: integer
+          required: true
+        createdAt:
+          type: string
+          required: true
+          format: date-time
+        updatedAt:
+          type: string
+          required: true
+          format: date-time
+
+  securitySchemes:
+    localDevelopment:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: http://localhost:3000/api/v1/auth/google
+          tokenUrl: http://localhost:3000/api/v1/auth/google/token
+    staging:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://staging.paytrail.app/api/v1/auth/google
+          tokenUrl: https://staging.paytrail.app/api/v1/auth/google/token
+
+paths:
+  /accounts/me:
+    security:
+      - staging: []
+      - localDevelopment: []
+    delete:
+      tags:
+        - accounts
+      summary: Delete account
+      description: Delete the users account
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: success
+
+  /sync/push:
+    security:
+      - staging: []
+      - localDevelopment: []
+    post:
+      tags:
+        - sync
+      summary: Push sync
+      description: Push the new data to the database
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      data:
+                        type: string
+                        format: json
+                        required: true
+                        description: Stringified JSON object that matches the table schema
+                        example: '{"id": "1", "amount": "100", "year": 2025, "budgetMonth": "JANUARY", "currency": "EUR", "userId": "1", "period": 1, createdAt: "2025-10-31T12:00:00Z", updatedAt: "2025-10-31T12:00:00Z"}'
+                      operation:
+                        type: string
+                        required: true
+                        example: create
+                        enum: [create, update, delete]
+                        description: The operation to perform on the table with the provided data
+                      tableName:
+                        type: string
+                        required: true
+                        example: budgets
+                        enum: [budgets, transactions, categories, payment_methods]
+                        description: The name of the table the data pushed should mutate
+
+      responses:
+        "200":
+          description: The time the server completed the request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  serverTime:
+                    type: string
+                    format: date-time
+        "400":
+          description: Invalid push schema
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
+  /sync/pull:
+    security:
+      - staging: []
+      - localDevelopment: []
+    get:
+      tags:
+        - sync
+      summary: Pull sync
+      description: Pull users data from the database
+      parameters:
+        - name: from
+          in: query
+          description: The timestamp the pull should start from (ISO 8601 format). If not included in query, it would pull all the users data from the database.
+          required: false
+          schema:
+            type: string
+            format: date-time
+            example: 2025-10-31T12:00:00Z
+
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  serverTime:
+                    type: string
+                    format: date-time
+                    description: The time the server completed the request
+                  data:
+                    type: object
+                    description: The data that satisfies the constraint
+                    properties:
+                      transactions:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Transactions"
+
+                      categories:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Categories"
+
+                      paymentMethods:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/PaymentMethods"
+
+                      budgets:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Budgets"
+
+  /rates:
+    security:
+      - staging: []
+      - localDevelopment: []
+    get:
+      tags:
+        - rates
+      summary: Get rates
+      description: Get the latest rates for a particular currency
+      parameters:
+        - name: currency
+          in: query
+          description: The currency to get rates for
+          required: true
+          schema:
+            type: string
+            example: EUR
+
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Rates"
+
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Bad Request
+
+  /receipts/parse:
+    security:
+      - staging: []
+      - localDevelopment: []
+    post:
+      tags:
+        - receipts
+      summary: Parse receipt
+      description: Parse a receipt and return the parsed data
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                receipt:
+                  type: array
+                  description: The receipt images to be parsed
+                  items:
+                    type: string
+                    format: binary
+                categories:
+                  type: string
+                  format: json
+                  description: The user’s categories as a JSON string
+                  example: '[{"id":"12345","description":"This category is for feeding"}]'
+                paymentMethods:
+                  type: string
+                  format: json
+                  description: The user’s payment methods as a JSON string
+                  example: '[{"id":"12345","description":"This payment method is for feeding"}]'
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      overview:
+                        type: object
+                        properties:
+                          merchant:
+                            type: string
+                          currency:
+                            type: string
+                            example: EUR
+                          totalAmountSpent:
+                            type: number
+                          totalItemsPurchased:
+                            type: number
+
+                      items:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            amount:
+                              type: string
+                            transactionDate:
+                              type: string
+                              format: date-time
+                            note:
+                              type: string
+                            transactionType:
+                              type: string
+                              enum: [expense, income]
+                            currency:
+                              type: string
+                              example: EUR
+                            categoryId:
+                              type: string
+                            paymentMethodId:
+                              type: string
+
+  /broadcasts:
+    security:
+      - staging: []
+      - localDevelopment: []
+    get:
+      tags:
+        - broadcasts
+      summary: Get broadcasts
+      description: Gets the available broadcasts
+      parameters:
+        - name: exclusiveStartKey
+          in: query
+          description: The last evaluated key. This is for pagination, indicating where to start getting broadcasts from
+          required: false
+          schema:
+            type: string
+            format: json
+
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  next:
+                    type: object
+                    nullable: true
+                  hasNextPage:
+                    type: boolean
+                    description: If there are more broadcasts to fetch
+                  notifications:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Notifications"
+
+  /notifications:
+    security:
+      - staging: []
+      - localDevelopment: []
+    get:
+      tags:
+        - notifications
+      summary: Get Notifications
+      description: Gets the users notifications
+      parameters:
+        - name: exclusiveStartKey
+          in: query
+          description: The last evaluated key. This is for pagination, indicating where to start getting notifications from
+          required: false
+          schema:
+            type: string
+            format: json
+
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  next:
+                    type: object
+                    nullable: true
+                  hasNextPage:
+                    type: boolean
+                    description: If the user has more notifications to fetch or not
+                  notifications:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Notifications"
+
+  /notifications/register:
+    security:
+      - staging: []
+      - localDevelopment: []
+    post:
+      tags:
+        - notifications
+      summary: Register for push notifications
+      description: Allows the user register for push notifications
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                pushToken:
+                  type: string
+                  required: true
+                  description: The users platform token
+
+                platform:
+                  type: string
+                  required: true
+                  enum: [android, ios]
+                  description: The operating system of the users platform
+
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: success
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Bad Request
+
+  /statements:
+    security:
+      - staging: []
+      - localDevelopment: []
+    post:
+      tags:
+        - statements
+      summary: Request Statement
+      description: Allows the user request a statement which would be sent to their mail
+      requestBody:
+        required: true
+        description: Request for a statement that satisfies the users selected filters if any
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                startDate:
+                  type: string
+                  required: false
+                  format: date-time
+                  description: The start date of the statement
+                endDate:
+                  type: string
+                  required: true
+                  format: date-time
+                  description: The end date of the statement
+                categories:
+                  type: array
+                  required: false
+                  description: The ids of the categories the user selected
+                  items:
+                    type: string
+                paymentMethods:
+                  type: array
+                  required: false
+                  description: The ids of the payment methods the user selected
+                  items:
+                    type: string
+                currencies:
+                  type: array
+                  required: false
+                  description: The currencies the user selected
+                  items:
+                    type: string
+                statementType:
+                  type: string
+                  required: true
+                  enum: [transactions, budgets]
+                  description: The type of the statement
+
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: success
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Bad Request
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: No Transactions Found

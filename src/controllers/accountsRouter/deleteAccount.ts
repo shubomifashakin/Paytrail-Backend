@@ -43,5 +43,5 @@ export default async function deleteUserAccount(req: Request, res: Response) {
       });
   }
 
-  return res.status(200).json({ message: "User deleted" });
+  return res.status(200).json({ message: "Success" });
 }

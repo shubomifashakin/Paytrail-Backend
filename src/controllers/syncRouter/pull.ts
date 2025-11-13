@@ -3,7 +3,7 @@ import { Request, Response } from "express";
 import prisma from "../../lib/prisma";
 
 export default async function (req: Request, res: Response) {
-  const lastPullDate = (req.query.lastPullDate as string) || null;
+  const lastPullDate = (req.query.from as string) || null;
 
   const whereClause = lastPullDate
     ? { updatedAt: { gte: new Date(lastPullDate) }, userId: req.user.id }
