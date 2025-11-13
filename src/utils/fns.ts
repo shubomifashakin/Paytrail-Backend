@@ -108,15 +108,17 @@ export async function generatePdf(html: string, pdfOptions?: PDFOptions) {
 }
 
 export const dateTimeLocale = "en-GB";
-const generatedAt = new Date().toLocaleString(dateTimeLocale, {
-  year: "numeric",
-  month: "short",
-  day: "2-digit",
-  hour: "2-digit",
-  minute: "2-digit",
-  hour12: true,
-  timeZoneName: "short",
-});
+const generatedAt = () => {
+  return new Date().toLocaleString(dateTimeLocale, {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+    timeZoneName: "short",
+  });
+};
 
 const formatDate = (date: string | Date) =>
   new Date(date).toLocaleDateString(dateTimeLocale, {
@@ -480,7 +482,7 @@ export async function generateBudgetStatement({
             </div>
             <div>
                 <div class="title">Paytrail Budget Statement</div>
-                <div class="subtitle">Generated on ${generatedAt}</div>
+                <div class="subtitle">Generated on ${generatedAt()}</div>
             </div>
         </div>
     </div>
@@ -807,7 +809,7 @@ export async function generateTransactionsStatement({
             </div>
             <div>
                 <div class="title">Paytrail Transactions Statement</div>
-                <div class="subtitle">Generated on ${generatedAt}</div>
+                <div class="subtitle">Generated on ${generatedAt()}</div>
             </div>
         </div>
     </div>
