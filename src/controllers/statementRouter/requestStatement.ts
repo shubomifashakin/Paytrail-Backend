@@ -72,21 +72,21 @@ export default async function requestStatement(req: Request, res: Response) {
         budgetId: {
           in: budgetIds,
         },
-        ...(data.paymentMethods.length
+        ...(data.paymentMethods?.length
           ? {
               paymentMethodId: {
                 in: data.paymentMethods,
               },
             }
           : null),
-        ...(data.categories.length
+        ...(data.categories?.length
           ? {
               categoryId: {
                 in: data.categories,
               },
             }
           : null),
-        ...(data.currencies.length
+        ...(data.currencies?.length
           ? {
               currency: {
                 in: data.currencies,
@@ -209,21 +209,21 @@ export default async function requestStatement(req: Request, res: Response) {
           gte: startDate,
           lte: endDate,
         },
-        ...(data.paymentMethods.length
+        ...(data.paymentMethods?.length
           ? {
               paymentMethodId: {
                 in: data.paymentMethods,
               },
             }
           : {}),
-        ...(data.categories.length
+        ...(data.categories?.length
           ? {
               categoryId: {
                 in: data.categories,
               },
             }
           : {}),
-        ...(data.currencies.length
+        ...(data.currencies?.length
           ? {
               currency: {
                 in: data.currencies,

@@ -50,11 +50,11 @@ export const statementQueryValidator = z
 
     endDate: z.union([periodValidator, dateValidator]),
 
-    categories: z.array(z.string()),
+    categories: z.array(z.string()).optional(),
 
-    paymentMethods: z.array(z.string()),
+    paymentMethods: z.array(z.string()).optional(),
 
-    currencies: z.array(validateCurrency),
+    currencies: z.array(validateCurrency).optional(),
 
     statementType: z.enum(["transactions", "budgets"]),
   })

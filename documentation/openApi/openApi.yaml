@@ -611,19 +611,19 @@ paths:
                   description: The end date of the statement
                 categories:
                   type: array
-                  required: true
+                  required: false
                   description: The ids of the categories the user selected
                   items:
                     type: string
                 paymentMethods:
                   type: array
-                  required: true
+                  required: false
                   description: The ids of the payment methods the user selected
                   items:
                     type: string
                 currencies:
                   type: array
-                  required: true
+                  required: false
                   description: The currencies the user selected
                   items:
                     type: string
