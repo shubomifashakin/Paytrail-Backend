@@ -29,18 +29,24 @@ jest.mock("../../../middlewares/rateLimiter", () => ({
     .mockImplementation(() => (_req: Request, _res: Response, next: NextFunction) => next()),
 }));
 
-const sub = "test-sub";
-const name = "Test User";
-const email = "test@example.com";
-const picture = "https://example.com/test.jpg";
+const joseDecodeValue = {
+  sub: "test-sub",
+  name: "Test User",
+  email: "test@example.com",
+};
+
+const deletedJoseUser = {
+  sub: "deleted-user",
+  name: "Deleted User",
+  email: "existingDeletedUser@deleted.com",
+};
 
 jest.mock("jose", () => ({
-  decodeJwt: jest.fn().mockReturnValue({
-    name,
-    email,
-    picture,
-    sub,
-  }),
+  decodeJwt: jest
+    .fn()
+    .mockReturnValue(deletedJoseUser)
+    .mockReturnValueOnce(joseDecodeValue)
+    .mockReturnValueOnce(joseDecodeValue),
 }));
 
 const mockRedis = {
@@ -67,7 +73,33 @@ import serverEnv from "../../../serverEnv";
 import prisma from "../../../lib/prisma";
 
 describe("Auth Router", () => {
+  let existingId: string;
+
+  beforeAll(async () => {
+    const user = await prisma.user.create({
+      data: {
+        id: deletedJoseUser.sub,
+        name: deletedJoseUser.name,
+        email: deletedJoseUser.email,
+        emailVerified: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        currency: "USD",
+        deletedAt: new Date(),
+      },
+      select: { id: true },
+    });
+
+    existingId = user.id;
+  });
+
   afterAll(async () => {
+    await prisma.user.delete({
+      where: {
+        id: existingId,
+      },
+    });
+
     await prisma.user.deleteMany({
       where: {
         id: fakeUUid,
@@ -166,104 +198,142 @@ describe("Auth Router", () => {
     });
 
     describe("POST /auth/google/token", () => {
-      test("user should be created and signed in successfully if no account exists", async () => {
-        const mockedFetch = global.fetch as jest.MockedFunction<typeof fetch>;
+      describe("user should sign in successfully", () => {
+        test("user should be created and signed in successfully if no account exists", async () => {
+          const mockedFetch = global.fetch as jest.MockedFunction<typeof fetch>;
 
-        mockedFetch.mockResolvedValue({
-          ok: true,
-          status: 200,
-          json: () => Promise.resolve({ id_token: "test-id-token" }),
-        } as unknown as Response);
+          mockedFetch.mockResolvedValue({
+            ok: true,
+            status: 200,
+            json: () => Promise.resolve({ id_token: "test-id-token" }),
+          } as unknown as Response);
 
-        const res = await request(createApp(mockRedis))
-          .post(`${API_V1}/auth/google/token`)
-          .set("user-agent", "test-agent")
-          .send({ code: "test-code" });
+          const res = await request(createApp(mockRedis))
+            .post(`${API_V1}/auth/google/token`)
+            .set("user-agent", "test-agent")
+            .send({ code: "test-code" });
 
-        expect(mockedFetch).toHaveBeenCalledTimes(1);
-        expect(mockedFetch).toHaveBeenCalledWith(GOOGLE_OATH_TOKEN_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-          body: new URLSearchParams({
-            code: "test-code",
-            grant_type: "authorization_code",
-            redirect_uri: GOOGLE_REDIRECT_URL,
-            client_id: serverEnv.googleClientId!,
-            client_secret: serverEnv.googleClientSecret!,
-          }),
+          expect(mockedFetch).toHaveBeenCalledTimes(1);
+          expect(mockedFetch).toHaveBeenCalledWith(GOOGLE_OATH_TOKEN_URL, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: new URLSearchParams({
+              code: "test-code",
+              grant_type: "authorization_code",
+              redirect_uri: GOOGLE_REDIRECT_URL,
+              client_id: serverEnv.googleClientId!,
+              client_secret: serverEnv.googleClientSecret!,
+            }),
+          });
+
+          expect(res.status).toBe(200);
         });
 
-        expect(res.status).toBe(200);
+        test("users previous sessions should be cancelled & signed in successfully if user already exists", async () => {
+          const mockedFetch = global.fetch as jest.MockedFunction<typeof fetch>;
+
+          mockedFetch.mockResolvedValue({
+            ok: true,
+            status: 200,
+            json: () => Promise.resolve({ id_token: "test-id-token" }),
+          } as unknown as Response);
+
+          const res = await request(createApp(mockRedis))
+            .post(`${API_V1}/auth/google/token`)
+            .set("user-agent", "test-agent")
+            .send({ code: "test-code" });
+
+          expect(mockedFetch).toHaveBeenCalledTimes(1);
+          expect(mockedFetch).toHaveBeenCalledWith(GOOGLE_OATH_TOKEN_URL, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: new URLSearchParams({
+              code: "test-code",
+              grant_type: "authorization_code",
+              redirect_uri: GOOGLE_REDIRECT_URL,
+              client_id: serverEnv.googleClientId!,
+              client_secret: serverEnv.googleClientSecret!,
+            }),
+          });
+
+          expect(res.status).toBe(200);
+        });
       });
 
-      test("users previous sessions should be cancelled & signed in successfully if user already exists", async () => {
-        const mockedFetch = global.fetch as jest.MockedFunction<typeof fetch>;
+      describe("a deleted user tried logging in", () => {
+        test("it should return status 423", async () => {
+          const mockedFetch = global.fetch as jest.MockedFunction<typeof fetch>;
 
-        mockedFetch.mockResolvedValue({
-          ok: true,
-          status: 200,
-          json: () => Promise.resolve({ id_token: "test-id-token" }),
-        } as unknown as Response);
+          mockedFetch.mockResolvedValue({
+            ok: true,
+            status: 200,
+            json: () => Promise.resolve({ id_token: "test-id-token" }),
+          } as unknown as Response);
 
-        const res = await request(createApp(mockRedis))
-          .post(`${API_V1}/auth/google/token`)
-          .set("user-agent", "test-agent")
-          .send({ code: "test-code" });
+          const res = await request(createApp(mockRedis))
+            .post(`${API_V1}/auth/google/token`)
+            .set("user-agent", "test-agent")
+            .send({ code: "test-code" });
 
-        expect(mockedFetch).toHaveBeenCalledTimes(1);
-        expect(mockedFetch).toHaveBeenCalledWith(GOOGLE_OATH_TOKEN_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-          body: new URLSearchParams({
-            code: "test-code",
-            grant_type: "authorization_code",
-            redirect_uri: GOOGLE_REDIRECT_URL,
-            client_id: serverEnv.googleClientId!,
-            client_secret: serverEnv.googleClientSecret!,
-          }),
+          expect(mockedFetch).toHaveBeenCalledTimes(1);
+          expect(mockedFetch).toHaveBeenCalledWith(GOOGLE_OATH_TOKEN_URL, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: new URLSearchParams({
+              code: "test-code",
+              grant_type: "authorization_code",
+              redirect_uri: GOOGLE_REDIRECT_URL,
+              client_id: serverEnv.googleClientId!,
+              client_secret: serverEnv.googleClientSecret!,
+            }),
+          });
+
+          expect(res.status).toBe(423);
+        });
+      });
+
+      describe("user should not be signed in", () => {
+        test("should return status 400 since no code was sent", async () => {
+          const mockedFetch = global.fetch as jest.MockedFunction<typeof fetch>;
+
+          mockedFetch.mockResolvedValue({
+            ok: true,
+            status: 200,
+            json: () => Promise.resolve({ id_token: "test-id-token" }),
+          } as unknown as Response);
+
+          const res = await request(createApp(mockRedis))
+            .post(`${API_V1}/auth/google/token`)
+            .set("user-agent", "test-agent")
+            .send({ code: null });
+
+          expect(res.status).toBe(400);
+          expect(res.body).toEqual({ message: MESSAGES.BAD_REQUEST });
         });
 
-        expect(res.status).toBe(200);
-      });
+        test("should return status 500 since no id token was provided by google", async () => {
+          const mockedFetch = global.fetch as jest.MockedFunction<typeof fetch>;
 
-      test("should return status 400 since no code was sent", async () => {
-        const mockedFetch = global.fetch as jest.MockedFunction<typeof fetch>;
+          mockedFetch.mockResolvedValue({
+            ok: true,
+            status: 200,
+            json: () => Promise.resolve({ id_token: null }),
+          } as unknown as Response);
 
-        mockedFetch.mockResolvedValue({
-          ok: true,
-          status: 200,
-          json: () => Promise.resolve({ id_token: "test-id-token" }),
-        } as unknown as Response);
+          const res = await request(createApp(mockRedis))
+            .post(`${API_V1}/auth/google/token`)
+            .set("user-agent", "test-agent")
+            .send({ code: "test-code" });
 
-        const res = await request(createApp(mockRedis))
-          .post(`${API_V1}/auth/google/token`)
-          .set("user-agent", "test-agent")
-          .send({ code: null });
-
-        expect(res.status).toBe(400);
-        expect(res.body).toEqual({ message: MESSAGES.BAD_REQUEST });
-      });
-
-      test("should return status 500 since no id token was provided by google", async () => {
-        const mockedFetch = global.fetch as jest.MockedFunction<typeof fetch>;
-
-        mockedFetch.mockResolvedValue({
-          ok: true,
-          status: 200,
-          json: () => Promise.resolve({ id_token: null }),
-        } as unknown as Response);
-
-        const res = await request(createApp(mockRedis))
-          .post(`${API_V1}/auth/google/token`)
-          .set("user-agent", "test-agent")
-          .send({ code: "test-code" });
-
-        expect(res.status).toEqual(500);
-        expect(res.body).toEqual({ message: MESSAGES.INTERNAL_SERVER_ERROR });
+          expect(res.status).toEqual(500);
+          expect(res.body).toEqual({ message: MESSAGES.INTERNAL_SERVER_ERROR });
+        });
       });
     });
   });
