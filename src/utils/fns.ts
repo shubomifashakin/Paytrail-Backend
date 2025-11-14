@@ -8,7 +8,7 @@ import { Budgets, Currencies, Months, TransactionType, Transactions } from "@pri
 
 import logger from "../lib/logger";
 
-import { MESSAGES, currencyData } from "./constants";
+import { MESSAGES, currencyData, dateTimeLocale } from "./constants";
 
 /**
  * Sleeps for a specified number of seconds.
@@ -109,8 +109,6 @@ export async function generatePdf(html: string, pdfOptions?: PDFOptions) {
 
   return pdf;
 }
-
-export const dateTimeLocale = "en-GB";
 const generatedAt = () => {
   return new Date().toLocaleString(dateTimeLocale, {
     year: "numeric",

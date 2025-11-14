@@ -172,3 +172,5 @@ export const currencyData: Record<keyof typeof Currencies, { name: string; symbo
   CVE: { name: "Cape Verdean Escudo", symbol: "CVE" },
   BND: { name: "Brunei Dollar", symbol: "B$" },
 };
+
+export const dateTimeLocale = "en-GB";
