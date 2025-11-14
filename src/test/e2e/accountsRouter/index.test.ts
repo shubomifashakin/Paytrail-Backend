@@ -31,6 +31,7 @@ const mockRedis = {
 } as unknown as RedisClientType;
 
 describe("Accounts Router", () => {
+  let userId: string;
   let sessionId: string;
 
   beforeAll(async () => {
@@ -63,7 +64,16 @@ describe("Accounts Router", () => {
       },
     });
 
+    userId = user.id;
     sessionId = session.id;
+  });
+
+  afterAll(async () => {
+    await prisma.user.deleteMany({
+      where: {
+        id: userId,
+      },
+    });
   });
 
   describe("DELETE /accounts/me", () => {
@@ -72,7 +82,19 @@ describe("Accounts Router", () => {
         .delete(`${API_V1}/accounts/me`)
         .set("Authorization", `Bearer ${sessionId}`);
 
+      const user = await prisma.user.findUnique({
+        where: {
+          id: userId,
+        },
+        select: {
+          sessions: true,
+          deletedAt: true,
+        },
+      });
+
       expect(response.statusCode).toBe(200);
+      expect(user?.deletedAt).toBeDefined();
+      expect(user?.sessions).toHaveLength(0);
 
       expect(deleteEndpoint).not.toHaveBeenCalled();
     });
