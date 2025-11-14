@@ -94,12 +94,12 @@ describe("Auth Router", () => {
   });
 
   describe("Google Oauth", () => {
-    describe("GET /auth/google", () => {
+    describe("GET /auth/google/authorize", () => {
       test("google sign in authorize request should be successfully redirected", async () => {
         const state = "fake-state";
 
         const res = await request(createApp(mockRedis))
-          .get(`${API_V1}/auth/google`)
+          .get(`${API_V1}/auth/google/authorize`)
           .query({ redirect_uri: serverEnv.appScheme, state });
 
         expect(res.status).toBe(302);
@@ -109,7 +109,7 @@ describe("Auth Router", () => {
         const state = "fake-state";
 
         const res = await request(createApp(mockRedis))
-          .get(`${API_V1}/auth/google`)
+          .get(`${API_V1}/auth/google/authorize`)
           .query({ state });
 
         expect(res.status).toBe(400);
@@ -122,7 +122,7 @@ describe("Auth Router", () => {
         const state = "fake-state";
 
         const res = await request(createApp(mockRedis))
-          .get(`${API_V1}/auth/google`)
+          .get(`${API_V1}/auth/google/authorize`)
           .query({ state, redirect_uri: "https://fake.com" });
 
         expect(res.status).toBe(400);

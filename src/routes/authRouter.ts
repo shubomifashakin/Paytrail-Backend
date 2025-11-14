@@ -18,7 +18,7 @@ function createAuthRouter({ redisClient }: { redisClient: RedisClientType }) {
 
   router.post("/apple", asyncHandler(signInWithApple));
   router.get(
-    "/google",
+    "/google/authorize",
     createRateLimiter({ redisClient, limit: 5, window: 60 }),
     asyncHandler(signInWithGoogle),
   );
