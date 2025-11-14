@@ -9,23 +9,25 @@ import { MESSAGES } from "../../utils/constants";
 import { normalizeRequestPath } from "../../utils/fns";
 
 export default async function deleteUserAccount(req: Request, res: Response) {
-  const user = await prisma.user.delete({
+  const user = await prisma.user.update({
     where: {
       id: req.user.id,
     },
+    data: {
+      deletedAt: new Date(),
+    },
     select: {
-      id: true,
-      email: true,
-      device: {
-        select: {
-          deviceToken: true,
-          platform: true,
-        },
-      },
+      device: true,
     },
   });
 
-  //not necessarilyy an error that warrants a 500
+  //revoke sessions
+  await prisma.session.deleteMany({
+    where: {
+      userId: req.user.id,
+    },
+  });
+
   if (user.device.length > 0) {
     await snsClient
       .send(

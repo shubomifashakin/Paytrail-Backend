@@ -190,6 +190,7 @@ model User {
   createdAt      DateTime
   currency       Currencies
   updatedAt      DateTime
+  deletedAt      DateTime?
   device         DeviceToken[]
   sessions       Session[]
   accounts       Account[]
@@ -199,6 +200,9 @@ model User {
   Transactions   Transactions[]
 
   @@unique([email])
+
+  @@index([email,deletedAt])
+  @@index([id,deletedAt])
   @@map("user")
 }
 
