@@ -166,7 +166,7 @@ describe("Auth Router", () => {
     });
 
     describe("POST /auth/google/token", () => {
-      test("google sign in token, user should be created and signed in successfully if no account exists", async () => {
+      test("user should be created and signed in successfully if no account exists", async () => {
         const mockedFetch = global.fetch as jest.MockedFunction<typeof fetch>;
 
         mockedFetch.mockResolvedValue({
@@ -198,7 +198,7 @@ describe("Auth Router", () => {
         expect(res.status).toBe(200);
       });
 
-      test("google sign in token, users previous sessions should be cancelled & signed in successfully if user already exists", async () => {
+      test("users previous sessions should be cancelled & signed in successfully if user already exists", async () => {
         const mockedFetch = global.fetch as jest.MockedFunction<typeof fetch>;
 
         mockedFetch.mockResolvedValue({
@@ -230,7 +230,7 @@ describe("Auth Router", () => {
         expect(res.status).toBe(200);
       });
 
-      test("google sign in token, should return status 400 since no code was sent", async () => {
+      test("should return status 400 since no code was sent", async () => {
         const mockedFetch = global.fetch as jest.MockedFunction<typeof fetch>;
 
         mockedFetch.mockResolvedValue({
@@ -248,7 +248,7 @@ describe("Auth Router", () => {
         expect(res.body).toEqual({ message: MESSAGES.BAD_REQUEST });
       });
 
-      test("google sign in token, should return status 500 since no id token was provided by google", async () => {
+      test("should return status 500 since no id token was provided by google", async () => {
         const mockedFetch = global.fetch as jest.MockedFunction<typeof fetch>;
 
         mockedFetch.mockResolvedValue({
