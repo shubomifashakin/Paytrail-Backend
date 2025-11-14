@@ -17,6 +17,7 @@ import {
   GOOGLE_TOKEN_ERROR,
   MESSAGES,
   SESSION_EXPIRY,
+  deleteDaysWindow,
 } from "../../../utils/constants";
 
 import { normalizeRequestPath } from "../../../utils/fns";
@@ -70,9 +71,39 @@ export default async function googleToken(req: Request, res: Response) {
 
   let user = await prisma.user.findUnique({
     where: {
-      email: claims.email!,
+      email: claims.email! as string,
     },
   });
+
+  if (user && user.deletedAt) {
+    const daysSinceDeletion = Math.floor(
+      (Date.now() - user.deletedAt.getTime()) / (1000 * 60 * 60 * 24),
+    );
+
+    if (daysSinceDeletion < deleteDaysWindow) {
+      return res.status(423).json({
+        deletionDate: user.deletedAt,
+        message: MESSAGES.ACCOUNT_PENDING_DELETION,
+      });
+    }
+
+    if (daysSinceDeletion >= deleteDaysWindow) {
+      await prisma.user.delete({
+        where: { email: claims.email! },
+      });
+
+      return res.status(404).json({ message: MESSAGES.ACCOUNT_DOES_NOT_EXIST });
+    }
+  }
+
+  //user should only have one active session
+  if (user) {
+    await prisma.session.deleteMany({
+      where: {
+        userId: user.id,
+      },
+    });
+  }
 
   if (!user) {
     user = await prisma.user.create({
@@ -142,12 +173,6 @@ export default async function googleToken(req: Request, res: Response) {
         userAgent: req.get("user-agent"),
       });
     }
-  } else {
-    await prisma.session.deleteMany({
-      where: {
-        userId: user.id,
-      },
-    });
   }
 
   const session = await prisma.session.create({

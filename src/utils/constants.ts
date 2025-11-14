@@ -21,9 +21,12 @@ export enum MESSAGES {
   EMAIL_ERROR = "Email Error",
   FAILED_TO_DELETE_ENDPOINT_ARN = "Failed to delete endpoint",
   FAILED_TO_CREATE_CONTACT = "Failed to create contact",
+  ACCOUNT_PENDING_DELETION = "Your account has been scheduled for deletion",
+  ACCOUNT_DOES_NOT_EXIST = "Account does not exist",
 }
 
 export const API_V1 = "/api/v1";
+export const deleteDaysWindow = 14;
 
 export const GOOGLE_OAUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 export const GOOGLE_OATH_TOKEN_URL = "https://oauth2.googleapis.com/token";
