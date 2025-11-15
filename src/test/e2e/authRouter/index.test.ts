@@ -295,6 +295,7 @@ describe("Auth Router", () => {
           });
 
           expect(res.status).toBe(423);
+          expect(res.body.email).toBe(deletedJoseUser.email);
         });
       });
 
