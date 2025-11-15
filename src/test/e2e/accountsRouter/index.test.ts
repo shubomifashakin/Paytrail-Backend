@@ -3,6 +3,18 @@ import { RedisClientType } from "redis";
 import request from "supertest";
 import { v4 as uuid } from "uuid";
 
+const sendMail = jest.fn().mockResolvedValue({
+  error: null,
+});
+const resend = jest.fn().mockImplementation(() => ({
+  emails: {
+    send: sendMail,
+  },
+}));
+jest.mock("resend", () => ({
+  Resend: resend,
+}));
+
 const deleteEndpoint = jest.fn().mockResolvedValue({});
 jest.mock("@aws-sdk/client-sns", () => ({
   SNSClient: jest.fn().mockImplementation(() => ({
