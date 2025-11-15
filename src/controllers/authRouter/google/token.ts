@@ -82,6 +82,7 @@ export default async function googleToken(req: Request, res: Response) {
 
     if (daysSinceDeletion < deleteDaysWindow) {
       return res.status(423).json({
+        email: user.email,
         deletionDate: user.deletedAt,
         message: MESSAGES.ACCOUNT_PENDING_DELETION,
       });
