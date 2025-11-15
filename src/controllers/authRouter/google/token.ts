@@ -88,12 +88,14 @@ export default async function googleToken(req: Request, res: Response) {
       });
     }
 
+    //if for some reason, our cleanup deleted users worker, has not deleted the user, just delete it
+    //then treat it as a fresh sign in/sign up
     if (daysSinceDeletion >= deleteDaysWindow) {
       await prisma.user.delete({
-        where: { email: claims.email! },
+        where: { id: user.id },
       });
 
-      return res.status(404).json({ message: MESSAGES.ACCOUNT_DOES_NOT_EXIST });
+      user = null;
     }
   }
 
@@ -189,7 +191,6 @@ export default async function googleToken(req: Request, res: Response) {
     },
   });
 
-  //return the user info back to the client
   const userResponse = {
     name: user.name,
     userId: user.id,
