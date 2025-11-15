@@ -5,6 +5,8 @@ import logger from "../lib/logger";
 
 import { getMonthIndex } from "./fns";
 
+export const emailValidator = z.email({ error: "Invalid email" });
+
 const dateValidator = z.iso.datetime({ error: "Invalid date" });
 
 const amountValidator = z.string().refine(

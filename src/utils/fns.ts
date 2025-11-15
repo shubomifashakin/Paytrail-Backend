@@ -29,11 +29,11 @@ export function logEmailError(
   type: string,
   user: { id: string; email: string },
   error: ErrorResponse,
-  req: Request | undefined,
+  req: Request,
 ) {
   logger.error(MESSAGES.EMAIL_ERROR, {
     type,
-    url: req?.url,
+    path: normalizeRequestPath(req),
     method: req?.method,
     name: error.name,
     userId: user.id,

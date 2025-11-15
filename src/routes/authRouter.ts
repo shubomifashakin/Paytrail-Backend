@@ -3,6 +3,7 @@ import { Router } from "express";
 
 import signInWithApple from "../controllers/authRouter/apple/signIn";
 
+import restoreAccount from "../controllers/authRouter/restoreAccount";
 import signInWithGoogle from "../controllers/authRouter/google/signIn";
 import signInWithGoogleCallback from "../controllers/authRouter/google/callback";
 import signInWithGoogleToken from "../controllers/authRouter/google/token";
@@ -24,6 +25,12 @@ function createAuthRouter({ redisClient }: { redisClient: RedisClientType }) {
   );
   router.get("/google/callback", asyncHandler(signInWithGoogleCallback));
   router.post("/google/token", asyncHandler(signInWithGoogleToken));
+
+  router.post(
+    "/restore",
+    createRateLimiter({ redisClient, limit: 5, window: 60 }),
+    asyncHandler(restoreAccount),
+  );
 
   router.post("/sign-out", isAuthorized, asyncHandler(signOut));
 

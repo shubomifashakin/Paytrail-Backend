@@ -17,6 +17,7 @@ import {
   GOOGLE_TOKEN_ERROR,
   MESSAGES,
   SESSION_EXPIRY,
+  deleteDaysWindow,
 } from "../../../utils/constants";
 
 import { normalizeRequestPath } from "../../../utils/fns";
@@ -70,9 +71,42 @@ export default async function googleToken(req: Request, res: Response) {
 
   let user = await prisma.user.findUnique({
     where: {
-      email: claims.email!,
+      email: claims.email! as string,
     },
   });
+
+  if (user && user.deletedAt) {
+    const daysSinceDeletion = Math.floor(
+      (Date.now() - user.deletedAt.getTime()) / (1000 * 60 * 60 * 24),
+    );
+
+    if (daysSinceDeletion < deleteDaysWindow) {
+      return res.status(423).json({
+        email: user.email,
+        deletionDate: user.deletedAt,
+        message: MESSAGES.ACCOUNT_PENDING_DELETION,
+      });
+    }
+
+    //if for some reason, our cleanup deleted users worker, has not deleted the user, just delete it
+    //then treat it as a fresh sign in/sign up
+    if (daysSinceDeletion >= deleteDaysWindow) {
+      await prisma.user.delete({
+        where: { id: user.id },
+      });
+
+      user = null;
+    }
+  }
+
+  //user should only have one active session
+  if (user) {
+    await prisma.session.deleteMany({
+      where: {
+        userId: user.id,
+      },
+    });
+  }
 
   if (!user) {
     user = await prisma.user.create({
@@ -142,12 +176,6 @@ export default async function googleToken(req: Request, res: Response) {
         userAgent: req.get("user-agent"),
       });
     }
-  } else {
-    await prisma.session.deleteMany({
-      where: {
-        userId: user.id,
-      },
-    });
   }
 
   const session = await prisma.session.create({
@@ -163,7 +191,6 @@ export default async function googleToken(req: Request, res: Response) {
     },
   });
 
-  //return the user info back to the client
   const userResponse = {
     name: user.name,
     userId: user.id,
