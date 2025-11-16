@@ -1,7 +1,7 @@
 import { RedisClientType } from "redis";
 import { Router } from "express";
 
-import signInWithApple from "../controllers/authRouter/apple/signIn";
+import signInWithApple from "../controllers/authRouter/apple/authorize";
 
 import restoreAccount from "../controllers/authRouter/restoreAccount";
 import signInWithGoogle from "../controllers/authRouter/google/signIn";
