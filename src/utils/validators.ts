@@ -5,6 +5,14 @@ import logger from "../lib/logger";
 
 import { getMonthIndex } from "./fns";
 
+export const signInWithAppleValidator = z.object({
+  nonce: z.string(),
+  idToken: z.string(),
+  email: z.string().nullable(),
+  firstName: z.string().nullable(),
+  lastName: z.string().nullable(),
+});
+
 export const emailValidator = z.email({ error: "Invalid email" });
 
 const dateValidator = z.iso.datetime({ error: "Invalid date" });

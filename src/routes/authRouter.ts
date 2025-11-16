@@ -17,7 +17,12 @@ import asyncHandler from "../utils/asyncHandler";
 function createAuthRouter({ redisClient }: { redisClient: RedisClientType }) {
   const router = Router();
 
-  router.post("/apple", asyncHandler(signInWithApple));
+  router.post(
+    "/apple/authorize",
+    createRateLimiter({ redisClient, limit: 5, window: 60 }),
+    asyncHandler(signInWithApple),
+  );
+
   router.get(
     "/google/authorize",
     createRateLimiter({ redisClient, limit: 5, window: 60 }),
