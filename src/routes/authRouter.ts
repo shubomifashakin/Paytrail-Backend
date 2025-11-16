@@ -19,7 +19,7 @@ function createAuthRouter({ redisClient }: { redisClient: RedisClientType }) {
 
   router.post(
     "/apple/authorize",
-    createRateLimiter({ redisClient, limit: 5, window: 60 }),
+    createRateLimiter({ redisClient, limit: 5, window: 30 }),
     asyncHandler(signInWithApple),
   );
 
