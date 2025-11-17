@@ -6,7 +6,7 @@ import prisma from "../../lib/prisma";
 import resend from "../../lib/resend";
 import snsClient from "../../lib/snsClient";
 
-import { MESSAGES, deleteDaysWindow, resendEmailFrom } from "../../utils/constants";
+import { MESSAGES, dateTimeLocale, deleteDaysWindow, resendEmailFrom } from "../../utils/constants";
 import { logEmailError, normalizeRequestPath } from "../../utils/fns";
 
 export default async function deleteUserAccount(req: Request, res: Response) {
@@ -25,13 +25,13 @@ export default async function deleteUserAccount(req: Request, res: Response) {
     },
   });
 
-  //revoke sessions
   await prisma.session.deleteMany({
     where: {
       userId: req.user.id,
     },
   });
 
+  const deletionDate = new Date(Date.now() + deleteDaysWindow * 24 * 60 * 60 * 1000);
   const { error: mailError } = await resend.emails.send({
     to: user.email,
     from: resendEmailFrom,
@@ -40,7 +40,7 @@ export default async function deleteUserAccount(req: Request, res: Response) {
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">  
           <p>Hello ${user.name || "there"},</p>
 
-          <p>Your account has been scheduled for deletion and will be permanently deleted in ${deleteDaysWindow} days. Until then, you can restore your account by signing back in to Paytrail.</p>
+          <p>Your account has been scheduled for deletion and will be permanently deleted on ${deletionDate.toLocaleString(dateTimeLocale)}. Until then, you can restore your account by signing back in to Paytrail.</p>
          
           <p>If you did not request this, please contact us at support@paytrail.app</p>
 
