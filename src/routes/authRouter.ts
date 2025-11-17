@@ -1,7 +1,7 @@
 import { RedisClientType } from "redis";
 import { Router } from "express";
 
-import signInWithApple from "../controllers/authRouter/apple/signIn";
+import signInWithApple from "../controllers/authRouter/apple/authorize";
 
 import restoreAccount from "../controllers/authRouter/restoreAccount";
 import signInWithGoogle from "../controllers/authRouter/google/signIn";
@@ -17,7 +17,12 @@ import asyncHandler from "../utils/asyncHandler";
 function createAuthRouter({ redisClient }: { redisClient: RedisClientType }) {
   const router = Router();
 
-  router.post("/apple", asyncHandler(signInWithApple));
+  router.post(
+    "/apple/authorize",
+    createRateLimiter({ redisClient, limit: 5, window: 30 }),
+    asyncHandler(signInWithApple),
+  );
+
   router.get(
     "/google/authorize",
     createRateLimiter({ redisClient, limit: 5, window: 60 }),

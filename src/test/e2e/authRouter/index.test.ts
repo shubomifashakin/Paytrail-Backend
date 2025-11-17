@@ -11,10 +11,10 @@ import {
   OAUTH_ERRORS,
 } from "../../../utils/constants";
 
-const fakeUUid = "fake-uuid";
-jest.mock("uuid", () => ({
-  v4: jest.fn().mockReturnValue(fakeUUid),
-}));
+// const fakeUUid = "fake-uuid";
+// jest.mock("uuid", () => ({
+//   v4: jest.fn().mockReturnValue(fakeUUid),
+// }));
 
 jest.mock("../../../lib/logger", () => ({
   warn: jest.fn(),
@@ -47,6 +47,68 @@ jest.mock("jose", () => ({
     .mockReturnValue(deletedJoseUser)
     .mockReturnValueOnce(joseDecodeValue)
     .mockReturnValueOnce(joseDecodeValue),
+
+  createRemoteJWKSet: jest.fn(() => {
+    return jest.fn();
+  }),
+
+  jwtVerify: jest
+    .fn()
+    .mockResolvedValue({
+      payload: {
+        iss: "apple-issuer",
+        nonce: "apple-nonce",
+        aud: "apple-aud",
+        sub: "apple-sub",
+        nonce_supported: true,
+        email: "apple@icloud.com",
+        email_verified: true,
+      },
+    })
+    .mockResolvedValueOnce({
+      payload: {
+        iss: "apple-issuer",
+        nonce: "apple-nonce",
+        aud: "apple-aud",
+        sub: "apple-sub",
+        nonce_supported: true,
+        // email: "apple@icloud.com",
+        email_verified: true,
+      },
+    })
+    .mockResolvedValueOnce({
+      payload: {
+        iss: "apple-issuer",
+        nonce: "apple-nonce",
+        aud: "apple-aud",
+        sub: "apple-sub",
+        nonce_supported: true,
+        email: "apple@icloud.com",
+        email_verified: true,
+      },
+    })
+    .mockResolvedValueOnce({
+      payload: {
+        // iss: "apple-issuer",
+        nonce: "apple-nonce",
+        aud: "apple-aud",
+        sub: "apple-sub",
+        nonce_supported: true,
+        email: "apple@icloud.com",
+        email_verified: true,
+      },
+    })
+    .mockResolvedValueOnce({
+      payload: {
+        iss: "apple-issuer",
+        nonce: "invalid-nonce",
+        aud: "apple-aud",
+        sub: "apple-sub",
+        nonce_supported: true,
+        email: "apple@icloud.com",
+        email_verified: true,
+      },
+    }),
 }));
 
 const mockRedis = {
@@ -73,10 +135,10 @@ import serverEnv from "../../../serverEnv";
 import prisma from "../../../lib/prisma";
 
 describe("Auth Router", () => {
-  let existingId: string;
+  let appleSessionId: string;
 
   beforeAll(async () => {
-    const user = await prisma.user.create({
+    await prisma.user.create({
       data: {
         id: deletedJoseUser.sub,
         name: deletedJoseUser.name,
@@ -89,34 +151,26 @@ describe("Auth Router", () => {
       },
       select: { id: true },
     });
-
-    existingId = user.id;
   });
 
   afterAll(async () => {
-    await prisma.user.delete({
+    await prisma.user.deleteMany({
       where: {
-        id: existingId,
+        email: deletedJoseUser.email,
       },
     });
 
     await prisma.user.deleteMany({
       where: {
-        id: fakeUUid,
-      },
-    });
-    await prisma.account.deleteMany({
-      where: {
-        id: fakeUUid,
-      },
-    });
-    await prisma.session.deleteMany({
-      where: {
-        id: fakeUUid,
+        email: joseDecodeValue.email,
       },
     });
 
-    await prisma.$disconnect();
+    await prisma.user.deleteMany({
+      where: {
+        email: "apple@icloud.com",
+      },
+    });
   });
 
   beforeEach(async () => {
@@ -339,15 +393,95 @@ describe("Auth Router", () => {
     });
   });
 
+  describe("Apple Oauth", () => {
+    describe("Apple Sign In", () => {
+      test("should not sign up due to absent email", async () => {
+        const res = await request(createApp(mockRedis))
+          .post(`${API_V1}/auth/apple/authorize`)
+          .set("user-agent", "test-agent")
+          .send({
+            nonce: "apple-nonce",
+            idToken: "test-id-token",
+            email: "apple@icloud.com",
+            lastName: "test-last-name",
+            firstName: "test-first-name",
+          });
+
+        expect(res.status).toBe(400);
+      });
+
+      test("should sign up successfully", async () => {
+        const res = await request(createApp(mockRedis))
+          .post(`${API_V1}/auth/apple/authorize`)
+          .set("user-agent", "test-agent")
+          .send({
+            nonce: "apple-nonce",
+            idToken: "test-id-token",
+            email: "apple@icloud.com",
+            lastName: "test-last-name",
+            firstName: "test-first-name",
+          });
+
+        appleSessionId = res.body.sessionId;
+
+        expect(res.status).toBe(200);
+      });
+
+      test("should not sign in due to invalid claims", async () => {
+        const res = await request(createApp(mockRedis))
+          .post(`${API_V1}/auth/apple/authorize`)
+          .set("user-agent", "test-agent")
+          .send({
+            nonce: "apple-nonce",
+            idToken: "test-id-token",
+            email: "apple@icloud.com",
+            lastName: "test-last-name",
+            firstName: "test-first-name",
+          });
+
+        expect(res.status).toBe(400);
+      });
+
+      test("should not sign in due to invalid nonce", async () => {
+        const res = await request(createApp(mockRedis))
+          .post(`${API_V1}/auth/apple/authorize`)
+          .set("user-agent", "test-agent")
+          .send({
+            nonce: "apple-nonce",
+            idToken: "test-id-token",
+            email: "apple@icloud.com",
+            lastName: "test-last-name",
+            firstName: "test-first-name",
+          });
+
+        expect(res.status).toBe(400);
+      });
+
+      test("should not sign in due to invalid req body", async () => {
+        const res = await request(createApp(mockRedis))
+          .post(`${API_V1}/auth/apple/authorize`)
+          .set("user-agent", "test-agent")
+          .send({
+            idToken: "test-id-token",
+            email: "apple@icloud.com",
+            firstName: "test-first-name",
+            lastName: "test-last-name",
+          });
+
+        expect(res.status).toBe(400);
+      });
+    });
+  });
+
   describe("Sign Out", () => {
-    test("should sign out successfully", async () => {
+    test("should sign out apple user successfully", async () => {
       const res = await request(createApp(mockRedis))
         .post(`${API_V1}/auth/sign-out`)
         .set("user-agent", "test-agent")
-        .set("authorization", `Bearer ${fakeUUid}`);
+        .set("authorization", `Bearer ${appleSessionId}`);
 
       const sessions = await prisma.session.findMany({
-        where: { id: fakeUUid },
+        where: { id: appleSessionId },
       });
 
       expect(sessions).toHaveLength(0);

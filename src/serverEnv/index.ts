@@ -11,6 +11,7 @@ const serverEnv = {
   appScheme: process.env.APP_SCHEME!,
   baseUrl: process.env.BASE_URL!,
   exchangeRateApiKey: process.env.EXCHANGE_RATE_API_KEY!,
+  appleBundleId: process.env.APPLE_BUNDLE_ID!,
 
   paytrailAWSRegion: process.env.PAYTRAIL_AWS_REGION!,
   paytrailAWSAccessKey: process.env.PAYTRAIL_AWS_ACCESS_KEY!,

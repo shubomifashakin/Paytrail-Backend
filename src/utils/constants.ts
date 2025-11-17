@@ -23,6 +23,7 @@ export enum MESSAGES {
   FAILED_TO_CREATE_CONTACT = "Failed to create contact",
   ACCOUNT_PENDING_DELETION = "Your account has been scheduled for deletion",
   ACCOUNT_DOES_NOT_EXIST = "Account does not exist",
+  APPLE_SIGN_IN_ERROR = "AppleSignInError:",
 }
 
 export const API_V1 = "/api/v1";
