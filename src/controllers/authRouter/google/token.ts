@@ -145,17 +145,17 @@ export default async function googleToken(req: Request, res: Response) {
             },
           ],
         },
-      },
-    });
-
-    await prisma.account.create({
-      data: {
-        id: uuid(),
-        accountId: claims.sub,
-        providerId: "google",
-        userId: user.id,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        accounts: {
+          create: [
+            {
+              id: uuid(),
+              accountId: claims.sub,
+              providerId: "google",
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            },
+          ],
+        },
       },
     });
 
