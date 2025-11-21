@@ -1,6 +1,6 @@
 services:
   redis:
-    image: redis:latest
+    image: redis:8.2.3
     container_name: paytrail_redis
     volumes:
       - redis_data:/data
@@ -39,7 +39,7 @@ services:
       - paytrail_logs:/var/log/paytrail
 
   grafana-alloy:
-    image: grafana/alloy:latest
+    image: grafana/alloy:v1.11.3
     container_name: paytrail_grafana_alloy
     command: >
       run
