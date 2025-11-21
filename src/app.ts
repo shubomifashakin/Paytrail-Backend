@@ -76,7 +76,7 @@ export default function createApp(redisClient: RedisClientType) {
 
   app.use(express.json());
 
-  if (serverEnv.environment !== "production") {
+  if (serverEnv.environment === "development") {
     setupSwagger(app);
   }
 
