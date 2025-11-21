@@ -10,6 +10,7 @@ COPY tsconfig.json ./
 COPY public ./public
 COPY prisma ./prisma
 COPY src ./src
+COPY documentation/openApi ./documentation/openApi
 
 RUN npx prisma generate
 RUN npm run build
@@ -33,6 +34,7 @@ RUN npm ci --omit=dev
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/public ./public
+COPY --from=builder /app/documentation ./documentation
 
 RUN npx prisma generate
 
