@@ -2,8 +2,6 @@ services:
   redis:
     image: redis:latest
     container_name: paytrail_redis
-    ports:
-      - "6379:6379"
     volumes:
       - redis_data:/data
       - "./redis.conf:/etc/redis/redis.conf"
@@ -19,8 +17,6 @@ services:
   paytrail:
     image: 545plea/paytrail-backend:latest
     container_name: paytrail
-    ports:
-      - "3000:3000"
     depends_on:
       - redis
     env_file:
@@ -45,8 +41,6 @@ services:
   grafana-alloy:
     image: grafana/alloy:latest
     container_name: paytrail_grafana_alloy
-    ports:
-      - "12345:12345"
     command: >
       run
       --server.http.listen-addr=0.0.0.0:12345
