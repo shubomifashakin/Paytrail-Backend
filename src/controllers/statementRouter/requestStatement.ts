@@ -63,7 +63,7 @@ export default async function requestStatement(req: Request, res: Response) {
     });
 
     if (!budgets.length) {
-      return res.status(404).json({ message: "No budgets found" });
+      return res.status(404).json({ message: MESSAGES.NOT_FOUND });
     }
 
     const budgetIds = budgets.map((budget) => budget.id);
@@ -254,7 +254,7 @@ export default async function requestStatement(req: Request, res: Response) {
     });
 
     if (!transactions.length) {
-      return res.status(404).json({ message: "No transactions found" });
+      return res.status(404).json({ message: MESSAGES.NOT_FOUND });
     }
 
     const pt = await generateTransactionsStatement({

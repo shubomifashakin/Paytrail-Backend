@@ -19,7 +19,7 @@ export default async function (req: Request, res: Response) {
       userAgent: req.get("user-agent"),
     });
 
-    return res.status(400).json({ message: error.issues });
+    return res.status(400).json({ message: MESSAGES.BAD_REQUEST });
   }
 
   await prisma.$transaction(async (tx) => {

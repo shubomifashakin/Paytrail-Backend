@@ -23,7 +23,7 @@ export default async function restoreAccount(req: Request, res: Response) {
       userAgent: req.get("user-agent"),
     });
 
-    return res.status(400).json({ error: emailValidation.error.message });
+    return res.status(400).json({ message: MESSAGES.BAD_REQUEST });
   }
 
   const user = await prisma.user.findUnique({
@@ -38,7 +38,7 @@ export default async function restoreAccount(req: Request, res: Response) {
   });
 
   if (!user) {
-    return res.status(404).json({ error: MESSAGES.NOT_FOUND });
+    return res.status(404).json({ message: MESSAGES.NOT_FOUND });
   }
 
   await prisma.user.update({
