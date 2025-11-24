@@ -27,7 +27,7 @@ components:
           format: date-time
         notificationType:
           type: string
-          enum: [paytrail, newsletter]
+          enum: [paytrail, article]
         image:
           type: string
           nullable: true
