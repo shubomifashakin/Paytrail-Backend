@@ -1,15 +1,7 @@
 import { RedisClientType } from "redis";
 import request from "supertest";
 
-import { NextFunction } from "express";
 import { v4 as uuid } from "uuid";
-
-jest.mock("../../../middlewares/rateLimiter", () => ({
-  __esModule: true,
-  default: jest
-    .fn()
-    .mockImplementation(() => (_req: Request, _res: Response, next: NextFunction) => next()),
-}));
 
 const mockRedisGet = jest
   .fn()

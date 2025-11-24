@@ -1,4 +1,3 @@
-import { NextFunction } from "express";
 import request from "supertest";
 
 import { RedisClientType } from "redis";
@@ -20,13 +19,6 @@ jest.mock("../../../lib/logger", () => ({
   warn: jest.fn(),
   info: jest.fn(),
   error: jest.fn(),
-}));
-
-jest.mock("../../../middlewares/rateLimiter", () => ({
-  __esModule: true,
-  default: jest
-    .fn()
-    .mockImplementation(() => (_req: Request, _res: Response, next: NextFunction) => next()),
 }));
 
 const joseDecodeValue = {

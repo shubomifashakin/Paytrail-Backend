@@ -1,4 +1,3 @@
-import { NextFunction } from "express";
 import { RedisClientType } from "redis";
 import request from "supertest";
 import { v4 as uuid } from "uuid";
@@ -23,13 +22,6 @@ jest.mock("@aws-sdk/client-sns", () => ({
     }),
   })),
   DeleteEndpointCommand: deleteEndpoint,
-}));
-
-jest.mock("../../../middlewares/rateLimiter", () => ({
-  __esModule: true,
-  default: jest
-    .fn()
-    .mockImplementation(() => (_req: Request, _res: Response, next: NextFunction) => next()),
 }));
 
 import { API_V1 } from "../../../utils/constants";

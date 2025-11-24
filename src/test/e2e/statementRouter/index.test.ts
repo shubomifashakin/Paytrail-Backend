@@ -5,15 +5,6 @@ import { RedisClientType } from "redis";
 
 import { API_V1, MESSAGES } from "../../../utils/constants";
 
-import { NextFunction } from "express";
-
-jest.mock("../../../middlewares/rateLimiter", () => ({
-  __esModule: true,
-  default: jest
-    .fn()
-    .mockImplementation(() => (_req: Request, _res: Response, next: NextFunction) => next()),
-}));
-
 const mockRedis = {
   get: jest.fn(),
   set: jest.fn(),

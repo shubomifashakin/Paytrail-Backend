@@ -14,9 +14,9 @@ import createBroadcastsRouter from "./routes/broadcasts";
 import createRateRouter from "./routes/ratesRouter";
 import createReceiptRouter from "./routes/receiptsRouter";
 import createStatementRouter from "./routes/statementRouter";
+import createSyncRouter from "./routes/syncRouter";
 import healthRouter from "./routes/healthRouter";
 import notificationRouter from "./routes/notifications";
-import syncRouter from "./routes/syncRouter";
 
 import errorMiddleware from "./middlewares/errorMiddleware";
 import isAuthorized from "./middlewares/isAuthorized";
@@ -97,7 +97,7 @@ export default function createApp(redisClient: RedisClientType) {
     }),
   );
 
-  app.use(`${API_V1}/sync`, syncRouter);
+  app.use(`${API_V1}/sync`, createSyncRouter({ redisClient }));
 
   app.use(`${API_V1}/statements`, isAuthorized, createStatementRouter({ redisClient }));
 

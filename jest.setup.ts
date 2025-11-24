@@ -1,4 +1,7 @@
 import dotenv from "dotenv";
+
+import { NextFunction } from "express";
+
 dotenv.config({ path: "./.env.test" });
 
 jest.mock("resend", () => ({
@@ -37,3 +40,10 @@ jest.mock("prom-client", () => {
     collectDefaultMetrics: jest.fn(),
   };
 });
+
+jest.mock("./src/middlewares/rateLimiter", () => ({
+  __esModule: true,
+  default: jest
+    .fn()
+    .mockImplementation(() => (_req: Request, _res: Response, next: NextFunction) => next()),
+}));
