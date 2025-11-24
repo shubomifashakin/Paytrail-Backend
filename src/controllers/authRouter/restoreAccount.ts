@@ -7,7 +7,7 @@ import resend from "../../lib/resend";
 import { emailValidator } from "../../utils/validators";
 import { logEmailError } from "../../utils/fns";
 import { normalizeRequestPath } from "../../utils/fns";
-import { MESSAGES, resendEmailFrom } from "../../utils/constants";
+import { MESSAGES, resendEmailFrom, supportMail } from "../../utils/constants";
 
 export default async function restoreAccount(req: Request, res: Response) {
   try {
@@ -50,7 +50,7 @@ export default async function restoreAccount(req: Request, res: Response) {
 
           <p>Your account has been restored, you can now log in to your account.</p>
          
-          <p>If you did not request this, please contact us at support@paytrail.app</p>
+          <p>If you did not request this, please contact us at ${supportMail}</p>
 
           <p>Best regards,<br>The PayTrail Team</p>
         </div>

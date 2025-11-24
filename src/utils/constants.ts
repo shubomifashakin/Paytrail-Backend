@@ -47,6 +47,7 @@ export const GOOGLE_SIGN_IN_ERROR = "GoogleSignInError:";
 export const GOOGLE_TOKEN_ERROR = "GoogleTokenError:";
 
 export const resendEmailFrom = "Paytrail <hello@notifications.paytrail.app>";
+export const supportMail = "support@paytrail.app";
 
 export const currencyData: Record<keyof typeof Currencies, { name: string; symbol: string }> = {
   USD: { name: "United States Dollar", symbol: "$" },

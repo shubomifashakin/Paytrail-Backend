@@ -6,7 +6,13 @@ import prisma from "../../lib/prisma";
 import resend from "../../lib/resend";
 import snsClient from "../../lib/snsClient";
 
-import { MESSAGES, dateTimeLocale, deleteDaysWindow, resendEmailFrom } from "../../utils/constants";
+import {
+  MESSAGES,
+  dateTimeLocale,
+  deleteDaysWindow,
+  resendEmailFrom,
+  supportMail,
+} from "../../utils/constants";
 import { logEmailError, normalizeRequestPath } from "../../utils/fns";
 
 export default async function deleteUserAccount(req: Request, res: Response) {
@@ -42,7 +48,7 @@ export default async function deleteUserAccount(req: Request, res: Response) {
 
           <p>Your account has been scheduled for deletion and will be permanently deleted on ${deletionDate.toLocaleString(dateTimeLocale)}. Until then, you can restore your account by signing back in to Paytrail.</p>
          
-          <p>If you did not request this, please contact us at support@paytrail.app</p>
+          <p>If you did not request this, please contact us at ${supportMail}</p>
 
           <p>Best regards,<br>The PayTrail Team</p>
         </div>
