@@ -10,51 +10,41 @@ import { normalizeRequestPath } from "../../utils/fns";
 import { MESSAGES, resendEmailFrom } from "../../utils/constants";
 
 export default async function restoreAccount(req: Request, res: Response) {
-  const { email } = req.body;
+  try {
+    const { email } = req.body;
 
-  const emailValidation = emailValidator.safeParse(email);
+    const { success, error } = emailValidator.safeParse(email);
 
-  if (!emailValidation.success) {
-    logger.warn(MESSAGES.BAD_REQUEST, {
-      path: normalizeRequestPath(req),
-      userId: req.user.id,
-      error: emailValidation.error.issues,
-      requestId: req.headers["request-id"],
-      userAgent: req.get("user-agent"),
+    if (!success) {
+      logger.warn(MESSAGES.BAD_REQUEST, {
+        path: normalizeRequestPath(req),
+        userId: req.user.id,
+        error: error.issues,
+        requestId: req.headers["request-id"],
+        userAgent: req.get("user-agent"),
+      });
+
+      return res.status(400).json({ message: MESSAGES.BAD_REQUEST });
+    }
+
+    const user = await prisma.user.update({
+      where: {
+        email,
+      },
+      data: {
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        name: true,
+      },
     });
 
-    return res.status(400).json({ message: MESSAGES.BAD_REQUEST });
-  }
-
-  const user = await prisma.user.findUnique({
-    where: {
-      email: emailValidation.data,
-    },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-    },
-  });
-
-  if (!user) {
-    return res.status(404).json({ message: MESSAGES.NOT_FOUND });
-  }
-
-  await prisma.user.update({
-    where: {
-      id: user.id,
-    },
-    data: {
-      deletedAt: null,
-    },
-  });
-
-  const { error: mailError } = await resend.emails.send({
-    to: user.email,
-    from: resendEmailFrom,
-    subject: "Your account has been restored",
-    html: `
+    const { error: mailError } = await resend.emails.send({
+      to: email,
+      from: resendEmailFrom,
+      subject: "Your account has been restored",
+      html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">  
           <p>Hello ${user.name || "there"},</p>
 
@@ -65,11 +55,18 @@ export default async function restoreAccount(req: Request, res: Response) {
           <p>Best regards,<br>The PayTrail Team</p>
         </div>
       `,
-  });
+    });
 
-  if (mailError) {
-    logEmailError("restoreAccount", user, mailError, req);
+    if (mailError) {
+      logEmailError("restoreAccount", { email, id: user.id }, mailError, req);
+    }
+
+    return res.status(200).json({ message: MESSAGES.SUCCESS });
+  } catch (error: any) {
+    if (error?.code === "P2025") {
+      return res.status(404).json({ message: MESSAGES.NOT_FOUND });
+    }
+
+    throw error;
   }
-
-  return res.status(200).json({ message: MESSAGES.SUCCESS });
 }
