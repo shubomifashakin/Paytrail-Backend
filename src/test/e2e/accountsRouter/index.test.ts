@@ -80,6 +80,38 @@ describe("Accounts Router", () => {
     });
   });
 
+  describe("PATCH /accounts/me", () => {
+    test("it should update the information of the created user", async () => {
+      const response = await request(createApp(mockRedis))
+        .patch(`${API_V1}/accounts/me`)
+        .send({ name: "New Name" })
+        .set("Authorization", `Bearer ${sessionId}`);
+
+      const user = await prisma.user.findUnique({
+        where: {
+          id: userId,
+        },
+        select: {
+          name: true,
+        },
+      });
+
+      expect(response.statusCode).toBe(200);
+      expect(user?.name).toBeDefined();
+      expect(user?.name).toBe("New Name");
+
+      expect(deleteEndpoint).not.toHaveBeenCalled();
+    });
+
+    test("it should fail to update the information of the created user due to invalid body", async () => {
+      const response = await request(createApp(mockRedis))
+        .patch(`${API_V1}/accounts/me`)
+        .set("Authorization", `Bearer ${sessionId}`);
+
+      expect(response.statusCode).toBe(400);
+    });
+  });
+
   describe("DELETE /accounts/me", () => {
     test("it should delete the created user", async () => {
       const response = await request(createApp(mockRedis))
