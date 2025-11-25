@@ -17,6 +17,14 @@ export const emailValidator = z.email({ error: "Invalid email" });
 
 const dateValidator = z.iso.datetime({ error: "Invalid date" });
 
+export const nameValidator = z
+  .string({ error: "Invalid name" })
+  .max(50, { error: "Name is too long" });
+
+export const userDetailsValidator = z.object({
+  name: nameValidator,
+});
+
 const amountValidator = z.string().refine(
   (arg) => {
     if (arg.length > 13) {
@@ -119,6 +127,7 @@ export const pushSchemaValidator = z
               { error: "Data not valid json" },
             )
             .transform((arg) => {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               return JSON.parse(arg) as any;
             }),
           operation: z.enum(["create", "update", "delete"]),

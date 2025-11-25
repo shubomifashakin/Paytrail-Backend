@@ -62,6 +62,7 @@ export default async function restoreAccount(req: Request, res: Response) {
     }
 
     return res.status(200).json({ message: MESSAGES.SUCCESS });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     if (error?.code === "P2025") {
       return res.status(404).json({ message: MESSAGES.NOT_FOUND });
