@@ -27,7 +27,7 @@ export default function createNotificationRouter({
   );
 
   router.post(
-    "/register",
+    "/devices",
     createRateLimiter({
       redisClient,
       limit: 10,

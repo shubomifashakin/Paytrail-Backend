@@ -100,7 +100,7 @@ describe("registerForPushNotifications", () => {
 
     test("it should register a push notification for android", async () => {
       const res = await request(createApp(mockRedis))
-        .post(`${API_V1}/notifications/register`)
+        .post(`${API_V1}/notifications/devices`)
         .set("Authorization", `Bearer ${sessionId}`)
         .set("Content-Type", "application/json")
         .send({
@@ -128,7 +128,7 @@ describe("registerForPushNotifications", () => {
 
     test("it should register a push notification for ios", async () => {
       const res = await request(createApp(mockRedis))
-        .post(`${API_V1}/notifications/register`)
+        .post(`${API_V1}/notifications/devices`)
         .set("Authorization", `Bearer ${sessionId}`)
         .set("Content-Type", "application/json")
         .send({
@@ -156,7 +156,7 @@ describe("registerForPushNotifications", () => {
 
     test("it should fail due to invalid post body", async () => {
       const res = await request(createApp(mockRedis))
-        .post(`${API_V1}/notifications/register`)
+        .post(`${API_V1}/notifications/devices`)
         .set("Authorization", `Bearer ${sessionId}`)
         .set("Content-Type", "application/json")
         .send({
@@ -182,7 +182,7 @@ describe("registerForPushNotifications", () => {
 
     test("it should register a push notification", async () => {
       const res = await request(createApp(mockRedis))
-        .post(`${API_V1}/notifications/register`)
+        .post(`${API_V1}/notifications/devices`)
         .set("Authorization", `Bearer ${sessionId}`)
         .set("Content-Type", "application/json")
         .send({
