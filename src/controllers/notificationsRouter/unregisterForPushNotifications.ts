@@ -12,9 +12,9 @@ import { pushTokenValidator } from "../../utils/validators";
 import logger from "../../lib/logger";
 
 export default async function registerForPushNotifications(req: Request, res: Response) {
-  const { deviceToken } = req.body;
+  const { pushToken } = req.body;
 
-  const { data, success, error } = pushTokenValidator.safeParse(deviceToken);
+  const { data, success, error } = pushTokenValidator.safeParse(pushToken);
 
   if (!success) {
     logger.warn(MESSAGES.BAD_REQUEST, {
