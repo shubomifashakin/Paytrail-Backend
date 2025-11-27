@@ -62,7 +62,7 @@ const config: Config = {
     "^.+\\.jsx?$": "babel-jest",
   },
 
-  transformIgnorePatterns: ["/node_modules/(?!jose/)"],
+  transformIgnorePatterns: ["/node_modules/(?!(jose|uuid)/)"],
 
   verbose: true,
 };

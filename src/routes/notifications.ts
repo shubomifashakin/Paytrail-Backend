@@ -3,6 +3,7 @@ import { Router } from "express";
 
 import getAllUserNotifications from "../controllers/notificationsRouter/getAllUserNotifications";
 import registerForPushNotifications from "../controllers/notificationsRouter/registerForPushNotifications";
+import unregisterForPushNotifications from "../controllers/notificationsRouter/unregisterForPushNotifications";
 
 import createRateLimiter from "../middlewares/rateLimiter";
 
@@ -27,7 +28,7 @@ export default function createNotificationRouter({
   );
 
   router.post(
-    "/register",
+    "/devices",
     createRateLimiter({
       redisClient,
       limit: 10,
@@ -35,6 +36,17 @@ export default function createNotificationRouter({
       keyGenerator: (req) => `${req.user.id}:${req.path}`,
     }),
     asyncHandler(registerForPushNotifications),
+  );
+
+  router.delete(
+    "/devices",
+    createRateLimiter({
+      redisClient,
+      limit: 10,
+      window: 60,
+      keyGenerator: (req) => `${req.user.id}:${req.path}`,
+    }),
+    asyncHandler(unregisterForPushNotifications),
   );
 
   return router;

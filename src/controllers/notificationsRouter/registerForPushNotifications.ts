@@ -43,9 +43,12 @@ export default async function registerForPushNotifications(req: Request, res: Re
     attributes: { Enabled: "true" },
   });
 
+  const subscriptionARN = await subscribeEndpointToTopic(endpointArn, serverEnv.broadcastTopicArn);
+
   await prisma.deviceToken.upsert({
     where: {
       userId: userId,
+      deviceToken: data.pushToken,
     },
     update: {
       platform: data.platform,
@@ -58,11 +61,9 @@ export default async function registerForPushNotifications(req: Request, res: Re
       platform: data.platform,
       deviceToken: data.pushToken,
       snsEndpointArn: endpointArn,
+      subscriptionArn: subscriptionARN,
     },
   });
-
-  //subscribe the user to the broadcast topic so we can broadcast notifications to all users
-  await subscribeEndpointToTopic(endpointArn, serverEnv.broadcastTopicArn);
 
   return res.status(200).json({ message: "success" });
 }
@@ -126,11 +127,18 @@ export async function createPlatformApplicationEndpoint({
 }
 
 export async function subscribeEndpointToTopic(endpointArn: string, topicArn: string) {
-  await snsClient.send(
+  const subscriptionARN = await snsClient.send(
     new SubscribeCommand({
       TopicArn: topicArn,
       Endpoint: endpointArn,
       Protocol: "application",
+      ReturnSubscriptionArn: true,
     }),
   );
+
+  if (!subscriptionARN.SubscriptionArn) {
+    throw new Error("Subscription ARN not returned");
+  }
+
+  return subscriptionARN.SubscriptionArn!;
 }

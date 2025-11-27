@@ -1,6 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
-  output   = "../node_modules/.prisma/client"
+  provider        = "prisma-client-js"
+  output          = "../node_modules/.prisma/client"
   previewFeatures = ["relationJoins"]
 }
 
@@ -166,14 +166,15 @@ enum Platforms {
 model DeviceToken {
   id             String    @id @default(uuid())
   platform       Platforms
-  deviceToken    String
+  deviceToken    String    @unique
   snsEndpointArn String
+  subscriptionArn String  
   enabled        Boolean
   lastUsedAt     DateTime
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @default(now())
 
-  userId String @unique
+  userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, snsEndpointArn])
@@ -200,9 +201,8 @@ model User {
   Transactions   Transactions[]
 
   @@unique([email])
-
-  @@index([email,deletedAt])
-  @@index([id,deletedAt])
+  @@index([email, deletedAt])
+  @@index([id, deletedAt])
   @@map("user")
 }
 
@@ -252,34 +252,34 @@ model Verification {
 }
 
 model Budgets {
-  id          String     @id
-  amount      Decimal    @db.Decimal(12, 2)
-  year        Int
-  budgetMonth Months
-  currency    Currencies
-  userId      String
-  period      Int
-  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt   DateTime
-  updatedAt   DateTime
-  Transactions        Transactions[]
+  id           String         @id
+  amount       Decimal        @db.Decimal(12, 2)
+  year         Int
+  budgetMonth  Months
+  currency     Currencies
+  userId       String
+  period       Int
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime
+  updatedAt    DateTime
+  Transactions Transactions[]
 
-  @@unique([userId,period])
+  @@unique([userId, period])
   @@unique([userId, budgetMonth, year])
   @@map("budgets")
 }
 
 model Categories {
-  id          String   @id
-  name        String   @db.VarChar(30)
-  color       String
-  emoji       String
-  description String   @db.VarChar(50)
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt   DateTime
-  updatedAt   DateTime
-  Transactions        Transactions[]
+  id           String         @id
+  name         String         @db.VarChar(30)
+  color        String
+  emoji        String
+  description  String         @db.VarChar(50)
+  userId       String
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime
+  updatedAt    DateTime
+  Transactions Transactions[]
 
   @@unique([userId, color])
   @@unique([userId, name])
@@ -288,16 +288,16 @@ model Categories {
 }
 
 model PaymentMethods {
-  id          String   @id
-  name        String   @db.VarChar(30)
-  color       String
-  emoji       String
-  description String   @db.VarChar(50)
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt   DateTime
-  updatedAt   DateTime
-  Transactions        Transactions[]
+  id           String         @id
+  name         String         @db.VarChar(30)
+  color        String
+  emoji        String
+  description  String         @db.VarChar(50)
+  userId       String
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime
+  updatedAt    DateTime
+  Transactions Transactions[]
 
   @@unique([userId, name])
   @@unique([userId, color])
@@ -310,11 +310,11 @@ model Transactions {
   amount Decimal @db.Decimal(12, 2)
 
   transactionDate DateTime
-  note            String?    @db.VarChar(50)
-  transactionType         TransactionType
+  note            String?         @db.VarChar(50)
+  transactionType TransactionType
   currency        Currencies
   categoryId      String
-  category        Categories @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  category        Categories      @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -330,6 +330,5 @@ model Transactions {
 
   @@index([budgetId, categoryId, currency])
   @@index([userId, transactionDate, currency])
-  
   @@map("transactions")
 }
