@@ -194,8 +194,10 @@ export const statementQueryValidator = z.object({
   statementType: z.enum(["transactions", "budgets"]),
 });
 
+export const pushTokenValidator = z.string({ error: "Invalid Push Token" });
+
 export const registerForPushNotificationsValidator = z.object({
-  pushToken: z.string({ error: "Invalid Push Token" }),
+  pushToken: pushTokenValidator,
   platform: z.enum(Platforms, { error: "Invalid Platform" }),
 });
 
