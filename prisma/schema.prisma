@@ -168,6 +168,7 @@ model DeviceToken {
   platform       Platforms
   deviceToken    String    @unique
   snsEndpointArn String
+  subscriptionArn String  
   enabled        Boolean
   lastUsedAt     DateTime
   createdAt      DateTime  @default(now())

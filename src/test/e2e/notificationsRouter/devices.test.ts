@@ -9,7 +9,7 @@ const mockRedis = {
   del: jest.fn(),
 } as unknown as RedisClientType;
 
-const subscribe = jest.fn().mockResolvedValue({});
+const subscribe = jest.fn().mockResolvedValue({ SubscriptionArn: "test-subscription-arn" });
 const setEndpointAttributes = jest.fn().mockResolvedValue({});
 const createPlatformApplicationEndpoint = jest
   .fn()
@@ -119,6 +119,7 @@ describe("registerForPushNotifications", () => {
         TopicArn: serverEnv.broadcastTopicArn,
         Endpoint: "test-endpoint-arn",
         Protocol: "application",
+        ReturnSubscriptionArn: true,
       });
       expect(subscribe).toHaveBeenCalledTimes(1);
 
@@ -147,6 +148,7 @@ describe("registerForPushNotifications", () => {
         TopicArn: serverEnv.broadcastTopicArn,
         Endpoint: "test-endpoint-arn",
         Protocol: "application",
+        ReturnSubscriptionArn: true,
       });
       expect(subscribe).toHaveBeenCalledTimes(1);
 
@@ -211,6 +213,7 @@ describe("registerForPushNotifications", () => {
         TopicArn: serverEnv.broadcastTopicArn,
         Endpoint: expect.any(String),
         Protocol: "application",
+        ReturnSubscriptionArn: true,
       });
       expect(subscribe).toHaveBeenCalledTimes(1);
 

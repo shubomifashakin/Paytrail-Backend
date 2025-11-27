@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 
-import { DeleteEndpointCommand } from "@aws-sdk/client-sns";
+import { DeleteEndpointCommand, NotFoundException, UnsubscribeCommand } from "@aws-sdk/client-sns";
 
 import prisma from "../../lib/prisma";
 import snsClient from "../../lib/snsClient";
@@ -12,8 +12,6 @@ import { pushTokenValidator } from "../../utils/validators";
 import logger from "../../lib/logger";
 
 export default async function registerForPushNotifications(req: Request, res: Response) {
-  const userId = req.user.id;
-
   const { deviceToken } = req.body;
 
   const { data, success, error } = pushTokenValidator.safeParse(deviceToken);
@@ -32,18 +30,26 @@ export default async function registerForPushNotifications(req: Request, res: Re
 
   const currentEndpointArn = await prisma.deviceToken.findUnique({
     where: {
-      userId: userId,
       deviceToken: data,
     },
     select: {
       snsEndpointArn: true,
+      subscriptionArn: true,
     },
   });
 
-  if (!currentEndpointArn?.snsEndpointArn) return res.status(200).json({ message: "success" });
+  if (!currentEndpointArn) return res.status(200).json({ message: "success" });
 
   await deleteEndpointArn({
     endpointArn: currentEndpointArn.snsEndpointArn,
+  });
+
+  await unsubscriptEndpointFromTopic({
+    subscriptionArn: currentEndpointArn.subscriptionArn,
+  }).catch((error) => {
+    if (!(error instanceof NotFoundException)) {
+      throw error;
+    }
   });
 
   await prisma.deviceToken.delete({
@@ -59,6 +65,18 @@ export async function deleteEndpointArn({ endpointArn }: { endpointArn: string }
   await snsClient.send(
     new DeleteEndpointCommand({
       EndpointArn: endpointArn,
+    }),
+  );
+}
+
+export async function unsubscriptEndpointFromTopic({
+  subscriptionArn,
+}: {
+  subscriptionArn: string;
+}) {
+  await snsClient.send(
+    new UnsubscribeCommand({
+      SubscriptionArn: subscriptionArn,
     }),
   );
 }
