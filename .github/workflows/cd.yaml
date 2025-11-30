@@ -65,7 +65,7 @@ jobs:
 
   deploy:
     name: Deploy to Production
-    needs: migrations
+    needs: [build]
     environment: production
     runs-on: ubuntu-latest
     timeout-minutes: 10
