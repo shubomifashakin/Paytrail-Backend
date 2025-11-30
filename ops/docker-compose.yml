@@ -38,39 +38,6 @@ services:
     volumes:
       - paytrail_logs:/var/log/paytrail
 
-  grafana-alloy:
-    image: grafana/alloy:v1.11.3
-    container_name: paytrail_grafana_alloy
-    command: >
-      run
-      --server.http.listen-addr=0.0.0.0:12345
-      --storage.path=/var/lib/alloy/data
-      /etc/alloy/config.alloy
-    volumes:
-      - paytrail_logs:/var/log/paytrail
-      - "./config.alloy:/etc/alloy/config.alloy"
-      - "./secrets/loki.txt:/var/secrets/loki-password.txt"
-      - "./secrets/prometheus.txt:/var/secrets/prometheus-password.txt"
-      - "./secrets/loki-username.txt:/var/secrets/loki-username.txt"
-      - "./secrets/prometheus-username.txt:/var/secrets/prometheus-username.txt"
-    restart: unless-stopped
-    mem_limit: 1g
-
-  nginx:
-    image: nginx:latest
-    container_name: paytrail_nginx
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - "./nginx.conf:/etc/nginx/nginx.conf"
-      - "./certs/paytrail.crt:/etc/nginx/paytrail.crt"
-      - "./certs/paytrail.key:/etc/nginx/paytrail.key"
-    depends_on:
-      - paytrail
-    restart: unless-stopped
-    mem_limit: 512m
-
 volumes:
   redis_data:
   paytrail_logs:
