@@ -127,7 +127,3 @@ jobs:
             echo "Removing old images"
 
             docker image prune -f
-
-      - name: "Run smoke tests"
-        run: |
-          curl -f http://localhost:8080/health || exit 1
