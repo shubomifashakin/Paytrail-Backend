@@ -5,6 +5,8 @@ services:
     volumes:
       - redis_data:/data
       - "./redis.conf:/etc/redis/redis.conf"
+    networks:
+      - paytrail_network
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -21,6 +23,8 @@ services:
       - redis
     env_file:
       - .env
+    networks:
+      - paytrail_network
     healthcheck:
       test:
         [
@@ -37,6 +41,11 @@ services:
     restart: unless-stopped
     volumes:
       - paytrail_logs:/var/log/paytrail
+
+networks:
+  paytrail_network:
+    external: true
+    name: system_wide_network
 
 volumes:
   redis_data:
