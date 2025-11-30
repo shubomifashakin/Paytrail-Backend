@@ -175,7 +175,7 @@ describe("Statement Router", () => {
             createdAt: new Date(),
             updatedAt: new Date(),
             year: 2025,
-            budgetMonth: "January",
+            budgetMonth: "january",
             period: 202500,
           },
           select: { id: true },
@@ -354,7 +354,7 @@ describe("Statement Router", () => {
             createdAt: new Date(),
             updatedAt: new Date(),
             year: 2025,
-            budgetMonth: "January",
+            budgetMonth: "january",
             period: 202500,
           },
           select: {
@@ -538,8 +538,8 @@ describe("Statement Router", () => {
             categories: [],
             currencies: ["FAKE-CURRENCY"],
             paymentMethods: [],
-            endDate: { endYear: 2025, endMonth: "January" },
-            startDate: { startYear: 2002, startMonth: "January" },
+            endDate: { endYear: 2025, endMonth: "january" },
+            startDate: { startYear: 2002, startMonth: "january" },
           });
 
         expect(res.status).toBe(400);
@@ -555,8 +555,8 @@ describe("Statement Router", () => {
             categories: [],
             currencies: ["FAKE-CURRENCY"],
             paymentMethods: [],
-            endDate: { year: 2025, month: "January" },
-            startDate: { year: 2002, month: "January" },
+            endDate: { year: 2025, month: "january" },
+            startDate: { year: 2002, month: "january" },
           });
 
         expect(res.status).toBe(401);
