@@ -92,6 +92,8 @@ jobs:
           script: |
             cd /home/${{ secrets.REMOTE_USER }}/projects/paytrail
 
+            OLD_IMAGE_TAG=$(docker inspect -f '{{.Config.Image}}' paytrail)
+
             echo "Pulling new Image"
 
             docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/paytrail-backend:latest
