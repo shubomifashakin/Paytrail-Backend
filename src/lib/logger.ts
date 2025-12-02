@@ -9,7 +9,7 @@ const fileTransport = new DailyRotateFile({
   zippedArchive: true,
   datePattern: "YYYY-MM-DD",
   level: serverEnv.logLevel,
-  dirname: "/var/log/paytrail",
+  dirname: "/logs",
   filename: "%DATE%.log",
 });
 
@@ -19,7 +19,7 @@ const errorTransport = new DailyRotateFile({
   zippedArchive: true,
   datePattern: "YYYY-MM-DD",
   level: "error",
-  dirname: "/var/log/paytrail",
+  dirname: "/logs",
   filename: "error-%DATE%.log",
 });
 
