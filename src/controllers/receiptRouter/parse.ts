@@ -90,7 +90,7 @@ export default function parseReceipt(register: Registry) {
 
     const endTimer = receiptProcessingTime.startTimer();
     try {
-      const { object, finishReason, warnings, usage, timeTaken } = await receiptParser.parse({
+      const { object, finishReason, warnings, usage } = await receiptParser.parse({
         categories,
         paymentMethods,
         files: fileContents,
@@ -109,7 +109,6 @@ export default function parseReceipt(register: Registry) {
 
       logger.info(MESSAGES.AI_GENERATION_USAGE, {
         usage,
-        timeTaken,
         path: normalizeRequestPath(req),
         userId: req.user.id,
         requestId: req.headers["request-id"],

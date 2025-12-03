@@ -74,7 +74,6 @@ export class ReceiptParser {
     categories: TextPart[];
     paymentMethods: TextPart[];
   }) {
-    const startTime = Date.now();
     const { object, finishReason, warnings, usage } = await generateObject({
       model: this.model,
       topP: 0.2,
@@ -93,8 +92,6 @@ export class ReceiptParser {
       ],
     });
 
-    const timeTaken = Date.now() - startTime;
-
-    return { object, finishReason, warnings, usage, timeTaken };
+    return { object, finishReason, warnings, usage };
   }
 }
