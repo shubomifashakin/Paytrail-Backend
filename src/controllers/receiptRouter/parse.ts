@@ -15,13 +15,13 @@ export default function parseReceipt(register: Registry) {
   const receiptsProcessedCounter = new Counter({
     name: "receipts_processed_total",
     help: "Total number of receipts processed",
-    labelNames: ["method", "path", "status"],
+    labelNames: ["filetype", "model"],
   });
 
   const receiptProcessingTime = new Histogram({
     name: "receipt_processing_seconds",
     help: "Time spent processing receipts",
-    labelNames: ["status"],
+    labelNames: ["status", "model"],
     buckets: [0.1, 0.5, 1, 2.5, 5, 10],
   });
 
@@ -36,7 +36,8 @@ export default function parseReceipt(register: Registry) {
   register.registerMetric(aiTokenUsage);
 
   return async (req: Request, res: Response) => {
-    if (!req.files?.length) {
+    const files = req.files as Express.Multer.File[];
+    if (!files.length) {
       logger.warn(MESSAGES.BAD_REQUEST, {
         path: normalizeRequestPath(req),
         error: "No files uploaded",
@@ -66,8 +67,6 @@ export default function parseReceipt(register: Registry) {
       });
     }
 
-    const files = req.files as Express.Multer.File[];
-
     const fileContents: FilePart[] = files.map((file) => {
       return { type: "file", filename: file.filename, mediaType: file.mimetype, data: file.buffer };
     });
@@ -86,7 +85,8 @@ export default function parseReceipt(register: Registry) {
       };
     });
 
-    const receiptParser = new ReceiptParser(google("gemini-2.5-flash-lite"));
+    const model = "gemini-2.5-flash-lite";
+    const receiptParser = new ReceiptParser(google(model));
 
     const endTimer = receiptProcessingTime.startTimer();
     try {
@@ -96,14 +96,15 @@ export default function parseReceipt(register: Registry) {
         files: fileContents,
       });
 
-      endTimer({ status: "success" });
-      aiTokenUsage.inc({ type: "prompt", model: "gemini-2.5-flash-lite" }, usage.inputTokens);
-      aiTokenUsage.inc({ type: "completion", model: "gemini-2.5-flash-lite" }, usage.outputTokens);
+      endTimer({ status: "success", model: model });
+      aiTokenUsage.inc({ type: "prompt", model: model }, usage.inputTokens);
+      aiTokenUsage.inc({ type: "completion", model: model }, usage.outputTokens);
 
-      receiptsProcessedCounter.inc({
-        method: req.method,
-        status: res.statusCode,
-        path: normalizeRequestPath(req),
+      files.forEach((file) => {
+        receiptsProcessedCounter.inc({
+          model: model,
+          filetype: file.mimetype,
+        });
       });
 
       logger.info(MESSAGES.AI_GENERATION_USAGE, {
@@ -144,7 +145,7 @@ export default function parseReceipt(register: Registry) {
         userId: req.user.id,
       });
     } catch (error) {
-      endTimer({ status: "error" });
+      endTimer({ status: "error", model });
 
       if (NoObjectGeneratedError.isInstance(error)) {
         logger.error(MESSAGES.AI_GENERATION_ERROR, {
