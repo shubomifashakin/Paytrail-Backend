@@ -22,7 +22,7 @@ export default function parseReceipt(register: Registry) {
     name: "receipt_processing_seconds",
     help: "Time spent processing receipts",
     labelNames: ["status", "model"],
-    buckets: [0.1, 0.5, 1, 2.5, 5, 10],
+    buckets: [0.1, 0.25, 0.5, 0.75, 1, 1.5, 2, 3, 5],
   });
 
   const aiTokenUsage = new Counter({
