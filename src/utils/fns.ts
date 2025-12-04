@@ -19,10 +19,9 @@ export async function sleep(seconds: number = 1) {
   return new Promise((resolve) => setTimeout(resolve, seconds * 1000));
 }
 
-export function normalizeRequestPath(req: Request) {
-  const finalString = req.baseUrl + req.path;
-
-  return finalString.replace(/\/api\/v\d+\//i, "");
+export function normalizeRequestPath(req: Request): string {
+  const fullPath = req.originalUrl.split("?")[0];
+  return fullPath || "/";
 }
 
 export function logEmailError(
