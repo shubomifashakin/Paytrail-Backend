@@ -21,7 +21,7 @@ export default function requestMetrics(register: Registry) {
     name: "http_request_size_bytes",
     help: "Size of HTTP requests in bytes",
     labelNames: ["method", "path"],
-    buckets: [100, 1000, 5000, 15000, 50000],
+    buckets: [100, 1000, 5000, 15000, 50000, 150000, 500000, 1500000, 5000000, 10000000, 15728640],
   });
 
   const httpResponseSizeBytes = new Histogram({
