@@ -1,7 +1,6 @@
 import { DeleteEndpointCommand } from "@aws-sdk/client-sns";
 import { Request, Response } from "express";
 
-import logger from "../../lib/logger";
 import prisma from "../../lib/prisma";
 import resend from "../../lib/resend";
 import snsClient from "../../lib/snsClient";
@@ -13,7 +12,7 @@ import {
   resendEmailFrom,
   supportMail,
 } from "../../utils/constants";
-import { logEmailError, normalizeRequestPath } from "../../utils/fns";
+import { logAuthenticatedError, logWarning } from "../../utils/fns";
 
 export default async function deleteUserAccount(req: Request, res: Response) {
   const user = await prisma.user.update({
@@ -56,7 +55,11 @@ export default async function deleteUserAccount(req: Request, res: Response) {
   });
 
   if (mailError) {
-    logEmailError("deleteAccount", user, mailError, req);
+    logWarning({
+      req,
+      message: MESSAGES.RESEND_ERROR,
+      reason: `Type:${mailError.name} Message:${mailError.message}`,
+    });
   }
 
   if (user.device.length > 0) {
@@ -67,11 +70,10 @@ export default async function deleteUserAccount(req: Request, res: Response) {
         }),
       )
       .catch(() => {
-        logger.error(MESSAGES.FAILED_TO_DELETE_ENDPOINT_ARN, {
-          userId: req.user.id,
-          requestId: req.headers["request-id"],
-          route: normalizeRequestPath(req),
-          userAgent: req.get("user-agent"),
+        logAuthenticatedError({
+          req,
+          reason: "Failed to delete endpoint ARN",
+          message: MESSAGES.FAILED_TO_DELETE_ENDPOINT_ARN,
         });
       });
   }

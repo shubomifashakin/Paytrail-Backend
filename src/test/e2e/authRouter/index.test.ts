@@ -7,7 +7,6 @@ import {
   GOOGLE_OATH_TOKEN_URL,
   GOOGLE_REDIRECT_URL,
   MESSAGES,
-  OAUTH_ERRORS,
 } from "../../../utils/constants";
 
 // const fakeUUid = "fake-uuid";
@@ -192,7 +191,7 @@ describe("Auth Router", () => {
 
         expect(res.status).toBe(400);
         expect(res.body).toEqual({
-          message: OAUTH_ERRORS.GOOGLE.INVALID_REDIRECT_URI,
+          message: MESSAGES.BAD_REQUEST,
         });
       });
 
@@ -205,7 +204,7 @@ describe("Auth Router", () => {
 
         expect(res.status).toBe(400);
         expect(res.body).toEqual({
-          message: OAUTH_ERRORS.GOOGLE.INVALID_REDIRECT_URI,
+          message: MESSAGES.BAD_REQUEST,
         });
       });
     });
@@ -227,7 +226,7 @@ describe("Auth Router", () => {
 
         expect(res.status).toBe(400);
         expect(res.body).toEqual({
-          message: OAUTH_ERRORS.GOOGLE.INVALID_CODE,
+          message: MESSAGES.BAD_REQUEST,
         });
       });
 
@@ -238,7 +237,7 @@ describe("Auth Router", () => {
 
         expect(res.status).toBe(400);
         expect(res.body).toEqual({
-          message: OAUTH_ERRORS.GOOGLE.INVALID_STATE,
+          message: MESSAGES.BAD_REQUEST,
         });
       });
     });

@@ -2,29 +2,21 @@ import { Request, Response } from "express";
 
 import serverEnv from "../../../serverEnv";
 
-import logger from "../../../lib/logger";
+import { GOOGLE_OAUTH_URL, GOOGLE_REDIRECT_URL, MESSAGES } from "../../../utils/constants";
 
-import {
-  GOOGLE_OAUTH_URL,
-  GOOGLE_REDIRECT_URL,
-  GOOGLE_SIGN_IN_ERROR,
-  OAUTH_ERRORS,
-} from "../../../utils/constants";
-
-import { normalizeRequestPath } from "../../../utils/fns";
+import { logUnauthenticatedError } from "../../../utils/fns";
 
 export default async function signInWithGoogle(req: Request, res: Response) {
   const redirectUri = req.query.redirect_uri as string;
 
   if (!redirectUri) {
-    logger.warn(`${GOOGLE_SIGN_IN_ERROR} Missing redirect_uri`, {
-      ipAddress: req.ip,
-      requestId: req.headers["request-id"],
-      path: normalizeRequestPath(req),
-      userAgent: req.get("user-agent"),
+    logUnauthenticatedError({
+      req,
+      reason: "Missing redirect_uri",
+      message: MESSAGES.GOOGLE_SIGN_IN_ERROR,
     });
 
-    return res.status(400).json({ message: OAUTH_ERRORS.GOOGLE.INVALID_REDIRECT_URI });
+    return res.status(400).json({ message: MESSAGES.BAD_REQUEST });
   }
 
   let platform;
@@ -37,15 +29,13 @@ export default async function signInWithGoogle(req: Request, res: Response) {
   ) {
     platform = "web";
   } else {
-    logger.warn(`${GOOGLE_SIGN_IN_ERROR} Invalid redirect_uri`, {
-      redirectUri,
-      ipAddress: req.ip,
-      requestId: req.headers["request-id"],
-      userAgent: req.get("user-agent"),
-      path: normalizeRequestPath(req),
+    logUnauthenticatedError({
+      req,
+      reason: "Invalid redirect_uri",
+      message: MESSAGES.GOOGLE_SIGN_IN_ERROR,
     });
 
-    return res.status(400).json({ message: OAUTH_ERRORS.GOOGLE.INVALID_REDIRECT_URI });
+    return res.status(400).json({ message: MESSAGES.BAD_REQUEST });
   }
 
   const scopes = [

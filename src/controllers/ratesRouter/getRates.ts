@@ -6,6 +6,7 @@ import logger from "../../lib/logger";
 import serverEnv from "../../serverEnv";
 
 import { MESSAGES } from "../../utils/constants";
+import { logAuthenticatedError } from "../../utils/fns";
 import { validateCurrency } from "../../utils/validators";
 
 export default function getRates({ redisClient }: { redisClient: RedisClientType }) {
@@ -15,13 +16,21 @@ export default function getRates({ redisClient }: { redisClient: RedisClientType
     const { success, error, data } = validateCurrency.safeParse(currency);
 
     if (!success) {
-      logger.warn(error.message);
+      logAuthenticatedError({
+        req,
+        reason: error.issues,
+        message: MESSAGES.BAD_REQUEST,
+      });
 
       return res.status(400).json({ message: MESSAGES.BAD_REQUEST });
     }
 
     const cachedRate = await redisClient.get(`rate:${currency}`).catch((err) => {
-      logger.error("Failed to get rate from cache", err);
+      logAuthenticatedError({
+        req,
+        reason: err,
+        message: MESSAGES.CACHE_FAILURE,
+      });
 
       return undefined;
     });
@@ -42,7 +51,12 @@ export default function getRates({ redisClient }: { redisClient: RedisClientType
 
     if (!rateReq.ok) {
       const rateData = (await rateReq.json()) as CurrencyConverterResponse;
-      logger.error("Failed to fetch rates from api", rateData.error_type);
+
+      logAuthenticatedError({
+        req,
+        message: MESSAGES.FETCH_FAILED,
+        reason: `Failed to fetch rates from currency api type: ${rateData.error_type}`,
+      });
 
       return res.status(500).json({ message: MESSAGES.INTERNAL_SERVER_ERROR });
     }
@@ -50,7 +64,11 @@ export default function getRates({ redisClient }: { redisClient: RedisClientType
     const rateData = (await rateReq.json()) as CurrencyConverterResponse;
 
     if (rateData.result !== "success") {
-      logger.error("Failed to fetch rates from api", rateData.error_type);
+      logAuthenticatedError({
+        req,
+        message: MESSAGES.FETCH_FAILED,
+        reason: `Currency api result failed: ${rateData.error_type}`,
+      });
 
       return res.status(500).json({ message: MESSAGES.INTERNAL_SERVER_ERROR });
     }
@@ -60,7 +78,11 @@ export default function getRates({ redisClient }: { redisClient: RedisClientType
         EX: 60 * 60 * 24 * 7,
       })
       .catch((err) => {
-        logger.error("Failed to set rate in cache", err);
+        logAuthenticatedError({
+          req,
+          reason: err,
+          message: MESSAGES.CACHE_FAILURE,
+        });
       });
 
     return res.status(200).json(rateData.conversion_rates);

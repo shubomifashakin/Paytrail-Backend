@@ -1,21 +1,20 @@
 import { NextFunction, Request, Response } from "express";
 
-import logger from "../lib/logger";
 import prisma from "../lib/prisma";
 
 import { MESSAGES } from "../utils/constants";
-import { normalizeRequestPath } from "../utils/fns";
+import { logUnauthenticatedWarning } from "../utils/fns";
 
 async function isAuthorized(req: Request, res: Response, next: NextFunction) {
   const sessionId = req.headers["authorization"]?.split(" ")[1];
 
   if (!sessionId) {
-    logger.warn(MESSAGES.UNAUTHORIZED, {
-      ipAddress: req.ip,
-      requestId: req.headers["request-id"],
-      path: normalizeRequestPath(req),
-      userAgent: req.get("user-agent"),
+    logUnauthenticatedWarning({
+      req,
+      reason: MESSAGES.UNAUTHORIZED,
+      message: MESSAGES.UNAUTHORIZED,
     });
+
     return res.status(401).json({ message: MESSAGES.UNAUTHORIZED });
   }
 
@@ -29,12 +28,12 @@ async function isAuthorized(req: Request, res: Response, next: NextFunction) {
   });
 
   if (!session) {
-    logger.warn(MESSAGES.UNAUTHORIZED, {
-      ipAddress: req.ip,
-      requestId: req.headers["request-id"],
-      path: normalizeRequestPath(req),
-      userAgent: req.get("user-agent"),
+    logUnauthenticatedWarning({
+      req,
+      reason: MESSAGES.UNAUTHORIZED,
+      message: MESSAGES.UNAUTHORIZED,
     });
+
     return res.status(401).json({ message: MESSAGES.UNAUTHORIZED });
   }
 

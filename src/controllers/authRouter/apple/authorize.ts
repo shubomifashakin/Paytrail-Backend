@@ -4,25 +4,22 @@ import { Request, Response } from "express";
 
 import { v4 as uuid } from "uuid";
 
-import logger from "../../../lib/logger";
 import prisma from "../../../lib/prisma";
 import resend from "../../../lib/resend";
 import serverEnv from "../../../serverEnv";
 
-import { normalizeRequestPath } from "../../../utils/fns";
 import { signInWithAppleValidator } from "../../../utils/validators";
 import { MESSAGES, SESSION_EXPIRY, deleteDaysWindow } from "../../../utils/constants";
+import { logUnauthenticatedError, logWarning } from "../../../utils/fns";
 
 export default async function signInWithApple(req: Request, res: Response) {
   const { data, success, error } = signInWithAppleValidator.safeParse(req.body);
 
   if (!success) {
-    logger.warn(`${MESSAGES.APPLE_SIGN_IN_ERROR} Invalid request body`, {
-      issues: error.issues,
-      ipAddress: req.ip,
-      requestId: req.headers["request-id"],
-      path: normalizeRequestPath(req),
-      userAgent: req.get("user-agent"),
+    logUnauthenticatedError({
+      req,
+      reason: error.issues,
+      message: MESSAGES.BAD_REQUEST,
     });
 
     return res.status(400).json({ message: MESSAGES.BAD_REQUEST });
@@ -36,24 +33,20 @@ export default async function signInWithApple(req: Request, res: Response) {
   });
 
   if (!payload?.iss || !payload?.nonce || !payload?.aud || !payload?.sub) {
-    logger.warn("invalid apple claims", {
-      payload,
-      ipAddress: req.ip,
-      requestId: req.headers["request-id"],
-      path: normalizeRequestPath(req),
-      userAgent: req.get("user-agent"),
+    logUnauthenticatedError({
+      req,
+      reason: "Invalid Apple Claims",
+      message: MESSAGES.APPLE_SIGN_IN_ERROR,
     });
 
     return res.status(400).json({ message: MESSAGES.BAD_REQUEST });
   }
 
   if (payload?.nonce_supported && payload.nonce !== data.nonce) {
-    logger.warn("invalid apple nonce", {
-      payload,
-      ipAddress: req.ip,
-      requestId: req.headers["request-id"],
-      path: normalizeRequestPath(req),
-      userAgent: req.get("user-agent"),
+    logUnauthenticatedError({
+      req,
+      reason: "Invalid Apple nonce",
+      message: MESSAGES.APPLE_SIGN_IN_ERROR,
     });
 
     return res.status(400).json({ message: MESSAGES.BAD_REQUEST });
@@ -65,12 +58,10 @@ export default async function signInWithApple(req: Request, res: Response) {
       .digest("base64url");
 
     if (computedNonce !== payload.nonce) {
-      logger.warn("invalid apple nonce", {
-        payload,
-        ipAddress: req.ip,
-        requestId: req.headers["request-id"],
-        path: normalizeRequestPath(req),
-        userAgent: req.get("user-agent"),
+      logUnauthenticatedError({
+        req,
+        reason: "Invalid Apple nonce",
+        message: MESSAGES.APPLE_SIGN_IN_ERROR,
       });
 
       return res.status(400).json({ message: MESSAGES.BAD_REQUEST });
@@ -123,12 +114,10 @@ export default async function signInWithApple(req: Request, res: Response) {
 
   if (!user) {
     if (!claims.email || !claims.email_verified) {
-      logger.warn("Invalid Apple Email", {
-        payload,
-        ipAddress: req.ip,
-        requestId: req.headers["request-id"],
-        path: normalizeRequestPath(req),
-        userAgent: req.get("user-agent"),
+      logUnauthenticatedError({
+        req,
+        reason: "Invalid or Empty Apple Email",
+        message: MESSAGES.APPLE_SIGN_IN_ERROR,
       });
 
       return res.status(400).json({ message: MESSAGES.BAD_REQUEST });
@@ -192,13 +181,12 @@ export default async function signInWithApple(req: Request, res: Response) {
     });
 
     if (error) {
-      logger.warn(MESSAGES.FAILED_TO_CREATE_CONTACT, {
-        errorName: error.name,
-        errorMessage: error.message,
-        ipAddress: req.ip,
-        requestId: req.headers["request-id"],
-        path: normalizeRequestPath(req),
-        userAgent: req.get("user-agent"),
+      req.user = user;
+
+      logWarning({
+        req,
+        message: MESSAGES.RESEND_ERROR,
+        reason: `Type:${error.name} Message:${error.message}`,
       });
     }
   }

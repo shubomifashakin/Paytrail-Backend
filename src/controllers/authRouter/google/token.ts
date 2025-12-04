@@ -7,30 +7,27 @@ import { v4 as uuid } from "uuid";
 
 import serverEnv from "../../../serverEnv";
 
-import logger from "../../../lib/logger";
 import prisma from "../../../lib/prisma";
 import resend from "../../../lib/resend";
 
 import {
   GOOGLE_OATH_TOKEN_URL,
   GOOGLE_REDIRECT_URL,
-  GOOGLE_TOKEN_ERROR,
   MESSAGES,
   SESSION_EXPIRY,
   deleteDaysWindow,
 } from "../../../utils/constants";
 
-import { normalizeRequestPath } from "../../../utils/fns";
+import { logUnauthenticatedError, logWarning } from "../../../utils/fns";
 
 export default async function googleToken(req: Request, res: Response) {
   const body = req.body;
 
   if (!body?.code || typeof body.code !== "string") {
-    logger.warn(`${GOOGLE_TOKEN_ERROR}: Invalid code`, {
-      ipAddress: req.ip,
-      requestId: req.headers["request-id"],
-      userAgent: req.get("user-agent"),
-      path: normalizeRequestPath(req),
+    logUnauthenticatedError({
+      req,
+      message: MESSAGES.GOOGLE_SIGN_IN_ERROR,
+      reason: "Invalid code",
     });
 
     return res.status(400).json({ message: MESSAGES.BAD_REQUEST });
@@ -55,11 +52,10 @@ export default async function googleToken(req: Request, res: Response) {
   const data = (await googleReq.json()) as { id_token: string };
 
   if (!data?.id_token) {
-    logger.error(`${GOOGLE_TOKEN_ERROR}: No id token provided`, {
-      ipAddress: req.ip,
-      requestId: req.headers["request-id"],
-      path: normalizeRequestPath(req),
-      userAgent: req.get("user-agent"),
+    logUnauthenticatedError({
+      req,
+      reason: "Invalid token",
+      message: MESSAGES.GOOGLE_SIGN_IN_ERROR,
     });
 
     return res.status(500).json({ message: MESSAGES.INTERNAL_SERVER_ERROR });
@@ -167,13 +163,12 @@ export default async function googleToken(req: Request, res: Response) {
     });
 
     if (error) {
-      logger.warn(MESSAGES.FAILED_TO_CREATE_CONTACT, {
-        errorName: error.name,
-        errorMessage: error.message,
-        ipAddress: req.ip,
-        requestId: req.headers["request-id"],
-        path: normalizeRequestPath(req),
-        userAgent: req.get("user-agent"),
+      req.user = user;
+
+      logWarning({
+        req,
+        reason: error,
+        message: MESSAGES.RESEND_ERROR,
       });
     }
   }

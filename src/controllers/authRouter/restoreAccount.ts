@@ -1,13 +1,11 @@
 import { Request, Response } from "express";
 
-import logger from "../../lib/logger";
 import prisma from "../../lib/prisma";
 import resend from "../../lib/resend";
 
 import { emailValidator } from "../../utils/validators";
-import { logEmailError } from "../../utils/fns";
-import { normalizeRequestPath } from "../../utils/fns";
 import { MESSAGES, resendEmailFrom, supportMail } from "../../utils/constants";
+import { logUnauthenticatedError, logWarning } from "../../utils/fns";
 
 export default async function restoreAccount(req: Request, res: Response) {
   try {
@@ -16,12 +14,10 @@ export default async function restoreAccount(req: Request, res: Response) {
     const { success, error } = emailValidator.safeParse(email);
 
     if (!success) {
-      logger.warn(MESSAGES.BAD_REQUEST, {
-        path: normalizeRequestPath(req),
-        userId: req.user.id,
-        error: error.issues,
-        requestId: req.headers["request-id"],
-        userAgent: req.get("user-agent"),
+      logUnauthenticatedError({
+        req,
+        reason: error.issues,
+        message: MESSAGES.BAD_REQUEST,
       });
 
       return res.status(400).json({ message: MESSAGES.BAD_REQUEST });
@@ -58,7 +54,11 @@ export default async function restoreAccount(req: Request, res: Response) {
     });
 
     if (mailError) {
-      logEmailError("restoreAccount", { email, id: user.id }, mailError, req);
+      logWarning({
+        req,
+        message: MESSAGES.RESEND_ERROR,
+        reason: `Type:${mailError.name} Message:${mailError.message}`,
+      });
     }
 
     return res.status(200).json({ message: MESSAGES.SUCCESS });

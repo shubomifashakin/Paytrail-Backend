@@ -25,17 +25,17 @@ function errorMiddleware(registry: Registry) {
       path: normalizeRequestPath(req),
     });
 
-    logger.error({
-      message: "Unhandled error",
-      name: err?.name,
-      statusCode,
+    logger.error("Unhandled error", {
       userId: req.user?.id,
+      errorName: err?.name || "Unknown Error",
+      stack: err?.stack,
       path: normalizeRequestPath(req),
+      requestId: req?.requestId || req.headers?.["x-request-id"],
+      userAgent: req.get("user-agent"),
+
+      statusCode,
       method: req?.method,
       ipAddress: req.ip,
-      userAgent: req.get("user-agent"),
-      stack: err?.stack,
-      requestId: req?.requestId || req.headers?.["x-request-id"],
     });
 
     return res.status(statusCode).json({

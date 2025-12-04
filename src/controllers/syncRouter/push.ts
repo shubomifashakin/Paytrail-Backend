@@ -1,22 +1,19 @@
 import { Request, Response } from "express";
 
-import logger from "../../lib/logger";
 import prisma from "../../lib/prisma";
 
 import { MESSAGES } from "../../utils/constants";
-import { normalizeRequestPath } from "../../utils/fns";
+import { logAuthenticatedError } from "../../utils/fns";
 import { pushSchemaValidator } from "../../utils/validators";
 
 export default async function (req: Request, res: Response) {
   const { success, error, data } = pushSchemaValidator.safeParse(req?.body);
 
   if (!success) {
-    logger.warn(MESSAGES.BAD_REQUEST, {
-      path: normalizeRequestPath(req),
-      error: error.issues,
-      userId: req.user.id,
-      requestId: req.headers["request-id"],
-      userAgent: req.get("user-agent"),
+    logAuthenticatedError({
+      req,
+      reason: error.issues,
+      message: MESSAGES.BAD_REQUEST,
     });
 
     return res.status(400).json({ message: MESSAGES.BAD_REQUEST });
