@@ -188,7 +188,7 @@ jobs:
               echo "No previous deployment was found!"
             fi
 
-            if [ -f docker-compose.yml ]; then
+            if [ -f docker-compose.yml ] && [ -d backups ]; then
               echo "Starting previous stable version"
 
               if ! docker compose up -d --wait --wait-timeout 120; then
