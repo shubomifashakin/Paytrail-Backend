@@ -48,7 +48,7 @@ jobs:
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          username: ${{ vars.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
       - name: Docker Setup Buildx
@@ -59,9 +59,9 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/paytrail-backend:latest,${{ secrets.DOCKER_HUB_USERNAME }}/paytrail-backend:${{ github.sha }}
-          cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/paytrail-backend:buildcache
-          cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/paytrail-backend:buildcache,mode=max
+          tags: ${{ vars.DOCKER_HUB_USERNAME }}/paytrail-backend:latest,${{ vars.DOCKER_HUB_USERNAME }}/paytrail-backend:${{ github.sha }}
+          cache-from: type=registry,ref=${{ vars.DOCKER_HUB_USERNAME }}/paytrail-backend:buildcache
+          cache-to: type=registry,ref=${{ vars.DOCKER_HUB_USERNAME }}/paytrail-backend:buildcache,mode=max
 
   deploy:
     name: Deploy to Staging
@@ -122,7 +122,7 @@ jobs:
 
             echo "Pulling new Paytrail Image"
 
-            if ! docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/paytrail-backend:latest; then
+            if ! docker pull ${{ vars.DOCKER_HUB_USERNAME }}/paytrail-backend:latest; then
                 echo "Failed to pull Docker image"
                 exit 1
             fi
@@ -179,7 +179,7 @@ jobs:
               PREV_SHA=$(cat .last_deployment_sha)
 
               echo "Pulling previous image: $PREV_SHA"
-              docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/paytrail-backend:$PREV_SHA || true
+              docker pull ${{ vars.DOCKER_HUB_USERNAME }}/paytrail-backend:$PREV_SHA || true
               
               echo "Replacing all paytrail-backend:latest with paytrail-backend:$PREV_SHA in docker-compose.yml"
 
@@ -188,14 +188,15 @@ jobs:
               echo "No previous deployment was found!"
             fi
 
-            echo "Starting previous stable version..."
+            if [ -f docker-compose.yml ]; then
+              echo "Starting previous stable version"
 
-            if ! docker-compose up -d --wait --wait-timeout 120; then
-              echo "Failed to start previous stable version"
-
-              docker-compose logs paytrail --tail=100
-              docker-compose logs paytrail_redis --tail=50
-              exit 1
+              if ! docker-compose up -d --wait --wait-timeout 120; then
+                echo "Failed to start previous stable version"
+                docker-compose logs paytrail --tail=100
+                docker-compose logs paytrail_redis --tail=50
+                exit 1
+              fi
             fi
 
             echo "=== ROLLBACK COMPLETED ==="
