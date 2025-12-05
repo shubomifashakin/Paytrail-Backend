@@ -169,6 +169,9 @@ jobs:
             echo "Stopping failed containers..."
             docker compose down
 
+            echo "Removing new files copied"
+            rm -rf redis.conf docker-compose.yml
+
             if [ -f backups/docker-compose.yml ]; then
               echo "Restoring docker-compose.yml from backup"
               cp backups/docker-compose.yml . || true
