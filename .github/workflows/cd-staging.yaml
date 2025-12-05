@@ -1,19 +1,15 @@
-name: Continuous Deployment Workflow
+name: Deploy to staging
 on:
   push:
     branches:
-      - master
-    paths:
-      - prisma/**
-      - src/**
-      - ops/**
-      - package*.json
-      - Dockerfile
+      - cicd
+
+  workflow_dispatch:
 
 jobs:
   migrations:
     name: "Apply Prisma Migrations"
-    environment: production
+    environment: staging
     runs-on: ubuntu-latest
     timeout-minutes: 10
     outputs:
@@ -42,7 +38,7 @@ jobs:
   build:
     name: "Build & Push Docker Image"
     needs: migrations
-    environment: production
+    environment: staging
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -68,9 +64,9 @@ jobs:
           cache-to: type=registry,ref=${{ vars.DOCKER_HUB_USERNAME }}/paytrail-backend:buildcache,mode=max
 
   deploy:
-    name: Deploy to Production
+    name: Deploy to Staging
     needs: [build]
-    environment: production
+    environment: staging
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -216,7 +212,7 @@ jobs:
     name: "Rollback Database Migrations"
     needs: [migrations, deploy]
     if: failure() && needs.migrations.outputs.migration_applied == 'true'
-    environment: production
+    environment: staging
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:

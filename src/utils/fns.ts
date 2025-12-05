@@ -1,4 +1,3 @@
-import { ErrorResponse } from "resend";
 import { Request } from "express";
 import fs from "fs";
 import path from "path";
@@ -8,7 +7,7 @@ import { Budgets, Currencies, Months, TransactionType, Transactions } from "@pri
 
 import logger from "../lib/logger";
 
-import { MESSAGES, currencyData, dateTimeLocale } from "./constants";
+import { currencyData, dateTimeLocale } from "./constants";
 
 /**
  * Sleeps for a specified number of seconds.
@@ -19,28 +18,92 @@ export async function sleep(seconds: number = 1) {
   return new Promise((resolve) => setTimeout(resolve, seconds * 1000));
 }
 
-export function normalizeRequestPath(req: Request) {
-  const finalString = req.baseUrl + req.path;
-
-  return finalString.replace(/\/api\/v\d+\//i, "");
+export function normalizeRequestPath(req: Request): string {
+  const fullPath = req.originalUrl.split("?")[0];
+  return fullPath || "/";
 }
 
-export function logEmailError(
-  type: string,
-  user: { id: string; email: string },
-  error: ErrorResponse,
-  req: Request,
-) {
-  logger.error(MESSAGES.EMAIL_ERROR, {
-    type,
+export function logWarning({
+  message,
+  req,
+  reason,
+}: {
+  reason: any;
+  req: Request;
+  message: string;
+}) {
+  logger.warn(message, {
+    reason,
+    userId: req.user.id,
     path: normalizeRequestPath(req),
-    method: req?.method,
-    name: error.name,
-    userId: user.id,
-    email: user.email,
-    message: error.message,
+    requestId: req.headers["request-id"],
+    userAgent: req.get("user-agent"),
   });
 }
+
+export function logUnauthenticatedWarning({
+  message,
+  req,
+  reason,
+}: {
+  reason: any;
+  req: Request;
+  message: string;
+}) {
+  logger.warn(message, {
+    reason,
+    ip: req.ip,
+    path: normalizeRequestPath(req),
+    requestId: req.headers["request-id"],
+    userAgent: req.get("user-agent"),
+  });
+}
+
+export function logAuthenticatedError({
+  message,
+  req,
+  reason,
+}: {
+  message: string;
+  req: Request;
+  reason: any;
+}) {
+  logger.error(message, {
+    reason,
+    userId: req.user.id,
+    path: normalizeRequestPath(req),
+    requestId: req.headers["request-id"],
+    userAgent: req.get("user-agent"),
+  });
+}
+
+export function logUnauthenticatedError({
+  message,
+  req,
+  reason,
+}: {
+  message: string;
+  req: Request;
+  reason: any;
+}) {
+  logger.error(message, {
+    reason,
+    ipAddress: req.ip,
+    path: normalizeRequestPath(req),
+    requestId: req.headers["request-id"],
+    userAgent: req.get("user-agent"),
+  });
+}
+
+// export function logInfoAuthenticated({ message, req }: { message: string; req: Request }) {
+//   logger.info(MESSAGES.AI_GENERATION_USAGE, {
+//     usage,
+//     userId: req.user.id,
+//     path: normalizeRequestPath(req),
+//     userAgent: req.get("user-agent"),
+//     requestId: req.headers["request-id"],
+//   });
+// }
 
 export function getMonthIndex(month: Months) {
   return Object.values(Months)

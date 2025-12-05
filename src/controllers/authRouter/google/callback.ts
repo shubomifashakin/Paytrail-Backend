@@ -1,34 +1,33 @@
 import { Request, Response } from "express";
 
-import logger from "../../../lib/logger";
 import serverEnv from "../../../serverEnv";
 
-import { normalizeRequestPath } from "../../../utils/fns";
-import { GOOGLE_SIGN_IN_ERROR, OAUTH_ERRORS } from "../../../utils/constants";
+import { MESSAGES } from "../../../utils/constants";
+import { logUnauthenticatedError } from "../../../utils/fns";
 
 export default async function signInWithGoogleCallback(req: Request, res: Response) {
   const code = req.query.code as string | null;
 
   if (!code) {
-    logger.warn(`${GOOGLE_SIGN_IN_ERROR} Missing code`, {
-      ipAddress: req.ip,
-      requestId: req.headers["request-id"],
-      path: normalizeRequestPath(req),
-      userAgent: req.get("user-agent"),
+    logUnauthenticatedError({
+      req,
+      reason: "Missing code",
+      message: MESSAGES.GOOGLE_SIGN_IN_ERROR,
     });
-    return res.status(400).json({ message: OAUTH_ERRORS.GOOGLE.INVALID_CODE });
+
+    return res.status(400).json({ message: MESSAGES.BAD_REQUEST });
   }
 
   const receivedState = req.query.state as string | null;
 
   if (!receivedState) {
-    logger.warn(`${GOOGLE_SIGN_IN_ERROR} Missing state`, {
-      ipAddress: req.ip,
-      requestId: req.headers["request-id"],
-      path: normalizeRequestPath(req),
-      userAgent: req.get("user-agent"),
+    logUnauthenticatedError({
+      req,
+      reason: "Missing state",
+      message: MESSAGES.GOOGLE_SIGN_IN_ERROR,
     });
-    return res.status(400).json({ message: OAUTH_ERRORS.GOOGLE.INVALID_STATE });
+
+    return res.status(400).json({ message: MESSAGES.BAD_REQUEST });
   }
 
   const [platform, state] = receivedState.split("|");

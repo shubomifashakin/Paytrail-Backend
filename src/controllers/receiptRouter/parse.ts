@@ -1,28 +1,27 @@
 import { google } from "@ai-sdk/google";
 import { Counter, Histogram, Registry } from "prom-client";
 
-import { FilePart, NoObjectGeneratedError, TextPart } from "ai";
+import { FilePart, TextPart } from "ai";
 import { Request, Response } from "express";
 
 import { ReceiptParser } from "../../lib/receiptParser";
-import logger from "../../lib/logger";
 
 import { MESSAGES } from "../../utils/constants";
-import { normalizeRequestPath } from "../../utils/fns";
 import { receiptParseRequestValidator } from "../../utils/validators";
+import { logAuthenticatedError, logWarning } from "../../utils/fns";
 
 export default function parseReceipt(register: Registry) {
   const receiptsProcessedCounter = new Counter({
     name: "receipts_processed_total",
     help: "Total number of receipts processed",
-    labelNames: ["method", "path", "status"],
+    labelNames: ["filetype", "model"],
   });
 
   const receiptProcessingTime = new Histogram({
     name: "receipt_processing_seconds",
     help: "Time spent processing receipts",
-    labelNames: ["status"],
-    buckets: [0.1, 0.5, 1, 2.5, 5, 10],
+    labelNames: ["status", "model"],
+    buckets: [0.1, 0.25, 0.5, 0.75, 1, 1.5, 2, 3, 5],
   });
 
   const aiTokenUsage = new Counter({
@@ -36,13 +35,12 @@ export default function parseReceipt(register: Registry) {
   register.registerMetric(aiTokenUsage);
 
   return async (req: Request, res: Response) => {
-    if (!req.files?.length) {
-      logger.warn(MESSAGES.BAD_REQUEST, {
-        path: normalizeRequestPath(req),
-        error: "No files uploaded",
-        userId: req.user.id,
-        requestId: req.headers["request-id"],
-        userAgent: req.get("user-agent"),
+    const files = req.files as Express.Multer.File[];
+    if (!files.length) {
+      logAuthenticatedError({
+        req,
+        reason: "No files uploaded",
+        message: MESSAGES.BAD_REQUEST,
       });
 
       return res.status(400).json({
@@ -53,20 +51,16 @@ export default function parseReceipt(register: Registry) {
     const { success, error, data } = receiptParseRequestValidator.safeParse(req.body);
 
     if (!success) {
-      logger.warn(MESSAGES.BAD_REQUEST, {
-        path: normalizeRequestPath(req),
-        error: error.issues,
-        userId: req.user.id,
-        requestId: req.headers["request-id"],
-        userAgent: req.get("user-agent"),
+      logAuthenticatedError({
+        req,
+        reason: error.issues,
+        message: MESSAGES.BAD_REQUEST,
       });
 
       return res.status(400).json({
         message: MESSAGES.BAD_REQUEST,
       });
     }
-
-    const files = req.files as Express.Multer.File[];
 
     const fileContents: FilePart[] = files.map((file) => {
       return { type: "file", filename: file.filename, mediaType: file.mimetype, data: file.buffer };
@@ -86,52 +80,41 @@ export default function parseReceipt(register: Registry) {
       };
     });
 
-    const receiptParser = new ReceiptParser(google("gemini-2.5-flash-lite"));
+    const model = "gemini-2.5-flash-lite";
+    const receiptParser = new ReceiptParser(google(model));
 
     const endTimer = receiptProcessingTime.startTimer();
     try {
-      const { object, finishReason, warnings, usage, timeTaken } = await receiptParser.parse({
+      const { object, finishReason, warnings, usage } = await receiptParser.parse({
         categories,
         paymentMethods,
         files: fileContents,
       });
 
-      endTimer({ status: "success" });
-      aiTokenUsage.inc({ type: "prompt", model: "gemini-2.5-flash-lite" }, usage.inputTokens);
-      aiTokenUsage.inc({ type: "completion", model: "gemini-2.5-flash-lite" }, usage.outputTokens);
+      endTimer({ status: "success", model: model });
+      aiTokenUsage.inc({ type: "prompt", model: model }, usage.inputTokens);
+      aiTokenUsage.inc({ type: "completion", model: model }, usage.outputTokens);
 
-      receiptsProcessedCounter.inc({
-        method: req.method,
-        status: res.statusCode,
-        path: normalizeRequestPath(req),
-      });
-
-      logger.info(MESSAGES.AI_GENERATION_USAGE, {
-        usage,
-        timeTaken,
-        path: normalizeRequestPath(req),
-        userId: req.user.id,
-        requestId: req.headers["request-id"],
-        userAgent: req.get("user-agent"),
+      files.forEach((file) => {
+        receiptsProcessedCounter.inc({
+          model: model,
+          filetype: file.mimetype,
+        });
       });
 
       if (warnings?.length) {
-        logger.warn(MESSAGES.AI_GENERATION_WARNINGS, {
-          warnings,
-          path: normalizeRequestPath(req),
-          userId: req.user.id,
-          requestId: req.headers["request-id"],
-          userAgent: req.get("user-agent"),
+        logWarning({
+          req,
+          reason: warnings,
+          message: MESSAGES.AI_GENERATION_WARNINGS,
         });
       }
 
       if (finishReason !== "stop") {
-        logger.warn(MESSAGES.AI_GENERATION_ENDED, {
-          path: normalizeRequestPath(req),
-          userId: req.user.id,
+        logWarning({
+          req,
           reason: finishReason,
-          requestId: req.headers["request-id"],
-          userAgent: req.get("user-agent"),
+          message: MESSAGES.AI_GENERATION_ENDED,
         });
 
         return res.status(500).json({
@@ -144,21 +127,7 @@ export default function parseReceipt(register: Registry) {
         userId: req.user.id,
       });
     } catch (error) {
-      endTimer({ status: "error" });
-
-      if (NoObjectGeneratedError.isInstance(error)) {
-        logger.error(MESSAGES.AI_GENERATION_ERROR, {
-          path: normalizeRequestPath(req),
-          error: error.message,
-          cause: error.cause,
-          variant: "NO_OBJECT_GENERATED",
-          text: error.text,
-          userId: req.user.id,
-          response: error.response,
-          requestId: req.headers["request-id"],
-          userAgent: req.get("user-agent"),
-        });
-      }
+      endTimer({ status: "error", model });
 
       throw error;
     }

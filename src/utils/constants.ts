@@ -20,10 +20,13 @@ export enum MESSAGES {
   AI_GENERATION_ERROR = "AI Generation Error",
   EMAIL_ERROR = "Email Error",
   FAILED_TO_DELETE_ENDPOINT_ARN = "Failed to delete endpoint",
-  FAILED_TO_CREATE_CONTACT = "Failed to create contact",
+  RESEND_ERROR = "RESEND ERROR",
   ACCOUNT_PENDING_DELETION = "Your account has been scheduled for deletion",
   ACCOUNT_DOES_NOT_EXIST = "Account does not exist",
   APPLE_SIGN_IN_ERROR = "AppleSignInError:",
+  GOOGLE_SIGN_IN_ERROR = "Google Sign In Error",
+  FETCH_FAILED = "Failed to fetch",
+  CACHE_FAILURE = "Cache Error",
 }
 
 export const API_V1 = "/api/v1";
@@ -34,17 +37,6 @@ export const GOOGLE_OATH_TOKEN_URL = "https://oauth2.googleapis.com/token";
 export const GOOGLE_REDIRECT_URL = `${serverEnv.baseUrl}${API_V1}/auth/google/callback`;
 
 export const SESSION_EXPIRY = 60 * 60 * 24 * 7;
-
-export const OAUTH_ERRORS = {
-  GOOGLE: {
-    INVALID_CODE: "Invalid code",
-    INVALID_STATE: "Invalid state",
-    INVALID_REDIRECT_URI: "Invalid redirect_uri",
-  },
-};
-
-export const GOOGLE_SIGN_IN_ERROR = "GoogleSignInError:";
-export const GOOGLE_TOKEN_ERROR = "GoogleTokenError:";
 
 export const resendEmailFrom = "Paytrail <hello@notifications.paytrail.app>";
 export const supportMail = "support@paytrail.app";

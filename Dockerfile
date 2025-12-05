@@ -4,6 +4,8 @@ WORKDIR /app
 
 COPY package*.json ./
 
+ENV PUPPETEER_SKIP_DOWNLOAD=true
+
 RUN npm ci
 
 COPY tsconfig.json ./
@@ -29,6 +31,9 @@ RUN apk add --no-cache \
 
 COPY package*.json ./
 
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+ENV PUPPETEER_SKIP_DOWNLOAD=true
+
 RUN npm ci --omit=dev
 
 COPY --from=builder /app/dist ./dist
@@ -37,9 +42,6 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/documentation ./documentation
 
 RUN npx prisma generate
-
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
-ENV PUPPETEER_SKIP_DOWNLOAD=true
 
 EXPOSE 3000
 CMD ["npm", "start"]

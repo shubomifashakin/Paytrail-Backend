@@ -6,10 +6,8 @@ import prisma from "../../lib/prisma";
 import snsClient from "../../lib/snsClient";
 
 import { MESSAGES } from "../../utils/constants";
-import { normalizeRequestPath } from "../../utils/fns";
+import { logAuthenticatedError } from "../../utils/fns";
 import { pushTokenValidator } from "../../utils/validators";
-
-import logger from "../../lib/logger";
 
 export default async function registerForPushNotifications(req: Request, res: Response) {
   const { pushToken } = req.body;
@@ -17,12 +15,10 @@ export default async function registerForPushNotifications(req: Request, res: Re
   const { data, success, error } = pushTokenValidator.safeParse(pushToken);
 
   if (!success) {
-    logger.warn(MESSAGES.BAD_REQUEST, {
-      path: normalizeRequestPath(req),
-      error: error.issues,
-      userId: req.user.id,
-      requestId: req.headers["request-id"],
-      userAgent: req.get("user-agent"),
+    logAuthenticatedError({
+      req,
+      reason: error.issues,
+      message: MESSAGES.BAD_REQUEST,
     });
 
     return res.status(400).json({ message: MESSAGES.BAD_REQUEST });

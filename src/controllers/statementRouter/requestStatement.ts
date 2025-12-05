@@ -1,8 +1,6 @@
 import { Currencies } from "@prisma/client";
 import { Request, Response } from "express";
 
-import logger from "../../lib/logger";
-
 import { MESSAGES, dateTimeLocale, resendEmailFrom } from "../../utils/constants";
 
 import { statementQueryValidator } from "../../utils/validators";
@@ -13,21 +11,19 @@ import resend from "../../lib/resend";
 import {
   generateBudgetStatement,
   generateTransactionsStatement,
-  logEmailError,
+  logAuthenticatedError,
+  logWarning,
   makeBudgetPeriod,
-  normalizeRequestPath,
 } from "../../utils/fns";
 
 export default async function requestStatement(req: Request, res: Response) {
   const { success, error, data } = statementQueryValidator.safeParse(req.body);
 
   if (!success) {
-    logger.warn(MESSAGES.BAD_REQUEST, {
-      path: normalizeRequestPath(req),
-      userId: req.user.id,
-      error: error.issues,
-      requestId: req.headers["request-id"],
-      userAgent: req.get("user-agent"),
+    logAuthenticatedError({
+      req,
+      reason: error.issues,
+      message: MESSAGES.BAD_REQUEST,
     });
 
     return res.status(400).json({ message: MESSAGES.BAD_REQUEST });
@@ -189,7 +185,11 @@ export default async function requestStatement(req: Request, res: Response) {
     });
 
     if (mailError) {
-      logEmailError("statement", req.user, mailError, req);
+      logWarning({
+        req,
+        message: MESSAGES.RESEND_ERROR,
+        reason: `Type:${mailError.name} Message:${mailError.message}`,
+      });
 
       return res.status(500).json({ message: MESSAGES.INTERNAL_SERVER_ERROR });
     }
@@ -289,7 +289,11 @@ export default async function requestStatement(req: Request, res: Response) {
     });
 
     if (mailError) {
-      logEmailError("statement", req.user, mailError, req);
+      logWarning({
+        req,
+        message: MESSAGES.RESEND_ERROR,
+        reason: `Type:${mailError.name} Message:${mailError.message}`,
+      });
 
       return res.status(500).json({ message: MESSAGES.INTERNAL_SERVER_ERROR });
     }
