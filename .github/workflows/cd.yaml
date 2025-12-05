@@ -92,14 +92,16 @@ jobs:
           script: |
             cd /home/${{ secrets.REMOTE_USER }}/projects/paytrail
 
-            OLD_IMAGE_TAG=$(docker inspect -f '{{.Config.Image}}' paytrail)
-
             echo "Pulling new Paytrail Image"
 
             docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/paytrail-backend:latest
 
             if [ ! $(docker-compose up -d --wait --wait-timeout 120) ]; then
               echo "Container failed to start"
+
+              echo "stopping new running container"
+              
+              docker-compose stop
 
               echo "Paytrail logs"
 
