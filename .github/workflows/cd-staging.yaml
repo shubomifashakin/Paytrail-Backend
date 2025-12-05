@@ -103,7 +103,7 @@ jobs:
       - name: Copy the Ops Files to the Server
         uses: Burnett01/rsync-deployments@7.1.0
         with:
-          switches: -avr --delete --exclude='.env*'
+          switches: -avr --exclude='.env*'
           path: ./ops/
           remote_path: /home/${{ secrets.REMOTE_USER }}/projects/paytrail/
           remote_host: ${{ secrets.HOSTNAME }}
