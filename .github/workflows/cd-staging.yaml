@@ -3,12 +3,7 @@ on:
   push:
     branches:
       - cicd
-    paths:
-      - prisma/**
-      - src/**
-      - ops/**
-      - package*.json
-      - Dockerfile
+
   workflow_dispatch:
 
 jobs:
