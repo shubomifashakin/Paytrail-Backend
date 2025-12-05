@@ -128,7 +128,7 @@ jobs:
             fi
 
             echo 'Starting new containers'
-            if docker-compose up -d --wait --wait-timeout 120; then
+            if docker compose up -d --wait --wait-timeout 120; then
               echo "Services are healthy"
 
               echo "updating last deployment sha"
@@ -142,10 +142,10 @@ jobs:
              echo "Services failed health check"
 
              echo "Paytrail Container Logs"
-             docker-compose logs paytrail --tail=100
+             docker compose logs paytrail --tail=100
 
              echo "Redis Container Logs"
-             docker-compose logs paytrail_redis --tail=50
+             docker compose logs paytrail_redis --tail=50
               
              exit 1
             fi
@@ -163,7 +163,7 @@ jobs:
             echo "=== INITIATING ROLLBACK ==="
 
             echo "Stopping failed containers..."
-            docker-compose down
+            docker compose down
 
             if [ -f backups/docker-compose.yml ]; then
               echo "Restoring docker-compose.yml from backup"
@@ -191,16 +191,16 @@ jobs:
             if [ -f docker-compose.yml ]; then
               echo "Starting previous stable version"
 
-              if ! docker-compose up -d --wait --wait-timeout 120; then
+              if ! docker compose up -d --wait --wait-timeout 120; then
                 echo "Failed to start previous stable version"
-                docker-compose logs paytrail --tail=100
-                docker-compose logs paytrail_redis --tail=50
+                docker compose logs paytrail --tail=100
+                docker compose logs paytrail_redis --tail=50
                 exit 1
               fi
             fi
 
             echo "=== ROLLBACK COMPLETED ==="
-            docker-compose ps
+            docker compose ps
 
             echo 'Clean ups'
             docker image prune -f
