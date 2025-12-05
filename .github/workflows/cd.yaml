@@ -16,6 +16,8 @@ jobs:
     environment: production
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    outputs:
+      migration_applied: ${{ steps.prisma-migrations.outputs.applied }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -31,7 +33,9 @@ jobs:
 
       - name: "Apply Prisma Migrations"
         id: prisma-migrations
-        run: npx prisma migrate deploy
+        run: |
+          npx prisma migrate deploy
+          echo "applied=true" >> $GITHUB_OUTPUT
         env:
           DATABASE_URL: ${{secrets.DATABASE_URL}}
 
@@ -73,6 +77,33 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
+      - name: Backup Current Configs
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.HOSTNAME }}
+          username: ${{ secrets.REMOTE_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /home/${{ secrets.REMOTE_USER }}/projects/paytrail
+
+            mkdir -p backups
+
+            if [ -f docker-compose.yml ]; then
+              if [ ! -f backups/docker-compose.yml ] || ! cmp -s docker-compose.yml backups/docker-compose.yml; then
+                cp docker-compose.yml backups/
+                echo "Backed up docker-compose.yml"
+              fi
+            fi
+
+            if [ -f redis.conf ]; then
+              if [ ! -f backups/redis.conf ] || ! cmp -s redis.conf backups/redis.conf; then
+                cp redis.conf backups/
+                echo "Backed up redis.conf"
+              fi
+            fi
+
+            echo "Pre deployment configuration backed up to backups/"
+
       - name: Copy the Ops Files to the Server
         uses: Burnett01/rsync-deployments@7.1.0
         with:
@@ -83,7 +114,8 @@ jobs:
           remote_user: ${{ secrets.REMOTE_USER }}
           remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: "Start the New Paytrail Container"
+      - name: "Deploy and Verify New Services"
+        id: deploy
         uses: appleboy/ssh-action@v1.2.2
         with:
           host: ${{ secrets.HOSTNAME }}
@@ -94,26 +126,114 @@ jobs:
 
             echo "Pulling new Paytrail Image"
 
-            docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/paytrail-backend:latest
+            if ! docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/paytrail-backend:latest; then
+                echo "Failed to pull Docker image"
+                exit 1
+            fi
 
-            if [ ! $(docker-compose up -d --wait --wait-timeout 120) ]; then
-              echo "Container failed to start"
+            echo 'Starting new containers'
+            if docker-compose up -d --wait --wait-timeout 120; then
+              echo "Services are healthy"
 
-              echo "stopping new running container"
+              echo "updating last deployment sha"
+              echo "${{ github.sha }}" > .last_deployment_sha
+
+              echo "Removing dangling Docker images"
+              docker image prune -f
+
+              exit 0
+            else
+             echo "Services failed health check"
+
+             echo "Paytrail Container Logs"
+             docker-compose logs paytrail --tail=100
+
+             echo "Redis Container Logs"
+             docker-compose logs paytrail_redis --tail=50
               
-              docker-compose stop
+             exit 1
+            fi
 
-              echo "Paytrail logs"
+      - name: "Rollback on Deployment Failure"
+        if: failure() && steps.deploy.outcome == 'failure'
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.HOSTNAME }}
+          username: ${{ secrets.REMOTE_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /home/${{ secrets.REMOTE_USER }}/projects/paytrail
 
-              docker-compose logs paytrail --tail=50
+            echo "=== INITIATING ROLLBACK ==="
 
-              echo "Redis logs"
+            echo "Stopping failed containers..."
+            docker-compose down
 
+            if [ -f backups/docker-compose.yml ]; then
+              echo "Restoring docker-compose.yml from backup"
+              cp backups/docker-compose.yml . || true
+            fi
+
+            if [ -f backups/redis.conf ]; then
+              echo "Restoring redis.conf from backup"
+              cp backups/redis.conf . || true
+            fi
+
+            if [ -f .last_deployment_sha ]; then
+              PREV_SHA=$(cat .last_deployment_sha)
+
+              echo "Pulling previous image: $PREV_SHA"
+              docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/paytrail-backend:$PREV_SHA || true
+              
+              echo "Replacing all paytrail-backend:latest with paytrail-backend:$PREV_SHA in docker-compose.yml"
+
+              sed -i "s|paytrail-backend:latest|paytrail-backend:$PREV_SHA|g" docker-compose.yml
+            else
+              echo "No previous deployment was found!"
+            fi
+
+            echo "Starting previous stable version..."
+
+            if ! docker-compose up -d --wait --wait-timeout 120; then
+              echo "Failed to start previous stable version"
+
+              docker-compose logs paytrail --tail=100
               docker-compose logs paytrail_redis --tail=50
-
               exit 1
             fi
 
-            echo "Removing old images"
+            echo "=== ROLLBACK COMPLETED ==="
+            docker-compose ps
 
+            echo 'Clean ups'
             docker image prune -f
+
+  rollback-migrations:
+    name: "Rollback Database Migrations"
+    needs: [migrations, deploy]
+    if: failure() && needs.migrations.outputs.migration_applied == 'true'
+    environment: production
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v5.0.0
+        with:
+          node-version: "24.11.0"
+          cache: "npm"
+
+      - name: "Install Dependencies"
+        run: npm ci
+
+      - name: "Rollback Migrations"
+        run: |
+          echo "⚠️  MANUAL INTERVENTION REQUIRED ⚠️"
+          echo "Deployment failed. Database migrations may need to be rolled back."
+          echo "Please review the migration state and rollback manually if needed."
+          echo "Current migration status:"
+          npx prisma migrate status || true
+        env:
+          DATABASE_URL: ${{secrets.DATABASE_URL}}
