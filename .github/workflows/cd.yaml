@@ -94,37 +94,23 @@ jobs:
 
             OLD_IMAGE_TAG=$(docker inspect -f '{{.Config.Image}}' paytrail)
 
-            echo "Pulling new Image"
+            echo "Pulling new Paytrail Image"
 
             docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/paytrail-backend:latest
 
-            echo "Stopping old Paytrail Container"
+            if [ ! $(docker-compose up -d --wait --wait-timeout 120) ]; then
+              echo "Container failed to start"
 
-            docker-compose stop paytrail
+              echo "Paytrail logs"
 
-            echo "Removing old Paytrail Container"
-
-            docker-compose rm -f paytrail
-
-            echo "Starting new Paytrail Container"
-
-            docker-compose up -d paytrail
-
-            echo "Waiting for paytrail container to be healthy..."
-            RETRY_COUNT=0
-            MAX_RETRIES=15
-            until docker-compose ps paytrail | grep -q "healthy" || [ $RETRY_COUNT -eq $MAX_RETRIES ]; do
-              echo "Waiting... ($RETRY_COUNT/$MAX_RETRIES)"
-              sleep 2
-              RETRY_COUNT=$((RETRY_COUNT + 1))
-            done
-
-            if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
-              echo "Container failed to become healthy"
               docker-compose logs paytrail --tail=50
+
+              echo "Redis logs"
+
+              docker-compose logs paytrail_redis --tail=50
+
               exit 1
             fi
-            echo "Container is healthy"
 
             echo "Removing old images"
 
