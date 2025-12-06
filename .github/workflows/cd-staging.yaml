@@ -230,7 +230,7 @@ jobs:
 
       - name: "Rollback Migrations"
         run: |
-          echo "⚠️  MANUAL INTERVENTION REQUIRED ⚠️"
+          echo "=== !! MANUAL INTERVENTION REQUIRED !! ==="
           echo "Deployment failed. Database migrations may need to be rolled back."
           echo "Please review the migration state and rollback manually if needed."
           echo "Current migration status:"
