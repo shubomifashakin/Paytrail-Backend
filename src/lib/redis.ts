@@ -6,6 +6,7 @@ import serverEnv from "../serverEnv";
 
 const redisClient = createClient({
   url: serverEnv.redis,
+  name: serverEnv.serviceName,
 })
   .on("ready", () => logger.info("Redis connection ready"))
   .on("end", () => logger.info("Redis connection closed"))
