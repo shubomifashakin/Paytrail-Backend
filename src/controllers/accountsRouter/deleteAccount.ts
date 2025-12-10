@@ -45,7 +45,7 @@ export default async function deleteUserAccount(req: Request, res: Response) {
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">  
           <p>Hello ${user.name || "there"},</p>
 
-          <p>Your account has been scheduled for deletion and will be permanently deleted on ${deletionDate.toLocaleString(dateTimeLocale)}. Until then, you can restore your account by signing back in to Paytrail.</p>
+          <p>Your account has been scheduled for deletion and will be permanently deleted on ${deletionDate.toLocaleString(dateTimeLocale, { timeZoneName: "short", hour12: true })}. Until then, you can restore your account by signing back in to Paytrail.</p>
          
           <p>If you did not request this, please contact us at ${supportMail}</p>
 
