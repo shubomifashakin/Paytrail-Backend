@@ -17,7 +17,7 @@ const receiptItem = z.object({
     .refine((date) => !isNaN(Date.parse(date)), { message: "Invalid date" })
     .nonoptional()
     .describe("Transaction Date in ISO format"),
-  note: z.string().min(1).max(100).nonoptional(),
+  note: z.string().min(5).max(50).nonoptional(),
   transactionType: z.enum(TransactionType).nonoptional(),
   currency: z.enum(Currencies).nonoptional(),
   categoryId: z.string().nonempty(),
