@@ -137,9 +137,9 @@ export default async function signInWithApple(req: Request, res: Response) {
           create: [
             {
               id: uuid(),
-              name: "Others",
+              name: "others",
               color: "#FF0000",
-              emoji: "🔄",
+              emoji: "🧩",
               description: "All other payment methods",
               createdAt: new Date(),
               updatedAt: new Date(),
@@ -150,9 +150,9 @@ export default async function signInWithApple(req: Request, res: Response) {
           create: [
             {
               id: uuid(),
-              name: "Others",
+              name: "others",
               color: "#FF0000",
-              emoji: "🔄",
+              emoji: "🧩",
               description: "All other categories",
               createdAt: new Date(),
               updatedAt: new Date(),
