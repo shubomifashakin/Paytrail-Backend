@@ -38,7 +38,7 @@ export const parsedReceiptSchema = z
 export const receiptParsingPrompt = `You are a system that parses receipts.
 You extract all the expenses or incomes from receipts/receipt-like files and categorize them based on the payment methods and categories provided.
 Get the name of the merchant/store from the receipt and use it as the merchant field.
-Use the name of each item purchased on the receipt as the respective note of the log.
+Use the name of each item purchased on the receipt as the respective note of the log, keep it less than 50 characters in total.
 Think about it before classifying something as an expense or income.
 
 Overview totalItemsPurchased: Extract the total number of items purchased from the receipt and use it as the totalItemsPurchased field.
