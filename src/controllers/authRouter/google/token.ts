@@ -13,6 +13,7 @@ import resend from "../../../lib/resend";
 import {
   GOOGLE_OATH_TOKEN_URL,
   GOOGLE_REDIRECT_URL,
+  IpLocatorResponse,
   MESSAGES,
   SESSION_EXPIRY,
   deleteDaysWindow,
@@ -63,8 +64,6 @@ export default async function googleToken(req: Request, res: Response) {
 
   const claims = jose.decodeJwt(data.id_token) as any;
 
-  const currency = Currencies.USD;
-
   let user = await prisma.user.findUnique({
     where: {
       email: claims.email! as string,
@@ -105,6 +104,32 @@ export default async function googleToken(req: Request, res: Response) {
   }
 
   if (!user) {
+    let usersCurrencyCode: IpLocatorResponse | undefined;
+
+    try {
+      const response = await fetch(
+        `https://api.ipgeolocation.io/v2/ipgeo?apiKey=${serverEnv.ipLocatorApiKey}&ip=${req.ip}`,
+        {
+          method: "GET",
+          redirect: "follow",
+        },
+      );
+
+      if (response.ok) {
+        usersCurrencyCode = (await response.json()) as IpLocatorResponse;
+      }
+    } catch (error) {
+      logUnauthenticatedError({
+        req,
+        reason: error,
+        message: "IPApiError",
+      });
+    }
+
+    const supportedCurrency = usersCurrencyCode?.currency?.code
+      ? Currencies[usersCurrencyCode.currency.code.toUpperCase() as Currencies] || Currencies.USD
+      : Currencies.USD;
+
     user = await prisma.user.create({
       data: {
         id: uuid(),
@@ -114,7 +139,7 @@ export default async function googleToken(req: Request, res: Response) {
         image: claims.picture!,
         createdAt: new Date(),
         updatedAt: new Date(),
-        currency: currency,
+        currency: supportedCurrency,
         PaymentMethods: {
           create: [
             {

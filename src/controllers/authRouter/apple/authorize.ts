@@ -10,42 +10,13 @@ import resend from "../../../lib/resend";
 import serverEnv from "../../../serverEnv";
 
 import { signInWithAppleValidator } from "../../../utils/validators";
-import { MESSAGES, SESSION_EXPIRY, deleteDaysWindow } from "../../../utils/constants";
+import {
+  IpLocatorResponse,
+  MESSAGES,
+  SESSION_EXPIRY,
+  deleteDaysWindow,
+} from "../../../utils/constants";
 import { logUnauthenticatedError, logWarning } from "../../../utils/fns";
-
-type IpLocatorResponse = {
-  ip: string;
-  location: {
-    continent_code: string;
-    continent_name: string;
-    country_code2: string;
-    country_code3: string;
-    country_name: string;
-    country_name_official: string;
-    country_capital: string;
-    state_prov: string;
-    state_code: string;
-    district: string;
-    city: string;
-    zipcode: string;
-    latitude: string;
-    longitude: string;
-    is_eu: false;
-    country_flag: string;
-    geoname_id: string;
-    country_emoji: string;
-  };
-  country_metadata: {
-    calling_code: string;
-    tld: string;
-    languages: string[];
-  };
-  currency: {
-    code: string;
-    name: string;
-    symbol: string;
-  };
-};
 
 export default async function signInWithApple(req: Request, res: Response) {
   const { data, success, error } = signInWithAppleValidator.safeParse(req.body);
