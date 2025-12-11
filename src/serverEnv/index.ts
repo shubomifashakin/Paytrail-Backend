@@ -24,6 +24,8 @@ const serverEnv = {
 
   userNotificationsTableARN: process.env.USER_NOTIFICATIONS_TABLE_ARN!,
   broadcastNotificationsTableARN: process.env.BROADCAST_NOTIFICATIONS_TABLE_ARN!,
+
+  ipLocatorApiKey: process.env.IP_API_KEY!,
 };
 
 export default serverEnv;

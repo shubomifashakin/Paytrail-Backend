@@ -1,4 +1,5 @@
 import * as jose from "jose";
+import { Currencies } from "@prisma/client";
 import { createHash } from "crypto";
 import { Request, Response } from "express";
 
@@ -9,7 +10,12 @@ import resend from "../../../lib/resend";
 import serverEnv from "../../../serverEnv";
 
 import { signInWithAppleValidator } from "../../../utils/validators";
-import { MESSAGES, SESSION_EXPIRY, deleteDaysWindow } from "../../../utils/constants";
+import {
+  IpLocatorResponse,
+  MESSAGES,
+  SESSION_EXPIRY,
+  deleteDaysWindow,
+} from "../../../utils/constants";
 import { logUnauthenticatedError, logWarning } from "../../../utils/fns";
 
 export default async function signInWithApple(req: Request, res: Response) {
@@ -123,6 +129,32 @@ export default async function signInWithApple(req: Request, res: Response) {
       return res.status(400).json({ message: MESSAGES.BAD_REQUEST });
     }
 
+    let usersCurrencyCode: IpLocatorResponse | undefined;
+
+    try {
+      const response = await fetch(
+        `https://api.ipgeolocation.io/v2/ipgeo?apiKey=${serverEnv.ipLocatorApiKey}&ip=${req.ip}`,
+        {
+          method: "GET",
+          redirect: "follow",
+        },
+      );
+
+      if (response.ok) {
+        usersCurrencyCode = (await response.json()) as IpLocatorResponse;
+      }
+    } catch (error) {
+      logUnauthenticatedError({
+        req,
+        reason: error,
+        message: "IPApiError",
+      });
+    }
+
+    const supportedCurrency = usersCurrencyCode?.currency?.code
+      ? Currencies[usersCurrencyCode.currency.code.toUpperCase() as Currencies] || Currencies.USD
+      : Currencies.USD;
+
     user = await prisma.user.create({
       data: {
         id: uuid(),
@@ -132,7 +164,7 @@ export default async function signInWithApple(req: Request, res: Response) {
         image: undefined,
         createdAt: new Date(),
         updatedAt: new Date(),
-        currency: "USD",
+        currency: supportedCurrency,
         PaymentMethods: {
           create: [
             {

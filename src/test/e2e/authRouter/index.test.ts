@@ -247,10 +247,16 @@ describe("Auth Router", () => {
         test("user should be created and signed in successfully if no account exists", async () => {
           const mockedFetch = global.fetch as jest.MockedFunction<typeof fetch>;
 
-          mockedFetch.mockResolvedValue({
+          mockedFetch.mockResolvedValueOnce({
             ok: true,
             status: 200,
             json: () => Promise.resolve({ id_token: "test-id-token" }),
+          } as unknown as Response);
+
+          mockedFetch.mockResolvedValue({
+            ok: true,
+            status: 200,
+            json: () => Promise.resolve({ currency: { code: "NGN" } }),
           } as unknown as Response);
 
           const res = await request(createApp(mockRedis))
@@ -258,7 +264,7 @@ describe("Auth Router", () => {
             .set("user-agent", "test-agent")
             .send({ code: "test-code" });
 
-          expect(mockedFetch).toHaveBeenCalledTimes(1);
+          expect(mockedFetch).toHaveBeenCalledTimes(2);
           expect(mockedFetch).toHaveBeenCalledWith(GOOGLE_OATH_TOKEN_URL, {
             method: "POST",
             headers: {
@@ -273,6 +279,11 @@ describe("Auth Router", () => {
             }),
           });
 
+          const userCurrency = await prisma.user.findFirst({
+            where: { email: "test@example.com" },
+            select: { currency: true },
+          });
+          expect(userCurrency?.currency).toBe("NGN");
           expect(res.status).toBe(200);
         });
 
