@@ -1,4 +1,5 @@
 import * as jose from "jose";
+import { Currencies } from "@prisma/client";
 import { createHash } from "crypto";
 import { Request, Response } from "express";
 
@@ -11,6 +12,40 @@ import serverEnv from "../../../serverEnv";
 import { signInWithAppleValidator } from "../../../utils/validators";
 import { MESSAGES, SESSION_EXPIRY, deleteDaysWindow } from "../../../utils/constants";
 import { logUnauthenticatedError, logWarning } from "../../../utils/fns";
+
+type IpLocatorResponse = {
+  ip: string;
+  location: {
+    continent_code: string;
+    continent_name: string;
+    country_code2: string;
+    country_code3: string;
+    country_name: string;
+    country_name_official: string;
+    country_capital: string;
+    state_prov: string;
+    state_code: string;
+    district: string;
+    city: string;
+    zipcode: string;
+    latitude: string;
+    longitude: string;
+    is_eu: false;
+    country_flag: string;
+    geoname_id: string;
+    country_emoji: string;
+  };
+  country_metadata: {
+    calling_code: string;
+    tld: string;
+    languages: string[];
+  };
+  currency: {
+    code: string;
+    name: string;
+    symbol: string;
+  };
+};
 
 export default async function signInWithApple(req: Request, res: Response) {
   const { data, success, error } = signInWithAppleValidator.safeParse(req.body);
@@ -123,6 +158,32 @@ export default async function signInWithApple(req: Request, res: Response) {
       return res.status(400).json({ message: MESSAGES.BAD_REQUEST });
     }
 
+    let usersCurrencyCode: IpLocatorResponse | undefined;
+
+    try {
+      const response = await fetch(
+        `https://api.ipgeolocation.io/v2/ipgeo?apiKey=${serverEnv.ipLocatorApiKey}&ip=${req.ip}`,
+        {
+          method: "GET",
+          redirect: "follow",
+        },
+      );
+
+      if (response.ok) {
+        usersCurrencyCode = (await response.json()) as IpLocatorResponse;
+      }
+    } catch (error) {
+      logUnauthenticatedError({
+        req,
+        reason: error,
+        message: "IPApiError",
+      });
+    }
+
+    const supportedCurrency = usersCurrencyCode?.currency?.code
+      ? Currencies[usersCurrencyCode.currency.code.toUpperCase() as Currencies] || Currencies.USD
+      : Currencies.USD;
+
     user = await prisma.user.create({
       data: {
         id: uuid(),
@@ -132,7 +193,7 @@ export default async function signInWithApple(req: Request, res: Response) {
         image: undefined,
         createdAt: new Date(),
         updatedAt: new Date(),
-        currency: "USD",
+        currency: supportedCurrency,
         PaymentMethods: {
           create: [
             {
