@@ -87,7 +87,7 @@ export async function createPlatformApplicationEndpoint({
     const res = await snsClient.send(
       new CreatePlatformEndpointCommand({
         Token: deviceToken,
-        CustomUserData: JSON.stringify({ userId }),
+        CustomUserData: userId,
         Attributes: attributes ?? { Enabled: "true" },
         PlatformApplicationArn: platformApplicationArn,
       }),
@@ -112,7 +112,7 @@ export async function createPlatformApplicationEndpoint({
           Attributes: {
             Enabled: "true",
             Token: deviceToken,
-            CustomUserData: JSON.stringify({ userId }),
+            CustomUserData: userId,
           },
         }),
       );
