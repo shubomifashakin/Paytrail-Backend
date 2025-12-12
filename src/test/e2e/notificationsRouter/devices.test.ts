@@ -116,7 +116,7 @@ describe("pushNotifications", () => {
 
       expect(createPlatformApplicationEndpoint).toHaveBeenCalledWith({
         Token: "test-token",
-        CustomUserData: JSON.stringify({ userId: userId }),
+        CustomUserData: userId,
         Attributes: { Enabled: "true" },
         PlatformApplicationArn: serverEnv.androidPlatformApplicationArn,
       });
@@ -145,7 +145,7 @@ describe("pushNotifications", () => {
 
       expect(createPlatformApplicationEndpoint).toHaveBeenCalledWith({
         Token: "test-token-ios",
-        CustomUserData: JSON.stringify({ userId: userId }),
+        CustomUserData: userId,
         Attributes: { Enabled: "true" },
         PlatformApplicationArn: serverEnv.iosPlatformApplicationArn,
       });
@@ -199,7 +199,7 @@ describe("pushNotifications", () => {
 
         expect(createPlatformApplicationEndpoint).toHaveBeenCalledWith({
           Token: "test-token",
-          CustomUserData: JSON.stringify({ userId: userId }),
+          CustomUserData: userId,
           Attributes: { Enabled: "true" },
           PlatformApplicationArn: serverEnv.androidPlatformApplicationArn,
         });
@@ -209,7 +209,7 @@ describe("pushNotifications", () => {
           Attributes: {
             Enabled: "true",
             Token: "test-token",
-            CustomUserData: JSON.stringify({ userId: userId }),
+            CustomUserData: userId,
           },
         });
         expect(setEndpointAttributes).toHaveBeenCalledTimes(1);
