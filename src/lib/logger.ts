@@ -5,7 +5,7 @@ import serverEnv from "../serverEnv";
 
 const fileTransport = new DailyRotateFile({
   maxSize: "5m",
-  maxFiles: "7d",
+  maxFiles: "3d",
   zippedArchive: true,
   datePattern: "YYYY-MM-DD",
   level: serverEnv.logLevel,
@@ -15,7 +15,7 @@ const fileTransport = new DailyRotateFile({
 
 const errorTransport = new DailyRotateFile({
   maxSize: "5m",
-  maxFiles: "7d",
+  maxFiles: "3d",
   zippedArchive: true,
   datePattern: "YYYY-MM-DD",
   level: "error",
