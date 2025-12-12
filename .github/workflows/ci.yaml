@@ -1,0 +1,77 @@
+name: CI Workflow
+
+on:
+  push:
+    branches:
+      - dev
+  workflow_dispatch:
+
+env:
+  DATABASE_URL: ${{secrets.DATABASE_URL}}
+
+jobs:
+  tests:
+    name: "Run Tests"
+    environment: development
+    services:
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres_123
+          POSTGRES_DB: paytrail_postgres
+        # health checks to ensure postgres container is ready
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    defaults:
+      run:
+        shell: bash
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        name: "Checkout Repository"
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v5.0.0
+        with:
+          node-version: "24.11.0"
+          cache: "npm"
+
+      - name: "Write .env.test file"
+        run: echo "${{ secrets.ENV_TEST_FILE }}" > .env.test
+
+      - name: "Install Dependencies"
+        run: npm ci
+
+      - name: "Prisma Migrations"
+        run: npx prisma migrate dev
+
+      - name: "Run Tests"
+        run: npm run test
+
+  lint:
+    name: "Run Linter"
+    defaults:
+      run:
+        shell: bash
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        name: "Checkout Repository"
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v5.0.0
+        with:
+          node-version: "24.11.0"
+          cache: "npm"
+
+      - name: "Install Dependencies"
+        run: npm ci
+
+      - name: "Run Linter"
+        run: npm run lint

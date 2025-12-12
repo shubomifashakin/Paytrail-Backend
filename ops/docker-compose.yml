@@ -1,0 +1,51 @@
+services:
+  redis:
+    image: redis:8.2.3
+    container_name: paytrail_redis
+    volumes:
+      - redis_data:/data
+      - "./redis.conf:/etc/redis/redis.conf"
+    networks:
+      - paytrail_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    command: ["redis-server", "/etc/redis/redis.conf"]
+    restart: unless-stopped
+    mem_limit: 512m
+
+  paytrail:
+    image: 545plea/paytrail-backend:latest
+    container_name: paytrail
+    depends_on:
+      - redis
+    env_file:
+      - .env
+    networks:
+      - paytrail_network
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:3000/health",
+        ]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+    volumes:
+      - ./logs:/logs
+
+networks:
+  paytrail_network:
+    external: true
+    name: system_wide_network
+
+volumes:
+  redis_data:

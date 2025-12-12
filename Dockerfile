@@ -1,0 +1,47 @@
+FROM node:24.11.0 AS builder
+
+WORKDIR /app
+
+COPY package*.json ./
+
+ENV PUPPETEER_SKIP_DOWNLOAD=true
+
+RUN npm ci
+
+COPY tsconfig.json ./
+COPY public ./public
+COPY prisma ./prisma
+COPY src ./src
+COPY documentation/openApi ./documentation/openApi
+
+RUN npx prisma generate
+RUN npm run build
+
+FROM node:24.11.0-alpine AS runner
+
+WORKDIR /app
+
+RUN apk add --no-cache \
+  chromium \
+  nss \
+  freetype \
+  harfbuzz \
+  ca-certificates \
+  ttf-freefont
+
+COPY package*.json ./
+
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+ENV PUPPETEER_SKIP_DOWNLOAD=true
+
+RUN npm ci --omit=dev
+
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/documentation ./documentation
+
+RUN npx prisma generate
+
+EXPOSE 3000
+CMD ["npm", "start"]

@@ -1,27 +1,56 @@
 import { NextFunction, Request, Response } from "express";
 
-import { User } from "@prisma/client";
+import prisma from "../lib/prisma";
 
-import auth from "../lib/auth";
-import logger from "../lib/logger";
+import { logUnauthenticatedWarning } from "../utils/fns";
+import { MESSAGES, SESSION_EXPIRY_MS } from "../utils/constants";
 
-import { MESSAGES } from "../utils/constants";
-
-//checks if theres a valid session for the user that made the request
 async function isAuthorized(req: Request, res: Response, next: NextFunction) {
-  try {
-    const session = await auth.api.getSession({ headers: req.headers as unknown as Headers });
+  const sessionId = req.headers["authorization"]?.split(" ")[1];
 
-    if (!session) {
-      return res.status(401).json({ message: MESSAGES.UNAUTHORIZED });
-    }
+  if (!sessionId) {
+    logUnauthenticatedWarning({
+      req,
+      reason: MESSAGES.UNAUTHORIZED,
+      message: MESSAGES.UNAUTHORIZED,
+    });
 
-    req.user = session.user as User;
-    return next();
-  } catch (error) {
-    logger.error("Failed to authenticate user", error);
     return res.status(401).json({ message: MESSAGES.UNAUTHORIZED });
   }
+
+  const session = await prisma.session.findUnique({
+    where: {
+      id: sessionId,
+    },
+    include: {
+      user: true,
+    },
+  });
+
+  if (!session || new Date() > session.expiresAt) {
+    logUnauthenticatedWarning({
+      req,
+      reason: MESSAGES.UNAUTHORIZED,
+      message: MESSAGES.UNAUTHORIZED,
+    });
+
+    return res.status(401).json({ message: MESSAGES.UNAUTHORIZED });
+  }
+
+  const now = new Date();
+  const fourDaysInMs = 4 * 24 * 60 * 60 * 1000;
+  const timeUntilExpiry = session.expiresAt.getTime() - now.getTime();
+
+  if (timeUntilExpiry < fourDaysInMs) {
+    const newExpiry = new Date(now.getTime() + SESSION_EXPIRY_MS);
+    await prisma.session.update({
+      where: { id: sessionId },
+      data: { expiresAt: newExpiry },
+    });
+  }
+
+  req.user = session.user;
+  return next();
 }
 
 export default isAuthorized;
