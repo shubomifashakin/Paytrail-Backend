@@ -15,7 +15,7 @@ import {
   GOOGLE_REDIRECT_URL,
   IpLocatorResponse,
   MESSAGES,
-  SESSION_EXPIRY,
+  SESSION_EXPIRY_MS,
   deleteDaysWindow,
 } from "../../../utils/constants";
 
@@ -213,7 +213,7 @@ export default async function googleToken(req: Request, res: Response) {
       createdAt: new Date(),
       updatedAt: new Date(),
       userAgent: req.get("user-agent"),
-      expiresAt: new Date(Date.now() + SESSION_EXPIRY),
+      expiresAt: new Date(Date.now() + SESSION_EXPIRY_MS),
     },
   });
 

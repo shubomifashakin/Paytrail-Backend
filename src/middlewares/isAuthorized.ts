@@ -27,7 +27,7 @@ async function isAuthorized(req: Request, res: Response, next: NextFunction) {
     },
   });
 
-  if (!session) {
+  if (!session || new Date() > session.expiresAt) {
     logUnauthenticatedWarning({
       req,
       reason: MESSAGES.UNAUTHORIZED,

@@ -13,7 +13,7 @@ import { signInWithAppleValidator } from "../../../utils/validators";
 import {
   IpLocatorResponse,
   MESSAGES,
-  SESSION_EXPIRY,
+  SESSION_EXPIRY_MS,
   deleteDaysWindow,
 } from "../../../utils/constants";
 import { logUnauthenticatedError, logWarning } from "../../../utils/fns";
@@ -237,7 +237,7 @@ export default async function signInWithApple(req: Request, res: Response) {
       createdAt: new Date(),
       updatedAt: new Date(),
       userAgent: req.get("user-agent"),
-      expiresAt: new Date(Date.now() + SESSION_EXPIRY),
+      expiresAt: new Date(Date.now() + SESSION_EXPIRY_MS),
     },
   });
 

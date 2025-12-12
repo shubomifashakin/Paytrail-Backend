@@ -45,7 +45,7 @@ export const GOOGLE_OAUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 export const GOOGLE_OATH_TOKEN_URL = "https://oauth2.googleapis.com/token";
 export const GOOGLE_REDIRECT_URL = `${serverEnv.baseUrl}${API_V1}/auth/google/callback`;
 
-export const SESSION_EXPIRY = 60 * 60 * 24 * 7;
+export const SESSION_EXPIRY_MS = 60 * 60 * 24 * 7 * 1000;
 
 export const resendEmailFrom = "Paytrail <hello@notifications.paytrail.app>";
 export const supportMail = "support@paytrail.app";
