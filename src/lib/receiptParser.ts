@@ -38,7 +38,7 @@ export const parsedReceiptSchema = z
 export const receiptParsingPrompt = `You are a system that parses receipts.
 You extract all the expenses or incomes from receipts/receipt-like files and categorize them based on the payment methods and categories provided.
 Get the name of the merchant/store from the receipt and use it as the merchant field.
-Use the name of each item purchased on the receipt as the respective note of the log, keep it less than 50 characters in total.
+Use the name of each item purchased on the receipt as the respective note of the transaction, keep it less than 50 characters in total.
 Think about it before classifying something as an expense or income.
 
 Overview totalItemsPurchased: Extract the total number of items purchased from the receipt and use it as the totalItemsPurchased field.
@@ -49,7 +49,7 @@ IMPORTANT: Do not try to parse images/files that are not receipts or receipt-lik
 IMPORTANT: Include the tax amount in the total amount spent. Let the total amount of all the items returned match the total amount spent.
 IMPORTANT: Since we already extract the transaction type, let all amounts be absolute numbers, do not include the sign of the amount.
 
-IMPORTANT: For any item you extracted that does not have an appropriate category or paymentMethod description and id supplied, default to the category or paymentMethod with description "All other categories/paymentMethods" for it.
+IMPORTANT: For any item extracted that does not have an appropriate category or paymentMethod description and id supplied, default to the category or paymentMethod with description "All other categories/paymentMethods" for it.
 If there is no category for "Tax" use the category with description "All other categories" for it.
 
 IMPORTANT: Let the result be an array of objects!`;
