@@ -131,9 +131,14 @@ export default async function signInWithApple(req: Request, res: Response) {
 
     let usersCurrencyCode: IpLocatorResponse | undefined;
 
+    const searchParams = new URLSearchParams();
+    searchParams.set("apiKey", serverEnv.ipLocatorApiKey);
+    searchParams.set("ip", req.ip!);
+    searchParams.set("fields", "currency");
+
     try {
       const response = await fetch(
-        `https://api.ipgeolocation.io/v2/ipgeo?apiKey=${serverEnv.ipLocatorApiKey}&ip=${req.ip}`,
+        `https://api.ipgeolocation.io/v2/ipgeo?${searchParams.toString()}`,
         {
           method: "GET",
           redirect: "follow",

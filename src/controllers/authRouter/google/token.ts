@@ -107,11 +107,17 @@ export default async function googleToken(req: Request, res: Response) {
     let usersCurrencyCode: IpLocatorResponse | undefined;
 
     try {
+      const searchParams = new URLSearchParams();
+      searchParams.set("apiKey", serverEnv.ipLocatorApiKey);
+      searchParams.set("ip", req.ip!);
+      searchParams.set("fields", "currency");
+
       const response = await fetch(
-        `https://api.ipgeolocation.io/v2/ipgeo?apiKey=${serverEnv.ipLocatorApiKey}&ip=${req.ip}`,
+        `https://api.ipgeolocation.io/v2/ipgeo?${searchParams.toString()}`,
         {
           method: "GET",
           redirect: "follow",
+          signal: AbortSignal.timeout(10000),
         },
       );
 
