@@ -35,7 +35,7 @@ const logger = createLogger({
     format.json(),
   ),
   transports: [fileTransport, errorTransport],
-  defaultMeta: { serviceName: serverEnv.serviceName, environment: serverEnv.environment },
+  defaultMeta: { service: serverEnv.serviceName, environment: serverEnv.environment },
 });
 
 export default logger;
